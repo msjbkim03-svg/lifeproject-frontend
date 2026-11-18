@@ -312,3 +312,24 @@
 
 /* 다크: 구름은 아주 옅게 (예전 그대로) */
 :global(:root[data-theme='dark']) .cloud { --cloud: rgba(160, 175, 255, 0.05); }
+/* 퀘스트 저장 실패 안내 (C01) - 빨간 글씨 + [다시 저장] / [로그인하러 가기] 버튼 */
+.questError {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+}
+
+.questError p {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--red);
+}
+
+.questError button {
+  flex: none;
+  height: 36px;
+}

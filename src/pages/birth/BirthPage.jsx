@@ -9,14 +9,65 @@ import styles from './BirthPage.module.css';
 // 설정값
 // ───────────────────────────────────────────────
 
-// 나라별 착륙 지점 (위도·경도)
+// 나라별 착륙 지점 (위도·경도) - 키는 COUNTRY.COUNTRY_CODE (ISO 3글자)
+// 여기 없는 나라는 아래 ASIA_CENTER(아시아 가운데)로 떨어짐
 const COUNTRY_POS = {
-  KOR: { lat: 36.5, lng: 127.8 },
-  PRK: { lat: 40.0, lng: 127.0 },
-  JPN: { lat: 36.2, lng: 138.3 },
-  CHN: { lat: 34.0, lng: 104.0 },
-  VNM: { lat: 16.0, lng: 107.5 },
-  IND: { lat: 22.5, lng: 79.0 },
+  // 동아시아
+  KOR: { lat: 36.5, lng: 127.8 }, // 한국
+  PRK: { lat: 40.0, lng: 127.0 }, // 북한
+  JPN: { lat: 36.2, lng: 138.3 }, // 일본
+  CHN: { lat: 34.0, lng: 104.0 }, // 중국
+  TWN: { lat: 23.7, lng: 121.0 }, // 대만
+  HKG: { lat: 22.3, lng: 114.2 }, // 홍콩
+  MAC: { lat: 22.2, lng: 113.5 }, // 마카오
+  MNG: { lat: 46.9, lng: 103.8 }, // 몽골
+  // 동남아시아
+  VNM: { lat: 16.0, lng: 107.5 }, // 베트남
+  LAO: { lat: 19.9, lng: 102.5 }, // 라오스
+  KHM: { lat: 12.6, lng: 105.0 }, // 캄보디아
+  THA: { lat: 15.9, lng: 101.0 }, // 태국
+  MMR: { lat: 21.9, lng: 96.0 },  // 미얀마
+  MYS: { lat: 4.2, lng: 102.0 },  // 말레이시아
+  SGP: { lat: 1.35, lng: 103.8 }, // 싱가포르
+  IDN: { lat: -2.5, lng: 118.0 }, // 인도네시아
+  PHL: { lat: 12.9, lng: 121.8 }, // 필리핀
+  BRN: { lat: 4.5, lng: 114.7 },  // 브루나이
+  TLS: { lat: -8.9, lng: 125.7 }, // 동티모르
+  // 남아시아
+  IND: { lat: 22.5, lng: 79.0 },  // 인도
+  PAK: { lat: 30.4, lng: 69.3 },  // 파키스탄
+  BGD: { lat: 23.7, lng: 90.4 },  // 방글라데시
+  NPL: { lat: 28.4, lng: 84.1 },  // 네팔
+  BTN: { lat: 27.5, lng: 90.4 },  // 부탄
+  LKA: { lat: 7.9, lng: 80.8 },   // 스리랑카
+  MDV: { lat: 3.2, lng: 73.2 },   // 몰디브
+  AFG: { lat: 33.9, lng: 67.7 },  // 아프가니스탄
+  // 중앙아시아
+  KAZ: { lat: 48.0, lng: 67.0 },  // 카자흐스탄
+  UZB: { lat: 41.4, lng: 64.6 },  // 우즈베키스탄
+  TKM: { lat: 39.0, lng: 59.6 },  // 투르크메니스탄
+  KGZ: { lat: 41.2, lng: 74.8 },  // 키르기스스탄
+  TJK: { lat: 38.9, lng: 71.3 },  // 타지키스탄
+  // 서아시아 (중동·코카서스)
+  IRN: { lat: 32.4, lng: 53.7 },  // 이란
+  IRQ: { lat: 33.2, lng: 43.7 },  // 이라크
+  SYR: { lat: 34.8, lng: 39.0 },  // 시리아
+  LBN: { lat: 33.9, lng: 35.9 },  // 레바논
+  ISR: { lat: 31.0, lng: 34.9 },  // 이스라엘
+  PSE: { lat: 31.9, lng: 35.2 },  // 팔레스타인
+  JOR: { lat: 30.6, lng: 36.2 },  // 요르단
+  SAU: { lat: 23.9, lng: 45.1 },  // 사우디아라비아
+  YEM: { lat: 15.6, lng: 48.5 },  // 예멘
+  OMN: { lat: 21.5, lng: 55.9 },  // 오만
+  ARE: { lat: 23.4, lng: 53.8 },  // 아랍에미리트
+  QAT: { lat: 25.4, lng: 51.2 },  // 카타르
+  BHR: { lat: 26.0, lng: 50.6 },  // 바레인
+  KWT: { lat: 29.3, lng: 47.5 },  // 쿠웨이트
+  TUR: { lat: 39.0, lng: 35.2 },  // 튀르키예
+  CYP: { lat: 35.1, lng: 33.4 },  // 키프로스
+  GEO: { lat: 42.3, lng: 43.4 },  // 조지아
+  ARM: { lat: 40.1, lng: 45.0 },  // 아르메니아
+  AZE: { lat: 40.1, lng: 47.6 },  // 아제르바이잔
 };
 const ASIA_CENTER = { lat: 28, lng: 105 };
 
@@ -50,6 +101,9 @@ function BirthPage() {
   const [target, setTarget] = useState(null); // 착륙할 위도·경도
   const [jump, setJump] = useState(null); // 아기 출발·도착 화면 좌표
   const [error, setError] = useState('');
+  const [questError, setQuestError] = useState(''); // 퀘스트 저장 실패 안내 (C01)
+  const [questRetry, setQuestRetry] = useState(false); // [다시 저장] 버튼 보일지 (401 이면 안 보임)
+  const [questBusy, setQuestBusy] = useState(false); // 다시 저장 중 (연속 클릭 막기)
 
   // ① 시대를 안 고르고 주소로 바로 들어오면 메인으로
   useEffect(() => {
@@ -58,6 +112,35 @@ function BirthPage() {
 
   // ② 비행기가 멈추면 ToonEarth 가 화면 좌표를 알려 줌
   const handleParked = useCallback((pos) => setJump(pos), []);
+
+  // ②-1 퀘스트 저장 (C01) - 태어난 직후 + [다시 저장] 버튼이 같이 씀
+  //   성공: 안내 문구 지움
+  //   401(로그인 만료): 다시 저장해도 안 되니까 로그인 안내만 (버튼 숨김)
+  //   그 밖의 실패: 안내 + [다시 저장] 버튼
+  const saveQuests = async (lifeId) => {
+    try {
+      await client.post('/api/quests/life', { lifeId, questIds });
+      setQuestError('');
+      setQuestRetry(false);
+    } catch (e) {
+      console.log('퀘스트 저장 실패', e.response?.data);
+      if (e.response?.status === 401) {
+        setQuestError('로그인이 만료되어 퀘스트를 저장하지 못했어요. 다시 로그인해 주세요.');
+        setQuestRetry(false);
+      } else {
+        setQuestError(e.response?.data?.message || '퀘스트를 저장하지 못했어요. 이번 생은 퀘스트 없이 진행돼요.');
+        setQuestRetry(true);
+      }
+    }
+  };
+
+  // ②-2 [다시 저장] 버튼
+  const retryQuests = async () => {
+    if (questBusy) return;
+    setQuestBusy(true);
+    await saveQuests(life.lifeId);
+    setQuestBusy(false);
+  };
 
   // ③ 서버에 출생 요청 → 연출 순서대로 진행
   useEffect(() => {
@@ -88,10 +171,10 @@ function BirthPage() {
           localStorage.setItem('guestToken', born.guestToken);
         }
 
-        // 회원이 퀘스트를 골랐으면 이 인생에 저장 (C01) - 실패해도 연출은 계속
+        // 회원이 퀘스트를 골랐으면 이 인생에 저장 (C01)
+        // await 안 함 → 저장을 기다리지 않고 연출은 계속 (실패하면 결과 카드에 안내)
         if (isLogin && questIds?.length) {
-          client.post('/api/quests/life', { lifeId: born.lifeId, questIds })
-            .catch((e) => console.log('퀘스트 저장 실패', e.response?.data));
+          saveQuests(born.lifeId);
         }
 
         // 지구를 그 나라로 돌리기
@@ -195,6 +278,22 @@ function BirthPage() {
               <strong>{life.gdpPerCapita ? `$${Math.round(life.gdpPerCapita).toLocaleString()}` : '-'}</strong>
             </li>
           </ul>
+
+          {/* 퀘스트 저장 실패 안내 (C01) */}
+          {questError && (
+            <div className={styles.questError}>
+              <p>{questError}</p>
+              {questRetry ? (
+                <button type="button" className={styles.ghostBtn} disabled={questBusy} onClick={retryQuests}>
+                  {questBusy ? '저장하는 중…' : '퀘스트 다시 저장'}
+                </button>
+              ) : (
+                <button type="button" className={styles.ghostBtn} onClick={() => navigate('/login')}>
+                  로그인하러 가기
+                </button>
+              )}
+            </div>
+          )}
 
           <div className={styles.actions}>
             <button type="button" className={styles.ghostBtn} onClick={() => navigate('/')}>
