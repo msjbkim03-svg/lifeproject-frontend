@@ -34,7 +34,7 @@ function MyPage() {
         {/* 숫자 칸 3개 */}
         <div className={styles.stats}>
           <div className={styles.stat}><span>보유 포인트</span><b>{my.point}P</b></div>
-          <div className={styles.stat}><span>살아본 인생</span><b>{my.lifeCount}번</b></div>
+          <div className={styles.stat}><span>살아 본 인생</span><b>{my.lifeCount}번</b></div>
           <div className={styles.stat}><span>퀘스트 달성</span><b>{my.questDone}개</b></div>
         </div>
 
@@ -52,7 +52,7 @@ function MyPage() {
               </div>
               {/* TODO: 게임 진행 화면 주소가 정해지면 바꾸기 (C03, 엔진 담당) */}
               <Button type="primary" onClick={() => navigate('/play', { state: { lifeId: my.lifeId } })}>
-                이어하기
+                이어서 살기
               </Button>
             </div>
           ) : (
@@ -62,7 +62,7 @@ function MyPage() {
                 <b>진행 중인 인생이 없어요</b>
                 <span>메인에서 새 인생을 시작해 보세요.</span>
               </div>
-              <Button onClick={() => navigate('/')}>태어나기</Button>
+              <Button onClick={() => navigate('/')}>새 인생 시작하기</Button>
             </div>
           )}
         </section>
@@ -76,7 +76,7 @@ function MyPage() {
           </section>
           <section className={styles.card}>
             <div className={styles.cardHead}><span className={styles.cardTitle}>특성 강화</span></div>
-            <p className={styles.desc}>포인트 {my.point}점으로 특성을 올릴 수 있어요.</p>
+            <p className={styles.desc}>포인트 {my.point}P로 특성을 올릴 수 있어요.</p>
             <Button block onClick={() => navigate('/mypage/traits')}>바로가기 ›</Button>
           </section>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
 import Button from '../../common/ui/Button';
 import styles from './LoginPage.module.css';
@@ -7,6 +7,7 @@ import styles from './LoginPage.module.css';
 // 로그인 화면 (M02)
 function LoginPage() {
   const navigate = useNavigate();
+  const notice = useLocation().state?.message; // 회원가입·비밀번호 변경 뒤 넘어온 안내 문구
 
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
@@ -40,7 +41,7 @@ function LoginPage() {
       navigate('/'); // 메인으로
     } catch (err) {
       // 어느 쪽이 틀렸는지는 알려주지 않음 (M02 규칙)
-      setError(err.response?.data?.message || '아이디 또는 비밀번호가 올바르지 않습니다.');
+      setError(err.response?.data?.message || '아이디 또는 비밀번호가 맞지 않아요.');
     }
   };
 
@@ -57,6 +58,9 @@ function LoginPage() {
           <input className={styles.input} type="password" value={password}
             onChange={(e) => setPassword(e.target.value)} />
 
+          {/* 안내 문구 (회원가입·비밀번호 변경을 마치고 왔을 때) */}
+          {notice && !error && <div className={styles.noticeBox}>{notice}</div>}
+
           {/* 오류 문구 칸 (와이어프레임의 회색 상자) */}
           {error && <div className={styles.errorBox}>{error}</div>}
 
@@ -65,7 +69,7 @@ function LoginPage() {
           <Button type="primary" size="lg" block className={styles.mainBtn} onClick={handleSubmit}>로그인</Button>
 
           <div className={styles.links}>
-            <Link to="/find">아이디 · 비밀번호 찾기</Link>
+            <Link to="/find">아이디·비밀번호 찾기</Link>
             <span>|</span>
             <Link to="/join">회원가입</Link>
           </div>
@@ -73,7 +77,7 @@ function LoginPage() {
           <Button block className={styles.subBtn} onClick={() => navigate('/')}>
             로그인 없이 태어나기
           </Button>
-          <p className={styles.hint}>비회원은 퀘스트·포인트 없이 진행됩니다.</p>
+          <p className={styles.hint}>비회원은 퀘스트·포인트 없이 진행돼요.</p>
         </div>
       </form>
     </div>
