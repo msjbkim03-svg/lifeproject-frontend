@@ -1,47 +1,77 @@
 /* =========================================================
-   환승인생 디자인 규칙 (공통) - 밤하늘 스타일 (M01 시안)
+   환승인생 디자인 규칙 (공통) - 동현님 관리
    모든 화면은 아래 변수(var(--이름))만 써서 색·글꼴·간격을 맞춰요.
-   - 바탕은 짙은 남색 밤하늘, 강조는 금색 별빛 하나만 씁니다.
-   - 변수 이름은 예전(도트 스타일)과 같아서, 이미 붙인 화면도 그대로 새 색으로 바뀝니다.
+   테마 두 가지 (오른쪽 아래 버튼으로 바꿈, common/theme.js)
+   - 기본(라이트): 노을 코랄 - 따뜻한 크림 바탕 + 코랄 강조
+   - 다크: 예전 밤하늘 스타일 (M01 시안) 그대로 - <html data-theme="dark">
+   변수 이름은 예전과 같아서, 이미 붙인 화면도 그대로 새 색으로 바뀝니다.
    ========================================================= */
 
 /* 글꼴(고운바탕 + IBM Plex Sans KR)은 src/index.css 맨 위에서 불러와요 */
 
 :root {
-  /* ---------- 색: 바탕 ---------- */
-  --bg: #0a0f22;          /* 화면 바탕 (밤하늘) */
-  --bg-deep: #070b1a;     /* 더 어두운 바탕 (입력칸, 구역 나눌 때) */
-  --panel: #0f1530;       /* 카드·창 안쪽 */
-  --panel-2: #141b3a;     /* 카드 안의 칸, 마우스 올렸을 때 */
-  --line: #1d2546;        /* 기본 테두리 */
-  --line-strong: #2b3459; /* 버튼·입력칸 테두리 */
+  /* ---------- 색: 바탕 (메인 시안 이미지 색) ---------- */
+  --bg: #fff6f0;          /* 화면 바탕 (노을 크림) */
+  --bg-deep: #fff0e6;     /* 입력칸, 구역 나눌 때 */
+  --panel: #ffffff;       /* 카드·창 안쪽 */
+  --panel-2: #fff3eb;     /* 카드 안의 칸, 마우스 올렸을 때 */
+  --line: #f8e7dc;        /* 기본 테두리 */
+  --line-strong: #f0d3c4; /* 버튼·입력칸 테두리 */
 
   /* ---------- 색: 글자 ---------- */
-  --ink: #e8e9f5;         /* 기본 글자 */
-  --ink-sub: #a3a8cc;     /* 보조 글자 (설명, 날짜) */
-  --ink-light: #7d83ab;   /* 아주 흐린 글자 (안내 문구) */
+  --ink: #331c12;         /* 기본 글자 (짙은 밤색) */
+  --ink-sub: #664a3c;     /* 보조 글자 (설명, 날짜) */
+  --ink-light: #957a6c;   /* 아주 흐린 글자 (안내 문구) */
 
-  /* ---------- 색: 강조 (금색 별빛) ---------- */
-  --primary: #f2d58c;       /* 메인 색 - 주요 버튼, 선택됨, 출생 별 */
-  --primary-dark: #d9b25f;  /* 눌렀을 때 */
-  --primary-light: rgba(242, 213, 140, 0.14); /* 선택된 칸 바탕 */
-  --on-primary: #1a1a33;    /* 금색 위 글자 */
+  /* ---------- 색: 강조 (노을 코랄) ---------- */
+  --primary: #f26b38;       /* 메인 색 - 주요 버튼, 선택됨, 출생 별 */
+  --primary-dark: #d9552a;  /* 눌렀을 때 */
+  --primary-hover: #f47c4e; /* 마우스 올렸을 때 */
+  --primary-light: rgba(242, 107, 56, 0.12); /* 선택된 칸 바탕 */
+  --primary-line: rgba(242, 107, 56, 0.45);  /* 강조 테두리 */
+  --on-primary: #ffffff;    /* 코랄 위 글자 */
 
-  --green: #6fd3a8;       /* 성공·긍정 */
-  --blue: #7aa8ff;        /* 정보 */
-  --red: #ff7a7a;         /* 위험·삭제 */
-  --yellow: #f2d58c;      /* 강조 (= primary) */
-  --death: #8a93c8;       /* 떠난 사람 표시 (빈 원) */
+  --green: #2b9a74;       /* 성공·긍정 */
+  --teal: #128478;        /* 인생 기록 이정표·또래 생존 줄 (원작 ms·note) */
+  --blue: #4a78d6;        /* 정보 */
+  --red: #d2453b;         /* 위험·삭제 */
+  --yellow: #f2a23a;      /* 노을 금빛 */
+  --death: #a08a96;       /* 떠난 사람 표시 (빈 원) */
+  --green-line: rgba(43, 154, 116, 0.45);
+  --blue-line: rgba(74, 120, 214, 0.45);
+  --red-line: rgba(210, 69, 59, 0.45);
+  --red-soft: rgba(210, 69, 59, 0.08);
 
   /* 능력치 색 (C05) */
-  --stat-health: #ff8a80;     /* 건강 */
-  --stat-happiness: #f2d58c;  /* 행복 */
-  --stat-knowledge: #7aa8ff;  /* 지식 */
-  --stat-relation: #6fd3a8;   /* 관계 */
+  --stat-health: #f26b38;     /* 건강 */
+  --stat-happiness: #f0a03a;  /* 행복 */
+  --stat-knowledge: #4a78d6;  /* 지식 */
+  --stat-relation: #2b9a74;   /* 관계 */
+
+  /* ---------- 테마마다 다른 자리 ---------- */
+  --header-bg: rgba(255, 255, 255, 0.92);  /* 위 머리글 (흰색) */
+  --scrim: rgba(60, 25, 30, 0.42);         /* 창 뒤 어둡게 */
+  --chip-bg: rgba(255, 255, 255, 0.92);    /* 그림 위에 얹는 이름표 */
+  --pick-ink: #c2461a;                     /* 메인: 고른 시대 숫자, 강조 글자 */
+  --title-glow: rgba(242, 107, 56, 0.0);   /* 큰 제목 빛 (라이트는 없음) */
+  --light-hover: #3d2731;                  /* 진한 버튼 마우스 올림 */
+  --orbit-ring: #e9a493;                   /* 궤도 점 테두리 */
+  --orbit-on-ring: #ffffff;
+  --option-on-sub: #8a2f27;                /* 고른 칸 위 작은 글자 */
+  --outline: #2a1a22;                      /* 그림 테두리 선 */
+  --paper-mid: #ffffff;                    /* 그림 속 밝은 면 */
+  --pulse-on: rgba(242, 107, 56, 0.16);
+  --pulse-off: rgba(242, 107, 56, 0.04);
+  /* 넓은 화면 바탕: 라이트는 시안처럼 크림 단색 (다크는 별 하늘) */
+  --sky-image: none;
+  --sky-size: 100% 100%;
 
   /* ---------- 글꼴 ---------- */
   --font-display: 'Gowun Batang', 'Nanum Myeongjo', serif;          /* 큰 제목·숫자 */
+  --font-hero: 'Black Han Sans', 'Gowun Batang', sans-serif;        /* 메인 로고·시대·실시간 숫자 (라이트 시안) */
+  --hero-weight: 400;  /* Black Han Sans 는 굵기 하나뿐 */
   --font-body: 'IBM Plex Sans KR', 'Malgun Gothic', sans-serif;     /* 본문·버튼 */
+  --font-mono: 'IBM Plex Mono', 'IBM Plex Sans KR', 'Malgun Gothic', ui-monospace, monospace;  /* 나이·기록 숫자 (한글은 Plex Sans KR) */
   --font-pixel: var(--font-display); /* 예전 이름 (도트 글꼴 자리) - 새 코드는 --font-display */
 
   --fs-xs: 12px;
@@ -65,10 +95,79 @@
   --radius-lg: 16px;     /* 카드 */
   --radius-pill: 999px;  /* 알약 모양 */
   --border: 1px solid var(--line);
+  --shadow: 0 14px 36px rgba(170, 80, 60, 0.14);
+  --shadow-sm: 0 4px 14px rgba(170, 80, 60, 0.1);
+  --glow: 0 6px 20px rgba(242, 107, 56, 0.3); /* 코랄 빛 */
+  --ease: cubic-bezier(0.65, 0, 0.35, 1);
+
+  color-scheme: light;
+}
+
+/* ---------- 다크 모드 = 예전 밤하늘 스타일 그대로 ---------- */
+:root[data-theme='dark'] {
+  --bg: #0a0f22;
+  --bg-deep: #070b1a;
+  --panel: #0f1530;
+  --panel-2: #141b3a;
+  --line: #1d2546;
+  --line-strong: #2b3459;
+
+  --ink: #e8e9f5;
+  --ink-sub: #a3a8cc;
+  --ink-light: #7d83ab;
+
+  --primary: #f2d58c;
+  --primary-dark: #d9b25f;
+  --primary-hover: #f6e0a6;
+  --primary-light: rgba(242, 213, 140, 0.14);
+  --primary-line: rgba(242, 213, 140, 0.5);
+  --on-primary: #1a1a33;
+
+  --green: #6fd3a8;
+  --teal: #5fd0c0;
+  --blue: #7aa8ff;
+  --red: #ff7a7a;
+  --yellow: #f2d58c;
+  --death: #8a93c8;
+  --green-line: rgba(111, 211, 168, 0.45);
+  --blue-line: rgba(122, 168, 255, 0.45);
+  --red-line: rgba(255, 122, 122, 0.45);
+  --red-soft: rgba(255, 122, 122, 0.1);
+
+  --stat-health: #ff8a80;
+  --stat-happiness: #f2d58c;
+  --stat-knowledge: #7aa8ff;
+  --stat-relation: #6fd3a8;
+
+  --header-bg: rgba(10, 15, 34, 0.85);
+  --scrim: rgba(4, 6, 16, 0.7);
+  --chip-bg: rgba(15, 21, 48, 0.85);
+  --pick-ink: #f6e3b0;
+  --title-glow: rgba(160, 180, 255, 0.2);
+  --light-hover: #ffffff;
+  --orbit-ring: #9aa3dc;
+  --orbit-on-ring: #fff3cf;
+  --option-on-sub: #4a3d18;
+  --outline: #0a0f22;
+  --paper-mid: #e8e9f5;
+  --pulse-on: rgba(242, 213, 140, 0.16);
+  --pulse-off: rgba(242, 213, 140, 0.04);
+  --font-hero: var(--font-display); /* 다크는 예전처럼 명조 */
+  --hero-weight: 700;
+  --sky-image:
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 120px 80px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 210px 160px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 300px 40px, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 60px 220px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 260px 260px, rgba(255, 255, 255, 0.35), transparent);
+  --sky-size: 340px 300px;
+
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
-  --glow: 0 0 22px rgba(242, 213, 140, 0.35); /* 금색 별빛 */
-  --ease: cubic-bezier(0.65, 0, 0.35, 1);
+  --glow: 0 0 22px rgba(242, 213, 140, 0.35);
+
+  color-scheme: dark;
 }
 
 /* ---------- 기본 바탕 ---------- */
@@ -83,6 +182,13 @@ body {
   font-size: var(--fs-md);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+/* 테마 바꿀 때 부드럽게 (처음 열 때는 깜빡임 없게 theme-ready 뒤에만) */
+html.theme-anim body,
+html.theme-anim .panel,
+html.theme-anim .header,
+html.theme-anim .btn {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
 h1, h2, h3, h4 {
   font-family: var(--font-display);
@@ -109,7 +215,7 @@ a:hover { color: var(--ink); }
 .display { font-family: var(--font-display); }   /* 제목 글꼴로 */
 .pixel { font-family: var(--font-display); }     /* 예전 이름 (= .display) */
 .sub { color: var(--ink-sub); }                  /* 보조 글자 */
-.gold { color: var(--primary); }                 /* 금색 강조 */
+.gold { color: var(--primary); }                 /* 강조 색 */
 .center { text-align: center; }
 .page {                                          /* 화면 기본 틀 (가운데, 최대 너비) */
   max-width: 1200px;
@@ -119,18 +225,14 @@ a:hover { color: var(--ink); }
 .row { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
 .col { display: flex; flex-direction: column; gap: var(--sp-3); }
 
-/* 별이 뜬 바탕 (메인처럼 넓은 화면에 className="sky") */
+/* 넓은 바탕 (메인처럼 className="sky"): 라이트는 노을빛, 다크는 별 하늘 */
 .sky {
   background-color: var(--bg);
-  background-image:
-    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 120px 80px, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 210px 160px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 300px 40px, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(1px 1px at 60px 220px, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1px 1px at 260px 260px, rgba(255, 255, 255, 0.35), transparent);
-  background-size: 340px 300px;
+  background-image: var(--sky-image);
+  background-size: var(--sky-size);
+  background-repeat: no-repeat;
 }
+:root[data-theme='dark'] .sky { background-repeat: repeat; }
 
 /* 입력칸 */
 .input {
