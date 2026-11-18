@@ -65,13 +65,13 @@ function JoinPage() {
       const res = await client.get(urls[field]); // 서버에 물어보기
       if (res.data.available) {
         setChecked({ ...checked, [field]: true });
-        setMsg({ ...msg, [field]: '사용할 수 있습니다.' });
+        setMsg({ ...msg, [field]: '사용할 수 있어요.' });
       } else {
         setChecked({ ...checked, [field]: false });
-        setMsg({ ...msg, [field]: '이미 사용 중입니다.' });
+        setMsg({ ...msg, [field]: '이미 사용 중이에요.' });
       }
     } catch {
-      setMsg({ ...msg, [field]: '서버에 연결할 수 없습니다.' });
+      setMsg({ ...msg, [field]: '서버에 연결할 수 없어요.' });
     }
   };
 
@@ -88,7 +88,7 @@ function JoinPage() {
       return setError('비밀번호는 영문·숫자·특수문자를 포함해 8~20자로 입력해 주세요.');
     }
     if (form.password !== form.passwordCheck) {
-      return setError('비밀번호 확인이 일치하지 않습니다.');
+      return setError('비밀번호 확인이 맞지 않아요.');
     }
     if (form.nickname.length < 2 || form.nickname.length > 10) {
       return setError('닉네임은 2~10자로 입력해 주세요.');
@@ -106,17 +106,17 @@ function JoinPage() {
     try {
       // 서버로 보내기 (동의 여부는 DB 값에 맞춰 Y / N 으로)
       await client.post('/api/members', { ...form, privacyAgreed: agreed ? 'Y' : 'N' });
-      alert('회원가입이 완료되었습니다.');
-      navigate('/login'); // 로그인 화면으로 이동
+      // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸)
+      navigate('/login', { state: { message: '회원가입을 마쳤어요. 로그인해 주세요.' } });
     } catch (err) {
-      setError(err.response?.data?.message || '서버에 연결할 수 없습니다.');
+      setError(err.response?.data?.message || '서버에 연결할 수 없어요.');
     }
   };
 
   // 비밀번호 확인 칸 아래 문구
   const pwMatch = form.password === form.passwordCheck;
   const pwMatchMsg =
-    form.passwordCheck === '' ? '' : pwMatch ? '비밀번호가 일치합니다.' : '비밀번호가 일치하지 않습니다.';
+    form.passwordCheck === '' ? '' : pwMatch ? '비밀번호가 같아요.' : '비밀번호가 달라요.';
 
   // 문구 색: 통과면 초록(hintOk), 아니면 빨강(hint)
   const hintClass = (ok) => (ok ? styles.hintOk : styles.hint);

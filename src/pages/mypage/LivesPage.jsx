@@ -14,12 +14,16 @@ function LivesPage() {
   const [page, setPage] = useState(1);        // 지금 페이지
   const [sort, setSort] = useState('recent'); // recent 최신순 / age 오래 산 순
   const [data, setData] = useState(null);     // 서버 응답 { total, size, questDone, pointSum, lives }
+  const [loadError, setLoadError] = useState(false); // 불러오기 실패 (빈 목록과 구분)
 
   // 페이지나 정렬이 바뀔 때마다 서버에 다시 물어봄
   useEffect(() => {
     client.get('/api/members/me/lives', { params: { page, sort } })
-      .then((res) => setData(res.data))
-      .catch(() => setData({ total: 0, size: 10, questDone: 0, pointSum: 0, lives: [] }));
+      .then((res) => {
+        setData(res.data);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true)); // 오류를 '기록 없음'으로 보이지 않게
   }, [page, sort]);
 
   // 정렬을 바꾸면 1페이지부터
@@ -27,6 +31,10 @@ function LivesPage() {
     setSort(e.target.value);
     setPage(1);
   };
+
+  if (loadError) {
+    return <main className={common.main}><p className={common.lead}>전생 기록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.</p></main>;
+  }
 
   if (!data) {
     return <main className={common.main}><p className={common.lead}>불러오는 중…</p></main>;
@@ -44,7 +52,7 @@ function LivesPage() {
 
       {/* 숫자 칸 3개 */}
       <div className={common.stats}>
-        <div className={common.stat}><span>살아본 인생</span><b>{data.total}번</b></div>
+        <div className={common.stat}><span>살아 본 인생</span><b>{data.total}번</b></div>
         <div className={common.stat}><span>퀘스트 달성</span><b>{data.questDone}개</b></div>
         <div className={common.stat}><span>획득 포인트 합계</span><b>{data.pointSum}P</b></div>
       </div>
@@ -60,7 +68,7 @@ function LivesPage() {
               <span>{my.countryName} · {my.currentAge}살</span>
             </div>
             {/* TODO: 게임 진행 화면 주소가 정해지면 바꾸기 (C03, 엔진 담당) */}
-            <Button type="primary" onClick={() => navigate('/play', { state: { lifeId: my.lifeId } })}>이어하기</Button>
+            <Button type="primary" onClick={() => navigate('/play', { state: { lifeId: my.lifeId } })}>이어서 살기</Button>
           </div>
         ) : (
           <div className={common.life}>
@@ -69,7 +77,7 @@ function LivesPage() {
               <b>진행 중인 인생이 없어요</b>
               <span>메인에서 새 인생을 시작해 보세요.</span>
             </div>
-            <Button onClick={() => navigate('/')}>태어나기</Button>
+            <Button onClick={() => navigate('/')}>새 인생 시작하기</Button>
           </div>
         )}
       </section>

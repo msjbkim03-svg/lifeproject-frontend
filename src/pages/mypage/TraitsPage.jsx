@@ -6,18 +6,13 @@ import Button from '../../common/ui/Button';
 import LevelDots from '../../common/ui/LevelDots';
 import common from './MyPage.module.css'; // 마이페이지와 같은 틀 (main, card, stat …)
 import styles from './TraitsPage.module.css';
+import { TRAIT_VIEW } from '../../utils/traits';
 
 // 특성 강화 (M08)  주소: /mypage/traits
 // 와이어프레임 18쪽: 보유 포인트 + 강화 규칙 / 특성 4종 카드 / 고른 카드의 확인 줄 (Lv.3 → Lv.4)
 // 포인트 1점 = 1레벨, Lv.1 ~ Lv.5, 올린 레벨은 다음 생부터 적용 (C13)
 
-// 화면용 짧은 이름 · 아이콘 (DB 이름은 길어서)
-const TRAIT_VIEW = {
-  INVEST: { label: '투자 성공', icon: '📈' },
-  DISEASE: { label: '질병 예방', icon: '🩺' },
-  LOVE: { label: '연애 성공', icon: '💞' },
-  STUDY: { label: '학업 능력', icon: '📚' },
-};
+// 화면용 짧은 이름 · 아이콘은 utils/traits.js 의 TRAIT_VIEW (퀘스트 화면과 같이 씀)
 
 function TraitsPage() {
   const { my, setMy } = useOutletContext(); // 보유 포인트(my.point) - 바꾸면 마이페이지에도 반영

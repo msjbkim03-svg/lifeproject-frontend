@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
+import Button from '../../common/ui/Button';
 import MyPageSide from './MyPageSide';
 import styles from './MyPage.module.css';
 
@@ -13,6 +14,7 @@ function MyPageLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation(); // 지금 주소 (예: /mypage/edit)
   const [my, setMy] = useState(null);
+  const [loadError, setLoadError] = useState(''); // 401 말고 다른 오류 (서버 꺼짐·500 등)
 
   // 1. 처음 들어올 때 한 번: 로그인 확인 + 내 정보 받기
   useEffect(() => {
@@ -29,7 +31,10 @@ function MyPageLayout() {
           localStorage.removeItem('nickname');
           localStorage.removeItem('memberRole');
           navigate('/login');
+          return;
         }
+        // 그 밖의 오류 → '불러오는 중…'에서 멈추지 않게 안내
+        setLoadError('내 정보를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.');
       });
   }, [navigate]);
 
@@ -39,7 +44,17 @@ function MyPageLayout() {
   else if (pathname.startsWith('/mypage/lives')) active = 'lives';
   else if (pathname.startsWith('/mypage/traits')) active = 'traits';
 
-  // 3. 서버 응답 오기 전
+  // 3. 불러오기 실패 → 안내 + 다시 시도
+  if (loadError) {
+    return (
+      <div className={styles.loading}>
+        <p>{loadError}</p>
+        <Button onClick={() => window.location.reload()}>다시 시도</Button>
+      </div>
+    );
+  }
+
+  // 4. 서버 응답 오기 전
   if (!my) {
     return <div className={styles.loading}>불러오는 중…</div>;
   }

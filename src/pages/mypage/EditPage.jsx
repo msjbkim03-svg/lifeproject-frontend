@@ -41,15 +41,23 @@ function EditPage() {
   // 2. 닉네임 중복 확인 (원래 닉네임 그대로면 확인 필요 없음)
   const checkNickname = async () => {
     if (nickname === my.nickname) return setNickMsg('지금 쓰는 닉네임이에요.');
-    const res = await client.get('/api/members/checkNickname', { params: { nickname } });
-    setNickMsg(res.data.available ? '사용할 수 있는 닉네임이에요.' : '이미 사용 중인 닉네임이에요.');
+    try {
+      const res = await client.get('/api/members/checkNickname', { params: { nickname } });
+      setNickMsg(res.data.available ? '사용할 수 있는 닉네임이에요.' : '이미 사용 중인 닉네임이에요.');
+    } catch {
+      setNickMsg('중복 확인을 하지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    }
   };
 
   // 3. 이메일 중복 확인
   const checkEmail = async () => {
     if (email === my.email) return setEmailMsg('지금 쓰는 이메일이에요.');
-    const res = await client.get('/api/members/checkEmail', { params: { email } });
-    setEmailMsg(res.data.available ? '사용할 수 있는 이메일이에요.' : '이미 사용 중인 이메일이에요.');
+    try {
+      const res = await client.get('/api/members/checkEmail', { params: { email } });
+      setEmailMsg(res.data.available ? '사용할 수 있는 이메일이에요.' : '이미 사용 중인 이메일이에요.');
+    } catch {
+      setEmailMsg('중복 확인을 하지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    }
   };
 
   // 3-1. 새 이메일로 인증번호 받기 → POST /api/members/me/emailCode
@@ -60,7 +68,7 @@ function EditPage() {
       setEmailSent(true);
       setEmailMsg(res.data.message);
     } catch (err) {
-      setEmailMsg(err.response?.data?.message || '인증번호를 보내지 못했습니다.');
+      setEmailMsg(err.response?.data?.message || '인증번호를 보내지 못했어요.');
     }
   };
 
@@ -69,7 +77,7 @@ function EditPage() {
     setMessage('');
     setError('');
     if (!currentPassword) return setError('현재 비밀번호를 입력해 주세요.');
-    if (newPassword && newPassword !== newPasswordCheck) return setError('새 비밀번호 확인이 일치하지 않습니다.');
+    if (newPassword && newPassword !== newPasswordCheck) return setError('새 비밀번호 확인이 맞지 않아요.');
     if (email !== my.email && !emailCode) return setError('이메일을 바꾸려면 새 이메일로 받은 인증번호를 입력해 주세요.');
     if (!/^01[0-9]{8,9}$/.test(phone.replace(/-/g, ''))) return setError('전화번호를 올바르게 입력해 주세요. (예: 010-1234-5678)');
 
@@ -86,9 +94,9 @@ function EditPage() {
       setEmailCode('');
       setEmailSent(false);
       setEmailMsg('');
-      setMessage('저장했습니다.');
+      setMessage('저장했어요.');
     } catch (err) {
-      setError(err.response?.data?.message || '저장하지 못했습니다.');
+      setError(err.response?.data?.message || '저장하지 못했어요.');
     }
   };
 
@@ -110,7 +118,7 @@ function EditPage() {
       navigate('/');
     } catch (err) {
       setConfirmOpen(false);
-      setWithdrawError(err.response?.data?.message || '탈퇴하지 못했습니다.');
+      setWithdrawError(err.response?.data?.message || '탈퇴하지 못했어요.');
     }
   };
 

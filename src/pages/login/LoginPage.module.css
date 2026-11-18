@@ -64,6 +64,17 @@
   margin-top: var(--sp-2);
 }
 
+/* 안내 문구 (초록) - 회원가입·비밀번호 변경 뒤 */
+.noticeBox {
+  margin-top: var(--sp-3);
+  padding: 10px 12px;
+  font-size: var(--fs-xs);
+  color: var(--green);
+  background: rgba(111, 211, 168, 0.08);
+  border: 1px solid rgba(111, 211, 168, 0.3);
+  border-radius: var(--radius);
+}
+
 /* 오류 문구 */
 .errorBox {
   margin-top: var(--sp-3);
