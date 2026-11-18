@@ -1,4 +1,4 @@
-/* 메인 화면 H01 (M01 시안) 배치 */
+/* 메인 화면 H01 (M01 시안) 배치 - 유리 카드·알약 버튼은 design.css·ui.css 규칙을 따름 */
 .ms { min-height: 100vh; }
 .ms-in {
   max-width: 1200px;
@@ -26,8 +26,11 @@
   gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
   border: var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-sm);
   font-size: var(--fs-xs);
   color: var(--ink-sub);
 }
@@ -64,7 +67,7 @@
   justify-content: center;
   gap: var(--sp-2);
   border: 1px dashed var(--line-strong);
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--ink-sub);
   font-family: var(--font-body);
