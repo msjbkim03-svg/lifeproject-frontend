@@ -3,7 +3,9 @@
 .pp {
   --pp-gap: 20px;
   min-height: 100vh;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--aurora); /* 유리 오로라 */
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 15px;
@@ -18,16 +20,18 @@
   position: sticky;
   top: 65px; /* 공통 머리글(64px + 선 1px) 아래 */
   z-index: 20;
-  background: var(--bg);
+  background: var(--header-bg);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  backdrop-filter: blur(12px) saturate(1.15);
   border-bottom: 1px solid var(--line);
 }
 .pp-top-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-block: 10px; }
 .pp-agebox { display: flex; align-items: baseline; gap: 12px; flex: 1; min-width: 240px; }
-.pp-age { font-family: var(--font-display); font-size: 40px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.pp-age { font-family: var(--font-display); font-size: 40px; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
 .pp-age small { font-size: 18px; font-weight: 500; margin-left: 2px; }
 .pp-yr { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 5px; }
 .pp-yr-t { font-family: var(--font-mono); font-size: 12px; color: var(--ink-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pp-prog { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; width: 100%; }
+.pp-prog { height: 6px; background: var(--line); border-radius: var(--radius-pill); overflow: hidden; width: 100%; }
 .pp-prog i { display: block; width: 100%; height: 100%; background: var(--primary); transform-origin: left center; will-change: transform; }
 
 .pp-speed { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
@@ -35,7 +39,7 @@
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  border-radius: var(--radius-pill); /* 알약 */
   background: var(--panel);
   color: var(--ink);
   font-family: var(--font-body);
@@ -49,15 +53,15 @@
 .pp-b.ghost { background: transparent; }
 .pp-sps { display: inline-flex; }
 .pp-sps button { min-width: 38px; padding: 0 6px; border-radius: 0; margin-left: -1px; font-family: var(--font-mono); font-size: 12px; }
-.pp-sps button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
-.pp-sps button:last-child { border-radius: 0 6px 6px 0; }
+.pp-sps button:first-child { border-radius: var(--radius-pill) 0 0 var(--radius-pill); margin-left: 0; padding-left: 10px; }
+.pp-sps button:last-child { border-radius: 0 var(--radius-pill) var(--radius-pill) 0; padding-right: 10px; }
 .pp-sps button[aria-pressed='true'] { position: relative; z-index: 1; }
 .pp-sps .x { font-size: 10px; margin-left: 1px; opacity: 0.8; }
 
 /* BGM 자리: ♪ 버튼 + 음량 막대를 한 덩어리로 */
 .pp-bgm {
   display: inline-flex; align-items: center; gap: 0;
-  border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--panel);
   overflow: hidden;
 }
 .pp-bgm button { border: 0; border-radius: 0; background: transparent; }
@@ -67,7 +71,7 @@
 
 .pp-notice {
   position: fixed; left: 50%; top: 140px; transform: translateX(-50%); z-index: 60;
-  padding: 8px 16px; border-radius: 6px;
+  padding: 8px 18px; border-radius: var(--radius-pill);
   background: var(--ink); color: var(--bg); font-size: 13px;
   box-shadow: var(--shadow);
 }
@@ -81,26 +85,34 @@
   align-items: start;
 }
 .pp-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.pp-panel {
-  background: var(--panel);
+.pp-panel { /* 유리 카드 + 큰 그림자 (design.css 디자인 규칙) */
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 16px;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px 18px;
   min-width: 0;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow);
 }
-.pp-h {
-  margin: 0 0 10px;
-  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
-  font-family: var(--font-display); font-size: 17px; font-weight: 700;
+.pp-h { /* 머리띠 제목 줄: 카드 맨 위 색 띠 + 강조색 막대 */
+  margin: -16px -18px 14px;
+  padding: 11px 18px;
+  background: var(--band);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-size: 17px; font-weight: 400;
 }
+.pp-h > span:first-child { display: inline-flex; align-items: center; gap: 10px; }
+.pp-h > span:first-child::before { content: ''; width: 4px; height: 16px; border-radius: 4px; background: var(--band-bar); }
 .pp-lbl { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-light); }
 .pp-sub { font-size: 13px; color: var(--ink-sub); }
 .pp-center { text-align: center; padding-top: 80px; }
 .pp-center-card { max-width: 420px; margin: 80px auto; display: flex; flex-direction: column; gap: 12px; }
 
 /* ───── 신원 기록 (여권 카드) ───── */
-.pp-id { position: relative; overflow: hidden; padding: 0; }
+.pp-id { position: relative; overflow: hidden; padding: 0; } /* 신원 기록: 맨 위 강조색 띠가 머리띠 역할 */
 .pp-guilloche {
   position: absolute; inset: 0; width: 100%; height: 100%;
   fill: none; stroke: var(--primary); stroke-width: 0.8; opacity: 0.12;
@@ -115,25 +127,17 @@
 }
 .pp-id-in { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding: 14px 14px 10px; }
 .pp-photo { width: 64px; height: 80px; border: 1px solid var(--line-strong); border-radius: 2px; image-rendering: pixelated; }
-.pp-id-nm { font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+.pp-id-nm { font-family: var(--font-display); font-size: 22px; font-weight: 400; line-height: 1.2; margin-bottom: 6px; }
 .pp-id-dl { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 2px 8px; margin: 0; font-size: 12.5px; }
 .pp-id-dl dt { color: var(--ink-light); font-size: 12px; }
 .pp-id-dl dd { margin: 0; }
 .pp-dot { display: inline-block; width: 8px; height: 8px; margin-right: 3px; border-radius: 50%; border: 1.5px solid var(--ink); }
 .pp-dot.on { background: var(--ink); }
-.pp-mrz {
-  position: relative;
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; line-height: 1.5;
-  color: var(--ink-sub);
-  padding: 8px 14px 12px;
-  border-top: 1px dashed var(--line-strong);
-  white-space: nowrap; overflow: hidden;
-}
 
 /* ───── 상태 ───── */
 .pp-stat { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) 2.2em; gap: 10px; align-items: center; font-size: 13.5px; padding-block: 4px; }
 .pp-stat > span:first-child { color: var(--ink-sub); }
-.pp-bar { position: relative; height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.pp-bar { position: relative; height: 10px; background: var(--line); border-radius: var(--radius-pill); overflow: hidden; }
 .pp-bar i { position: absolute; inset: 0 auto 0 0; transition: width 0.5s ease; }
 .pp-v { text-align: right; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
 .pp-help { margin-top: 8px; font-size: 13px; color: var(--ink-sub); }
@@ -283,3 +287,52 @@
   .pp-age { font-size: 32px; }
   .pp-bgm input[type='range'] { display: none; }
 }
+
+/* 같은 해에 초점을 다시 고르면 앞서 고른 기록은 줄을 그어 지움 */
+.pp-feed li.fk-struck .x { text-decoration: line-through; text-decoration-color: var(--ink-light); color: var(--ink-light); }
+
+/* ───── 돈 쓰기 · 투자 창 (C06-3) ───── */
+.pp-shopbtn { margin-top: 10px; width: 100%; }
+.shop {
+  width: min(620px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: rise-in 0.25s var(--ease);
+}
+.shop-bd { padding: 18px; max-height: 74vh; overflow-y: auto; }
+.shop-title { font-family: var(--font-display); font-size: 26px; margin: 0 0 6px; }
+.shop-sub { margin: 0 0 12px; font-size: 13px; color: var(--ink-sub); line-height: 1.6; }
+.shop-msg { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--primary-light); color: var(--ink); font-size: 13.5px; }
+.shop section { margin-bottom: 16px; }
+.shop h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: baseline; gap: 8px; }
+.shop h3 small { font-size: 12px; font-weight: 400; color: var(--ink-light); }
+.shop-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.shop-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center;
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2);
+}
+.shop-row.inv { grid-template-columns: minmax(0, 1fr) auto; }
+.shop-row.done { border-color: var(--primary); }
+.shop-row.off .shop-nm { opacity: 0.7; }
+.shop-nm { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.shop-nm b { font-size: 14px; font-weight: 600; }
+.shop-nm small { font-size: 12px; color: var(--ink-light); line-height: 1.45; }
+.shop-pr { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+.shop-why { font-size: 12px; color: var(--ink-light); white-space: nowrap; }
+.shop-now { font-size: 12px; font-weight: 600; color: var(--primary); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--primary); }
+.shop-b {
+  font: inherit; font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 999px; cursor: pointer;
+  background: var(--primary); color: var(--on-primary); border: 1px solid var(--primary); white-space: nowrap;
+}
+.shop-b.ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.shop-b:hover:not(:disabled) { filter: brightness(1.05); }
+.shop-b.ghost:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.shop-b:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 560px) {
+  .shop-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .shop-pr { grid-column: 1; }
+}
+

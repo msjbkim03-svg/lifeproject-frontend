@@ -60,7 +60,21 @@ export const feedKind = (line) => {
 };
 
 // ───────── 가진 것 · 다니는 길 (원작 살림 패널 아랫줄, 시대·형편으로 짐작) ─────────
+// 산 물건 (C06-3 LIFE.OWNS 코드 → 이름)
+const OWN_NAME = { PHONE: '스마트폰', CELL: '휴대전화', BIKE: '자전거', MOTO: '오토바이', CAR: '자동차', TV: '텔레비전·냉장고', PC: '컴퓨터·노트북', HOUSE: '내 집' };
+export const ownNames = (life) => (life.owns || '').split(',').map((x) => OWN_NAME[x.trim()]).filter(Boolean);
+
+// 가진 것: 돈 쓰기로 산 물건 (C06-3, 원작처럼 산 것만)
+//   서버가 owns 를 주지 않는 예전 응답일 때만 형편으로 짐작한 살림
 export const belongings = (life, year) => {
+  if (life.currentAge < 6) return '부모님 집의 살림';
+  if (!('owns' in life)) return guessBelongings(life, year);
+  const owned = ownNames(life);
+  if ((life.assets || 0) < 0 && life.currentAge >= 18) owned.push('빚');
+  return owned.length ? owned.join(' · ') : '아직 산 물건이 없어요';
+};
+
+const guessBelongings = (life, year) => {
   const age = life.currentAge;
   const rank = life.incomeRankCountry ?? (life.wealthClass - 0.5) / 5;
   const urban = life.isUrban === 'Y';

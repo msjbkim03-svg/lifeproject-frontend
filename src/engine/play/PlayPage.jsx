@@ -1,17 +1,19 @@
 // C03 인생 진행 화면 (주소: /play) - 원작(1in8b) 진행 화면 구색을 따름
 //   위: 진행 막대 (나이 · 연도 · 한 해 진행 막대 · 멈춤 · 배속 1~16× · 다음 결정까지 · 음악 · 나가기)
 //   왼쪽: 신원 기록(여권 카드) · 상태(능력치) · 살림 (한국 체감 원, 소득 위치, 지난 1년 순자산 내역, 가진 것, 다니는 길)
+//         + '돈 쓰기 · 투자' 단추 (C06-3 ShopSheet: 물건 사기 · 여행·용돈 같은 돈 쓰기 · 여유 자금 굴리기, 여는 동안 시간 멈춤)
 //   가운데: 마을(게임 화면) · 올해의 초점(칩, 진행을 멈추지 않음) · 인생 기록
 //   오른쪽: 가족과 삶 · 같은 1초에 태어난 사람들 · 인생 지도 · 생존 곡선 · 나라
 // - 시간 흐름은 원작과 같아요: 1배속에서 한 해 = 3600 ÷ 기대수명 초 (12~120초, 기대수명까지 약 1시간)
 //   배속 1·2·4·8·12·16×, '다음 결정까지'는 결정 창이 뜰 때까지 빠르게 감기
-// - 한 해 막대가 3/4쯤 찼을 때 서버에 그해를 요청(POST /api/engine/next)하고 (빠른 배속은 더 일찍),
-//   그해 일어난 일을 남은 막대 동안 하나씩 보여 준 뒤, 막대가 다 차면 나이가 올라가요
-//   → 그 전에 바꾼 '올해의 초점'은 그해 계산에 바로 들어가요 (원작도 한 해가 끝날 때 그해 초점으로 계산)
+// - 한 해 막대가 30%쯤 찼을 때 서버에 그해를 요청(POST /api/engine/next)하고 (빠른 배속은 더 일찍),
+//   그해 일어난 일을 남은 막대 동안 고르게 하나씩 보여 준 뒤, 막대가 다 차면 나이가 올라가요
+//   → 그 전에 바꾼 '올해의 초점'은 그해 계산에 바로 들어가고, 그 뒤에 바꾸면 다음 해부터
 // - 인생 지도 칸에 마우스를 올리거나 누르면 그해 행복·건강·순자산·큰 일 (원작 인생 지도 말풍선, GET /api/engine/years)
 // - 나라 패널은 그해와 가장 가까운 연대의 나라·권역 통계 (원작 나라 패널, GET /api/engine/country)
 // - 출생 화면에서 state.life 로 들어오거나, 새로고침·이어하기면 GET /api/engine/current 로 불러옴
 // - 큰 결정(선택 이벤트 C09, 이민 목적지 C10, 직업 제안 C06)만 창으로 띄우고 진행을 멈춤
+//   선택 이벤트는 '운에 맡기기'로 무작위 결정, '앞으로도 맡기기'를 켜면 알아서 골라요 (localStorage autoChoice)
 // - 죽으면(status ENDED) 잠깐 보여 주고 /result/:lifeId 로 이동 (C18)
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -24,6 +26,7 @@ import Village from '../village/Village';
 import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
+import ShopSheet from './ShopSheet';
 import { won, ppp, rankStr, feedKind, belongings, commute } from './lifeText';
 import './play.css';
 
@@ -32,11 +35,14 @@ const PACE_MIN = 60;                         // 기대수명까지 약 60분 (�
 const SPEEDS = [1, 2, 4, 8, 12, 16];         // 원작과 같은 배속
 const FF_SEC = 0.6;                          // '다음 결정까지' 감을 때 한 해 길이 (초)
 const yearSecOf = (le) => Math.min(120, Math.max(12, (PACE_MIN * 60) / Math.max(le || 70, 60)));
-// 그해 요청 시점 (막대 비율): 남은 막대가 4초쯤 되게, 최대 3/4 (빠른 배속·빨리 감기는 바로)
-const fetchAtOf = (ys) => Math.min(0.75, Math.max(0, 1 - 4 / ys));
+// 그해 요청 시점 (막대 비율): 한 해의 앞 30% 안에서 요청하고, 그해 일은 남은 70% 막대에 고르게 나눠 보여 줌
+//   (예전 3/4 시점엔 기록이 막대 끝에 몰려 나왔음) · 빠른 배속은 남은 막대가 4초는 되게 더 일찍, 빨리 감기는 바로
+//   그 전에 고른 초점은 올해 계산에 들어가고, 그 뒤에 고르면 다음 해부터 (기록 문구에 '다음 해'로 표시)
+const fetchAtOf = (ys) => Math.min(0.3, Math.max(0, 1 - 4 / ys));
 // '1년 ≈ n초' 표시 (10초 미만은 소수 한 자리)
 const secText = (v) => (v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
 const RESULT_DELAY = 3500;                   // 죽은 뒤 결과 화면까지
+const AUTO_MS = 1600;                        // '자동 결정'일 때 직업·이민 창을 보여 주는 시간
 const MAX_FEED = 400;                        // 화면에 남겨 둘 기록 줄 수
 
 // 집중 코드 → 화면 문구 (EngineService.applyFocus·knowEff 기준)
@@ -79,6 +85,9 @@ const focusList = (life) => {
   }
 };
 
+// 여유 자금 굴리기 이름 (ShopSheet 와 같은 코드)
+const INV_NAME = { CASH: '집에 둔 현금', DEPOSIT: '예금', BOND: '채권', MIX: '반반 펀드', STOCK: '주식', WORLD: '해외 지수', PROPERTY: '부동산 펀드', TRADE: '종목 사고팔기' };
+
 const STAGE = {
   STUDENT: '학창 시절', YOUTH: '어린 시절', UNIV: '대학 시절', WORKER: '직장 생활',
   JOBLESS: '일을 찾는 시기', SENIOR: '노년',
@@ -112,6 +121,39 @@ const koBig = (v) => {
 };
 const fix1 = (v) => (Math.round(v * 10) / 10).toLocaleString();
 
+// 우리 집 마을 화면에 같이 사는 가족 (Village family)
+//   부모님(살아 계시면) · 형제자매(내가 20살 전까지, 25살 아래만) · 배우자 · 자녀(서버 가족 줄 '아들'·'딸', 30살 아래만)
+const SIB_RE = /(형|오빠|누나|언니|남동생|여동생) (\d+)세/g;
+const SIB_LABEL = { 형: ['형', 'M'], 오빠: ['오빠', 'M'], 누나: ['누나', 'F'], 언니: ['언니', 'F'], 남동생: ['동생', 'M'], 여동생: ['동생', 'F'] };
+const homeFamily = (life) => {
+  const out = [];
+  const age = life.currentAge;
+  const fam = life.family || [];
+  let kid = 0;
+  fam.forEach((m) => {
+    if (!m.alive) return;
+    if (m.role === '어머니') out.push({ id: 'mom', label: '엄마', gender: 'F', age: m.age });
+    else if (m.role === '아버지') out.push({ id: 'dad', label: '아빠', gender: 'M', age: m.age });
+    else if (m.role === '형제자매' && age < 20 && m.job) {
+      let k = 0;
+      for (const [, w, n] of m.job.matchAll(SIB_RE)) {
+        const sa = Number(n);
+        if (sa < 25) out.push({ id: 'sib' + k, label: SIB_LABEL[w][0], gender: SIB_LABEL[w][1], age: sa });
+        k += 1;
+      }
+    } else if (m.role === '배우자' && m.name) {
+      out.push({ id: 'spouse', label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: m.age });
+    } else if (m.role === '아들' || m.role === '딸') {
+      if (m.age == null || m.age < 30) out.push({ id: 'kid' + kid, label: m.role, gender: m.role === '아들' ? 'M' : 'F', age: m.age ?? 5 });
+      kid += 1;
+    }
+  });
+  if (!fam.length && life.parentAlive !== 'N' && age < 40) {
+    out.push({ id: 'mom', label: '엄마', gender: 'F' }, { id: 'dad', label: '아빠', gender: 'M' });
+  }
+  return out.slice(0, 10);
+};
+
 // 서버 오류 문구 꺼내기
 const errText = (err) => {
   const msg = err.response?.data;
@@ -129,15 +171,6 @@ const jobText = (life) => {
   if (life.jobStatus === 'UNEMPLOYED') return '구직 중';
   if (life.jobStatus === 'RETIRED') return '은퇴';
   return life.currentAge < 15 ? '—' : '일 없음';
-};
-
-// 여권 아래 기계 판독 줄 (장식)
-const mrz = (life) => {
-  const name = (life.name || '').toUpperCase().replace(/[^A-Z]/g, '<');
-  const l1 = ('I<' + (life.birthCountry || 'XXX') + name + '<'.repeat(44)).slice(0, 44);
-  const l2 = (String(life.lifeId).padStart(9, '0') + (life.birthCountry || 'XXX') + life.birthYear
-    + (life.gender || 'X') + '<'.repeat(44)).slice(0, 44);
-  return [l1, l2];
 };
 
 // 엔진 응답 events → 기록 줄 [{ age, text, big, fx, eventId }] (색은 feedKind)
@@ -178,6 +211,15 @@ function PlayPage() {
   const [mapTip, setMapTip] = useState(null);         // 인생 지도 말풍선 { age, x, y }
   const [ctyView, setCtyView] = useState('cur');      // 나라 패널: cur 사는 나라 / born 태어난 나라 (이민했을 때)
   const [cty, setCty] = useState(null);               // 나라 패널 통계 (GET /api/engine/country)
+  const [shopOpen, setShopOpen] = useState(false);    // 돈 쓰기 · 투자 창 (여는 동안 시간 멈춤)
+  // 선택 이벤트를 운에 맡기기 (원작 '자동으로 맡기기', 이 브라우저에 기억)
+  const [autoChoice, setAutoChoiceState] = useState(() => {
+    try { return localStorage.getItem('autoChoice') === 'Y'; } catch { return false; }
+  });
+  const setAutoChoice = (on) => {
+    setAutoChoiceState(on);
+    try { localStorage.setItem('autoChoice', on ? 'Y' : 'N'); } catch { /* 무시 */ }
+  };
 
   const guestToken = localStorage.getItem('token') ? null : localStorage.getItem('guestToken');
 
@@ -295,7 +337,10 @@ function PlayPage() {
     setLife((x) => ({ ...x, focusCode: focus, needFocus: false }));
     y.focus = focus;
     y.focusing = true;
-    pushLines([{ age: l.currentAge, kind: 'dec', text: `${late ? '다음 해' : '올해'}의 초점을 '${focusLabel(focus, l)}'(으)로 정했다.` }]);
+    // 같은 해에 다시 고르면 앞서 고른 초점 기록은 줄을 그어 지움 (올해 몫·다음 해 몫 따로)
+    const focusKey = `${l.currentAge}-${late ? 'next' : 'now'}`;
+    setFeed((f) => f.map((x) => (x.focusKey === focusKey && !x.struck ? { ...x, struck: true } : x)));
+    pushLines([{ age: l.currentAge, kind: 'dec', focusKey, text: `${late ? '다음 해' : '올해'}의 초점을 '${focusLabel(focus, l)}'(으)로 정했다.` }]);
     try {
       await client.post('/api/engine/focus', { lifeId: l.lifeId, guestToken, focus });
     } catch (err) {
@@ -315,10 +360,26 @@ function PlayPage() {
   // 결정 창이 뜨면 빨리 감기 끝
   useEffect(() => { if (waiting) setFf(false); }, [waiting]);
 
+  // 결정 운에 맡기기: 직업 제안·이민 목적지 (선택 이벤트는 EventChoiceModal 이 직접 처리)
+  //   '자동 결정'이 켜져 있으면 창을 잠깐(AUTO_MS) 보여 준 뒤 무작위로 골라요
+  const fateJob = useCallback(() => {
+    const offers = lifeRef.current?.jobOffers || [];
+    if (offers.length) decide('/api/engine/job', { jobId: offers[Math.floor(Math.random() * offers.length)].jobId });
+  }, [decide]);
+  const fateDest = useCallback(() => {
+    const ds = lifeRef.current?.destinations || [];
+    if (ds.length) decide('/api/engine/destination', { countryCode: ds[Math.floor(Math.random() * ds.length)].countryCode });
+  }, [decide]);
+  useEffect(() => {
+    if (!autoChoice || busy || !(showDest || showJob)) return undefined;
+    const t = setTimeout(() => (showDest ? fateDest() : fateJob()), AUTO_MS);
+    return () => clearTimeout(t);
+  }, [autoChoice, busy, showDest, showJob, fateDest, fateJob, life?.currentAge]);
+
   // ② 한 해 흐르기: 막대가 차는 동안 미리 받은 그해 일을 하나씩 보여 주고, 다 차면 나이 +1
   //    매 프레임 막대는 DOM 으로 바로 칠하고(React 다시 그리기 없음), 해가 바뀔 때만 화면을 새로 그려서 버벅임 없음
   //    다음 해는 막대가 끝나기 조금 전에 미리 요청해 두어 해 사이에 멈춤이 없게 함
-  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error;
+  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen;
   const loopRef = useRef({});
   loopRef.current = { yearSec, guestToken, pushLines, remember, reload };
   useEffect(() => {
@@ -399,6 +460,22 @@ function PlayPage() {
       cancelAnimationFrame(frame);
     };
   }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 돈 쓰기 · 투자 (C06-3): 그해 요청 중이면 끝날 때까지 기다렸다가 보냄, 사고 나면 돈·능력치만 바꾸고 기록 한 줄
+  //   이미 받아 둔 그해 응답(y.data)이 있으면 거기에도 반영 (해가 끝날 때 예전 돈으로 되돌아가지 않게)
+  const waitIdle = useCallback(async () => {
+    while (yr.current.fetching) await new Promise((r) => setTimeout(r, 100));
+  }, []);
+  const onShopDone = useCallback((dto) => {
+    const patch = {
+      assets: dto.assets, health: dto.health, happiness: dto.happiness, knowledge: dto.knowledge,
+      relation: dto.relation, investType: dto.investType, owns: dto.owns,
+    };
+    setLife((x) => ({ ...x, ...patch }));
+    if (yr.current.data) yr.current.data = { ...yr.current.data, ...patch };
+    if (dto.message) pushLines([{ age: lifeRef.current?.currentAge ?? dto.logAge, kind: 'dec', text: dto.message }]);
+  }, [pushLines]);
+  const closeShop = useCallback(() => setShopOpen(false), []);
 
   // 다른 탭으로 가면 멈췄다가(멈춤 버튼은 그대로), 돌아오면 다시 진행 (원작과 같음)
   useEffect(() => {
@@ -493,7 +570,6 @@ function PlayPage() {
   const stageText = STAGE[life.stageCode] || (life.currentAge < 6 ? '아기 시절' : '');
   const town = life.isUrban === 'Y' ? '도시' : '시골';
   const focusOpts = focusList(life);
-  const [mrz1, mrz2] = mrz(life);
   const deathAge = life.deathAge ?? life.currentAge;
   const lived = ended ? deathAge + 1 : life.currentAge;
   const le = life.lifeExpectancy || 70;
@@ -532,9 +608,14 @@ function PlayPage() {
               onClick={() => { setFf(!ff); setPaused(false); }}>
               다음 결정까지 »
             </button>
+            <button type="button" className="pp-b" aria-pressed={autoChoice} disabled={ended}
+              title="결정 창(선택 이벤트·일자리·이민)이 뜨면 잠깐 보여 준 뒤 운에 맡겨 알아서 골라요"
+              onClick={() => setAutoChoice(!autoChoice)}>
+              자동 결정 {autoChoice ? '켬' : '끔'}
+            </button>
 
-            {/* BGM: ♪ 켜기/끄기 + 음량 (노을빛 로파이 오르골을 브라우저가 만들어 냄, public/audio/bgm-play.mp3 넣으면 그 곡) */}
-            <span className={'pp-bgm' + (bgm.on ? ' on' : '')} title="배경음악 · 노을빛 오르골">
+            {/* BGM: ♪ 켜기/끄기 + 음량 (보사노바 해변을 브라우저가 만들어 냄, public/audio/bgm-play.mp3 넣으면 그 곡) */}
+            <span className={'pp-bgm' + (bgm.on ? ' on' : '')} title="배경음악 · 보사노바 해변">
               <button type="button" aria-pressed={bgm.on} onClick={bgm.toggle}>
                 <span aria-hidden="true">♪</span> {bgm.missing ? '음악 준비 중' : '음악'}
               </button>
@@ -572,7 +653,6 @@ function PlayPage() {
                 </dl>
               </div>
             </div>
-            <div className="pp-mrz" aria-hidden="true">{mrz1}<br />{mrz2}</div>
           </section>
 
           <section className="pp-panel">
@@ -595,6 +675,12 @@ function PlayPage() {
               <p>높은 수치는 가능성을 높일 뿐, 결과를 정해 주지는 않아요.</p>
             </details>
             <MoneyPanel life={life} year={year} countryName={countryName} />
+            {!ended && life.currentAge >= 15 && (
+              <button type="button" className="shop-b ghost pp-shopbtn" disabled={waiting} title={waiting ? '결정 창을 먼저 골라 주세요' : undefined}
+                onClick={() => setShopOpen(true)}>
+                돈 쓰기 · 투자{life.investType ? ` (${INV_NAME[life.investType] || ''})` : ''}
+              </button>
+            )}
           </section>
         </div>
 
@@ -602,7 +688,7 @@ function PlayPage() {
         <div className="pp-col">
           <section className="pp-panel pp-scene">
             <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
-              place={placeOf(life)} urban={life.isUrban === 'Y'} />
+              place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)} />
             <p className="pp-scenecap">{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
 
@@ -647,7 +733,7 @@ function PlayPage() {
             ) : (
               <ul className="pp-feed">
                 {feed.map((e, i) => (
-                  <li key={e.id ?? `k${i}`} className={feedKind(e) ? 'fk-' + feedKind(e) : undefined}>
+                  <li key={e.id ?? `k${i}`} className={[feedKind(e) ? 'fk-' + feedKind(e) : '', e.struck ? 'fk-struck' : ''].join(' ').trim() || undefined}>
                     <span className="a">{e.age}세</span>
                     <span className="x">
                       {e.text}
@@ -760,11 +846,18 @@ function PlayPage() {
           sub: d.gdpPerCapita ? `1인당 GDP ${money(d.gdpPerCapita)}` : undefined, armed: destPick === d.countryCode,
         }))}
         busy={busy}
-        onPick={(o) => (destPick === o.code ? decide('/api/engine/destination', { countryCode: o.code }) : setDestPick(o.code))} />
+        onPick={(o) => (destPick === o.code ? decide('/api/engine/destination', { countryCode: o.code }) : setDestPick(o.code))}
+        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 운이 골라요.' : undefined}
+        footer={<FateFooter onFate={fateDest} busy={busy} auto={autoChoice} onAuto={setAutoChoice} />} />
+
+      {/* C06-3 돈 쓰기 · 투자 */}
+      <ShopSheet open={shopOpen} life={life} age={life.currentAge} guestToken={guestToken}
+        waitIdle={waitIdle} onDone={onShopDone} onClose={closeShop} />
 
       {/* C09 선택 이벤트 */}
       <EventChoiceModal open={showChoice} event={life.pendingEvent} busy={busy} costs={life.choiceCosts} krw={life.krwPerUsd}
         age={life.currentAge - 1} year={year - 1}
+        auto={autoChoice} onAutoChange={setAutoChoice}
         onChoose={(choiceId) => decide('/api/engine/choice', { choiceId })} />
 
       {/* C06 직업 제안 */}
@@ -777,7 +870,26 @@ function PlayPage() {
         }))}
         busy={busy}
         onPick={(o) => decide('/api/engine/job', { jobId: o.jobId })}
-        footer={<Button type="ghost" size="sm" disabled={busy} onClick={() => setSkipJobAge(life.currentAge)}>올해는 넘기기</Button>} />
+        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 운이 골라요.' : undefined}
+        footer={(
+          <FateFooter onFate={fateJob} busy={busy} auto={autoChoice} onAuto={setAutoChoice}>
+            <Button type="ghost" size="sm" disabled={busy} onClick={() => setSkipJobAge(life.currentAge)}>올해는 넘기기</Button>
+          </FateFooter>
+        )} />
+    </div>
+  );
+}
+
+// 결정 창 아래 '운에 맡기기' 단추 + '앞으로 나오는 결정도 맡기기' (직업·이민 창, 선택 이벤트 창과 같은 모양)
+function FateFooter({ onFate, busy, auto, onAuto, children }) {
+  return (
+    <div className="dec-fate">
+      {children}
+      <button type="button" className="dec-fate-b" disabled={busy} onClick={onFate}>운에 맡기기</button>
+      <label className="dec-fate-auto">
+        <input type="checkbox" checked={auto} onChange={(e) => onAuto(e.target.checked)} />
+        앞으로 나오는 결정도 맡기기
+      </label>
     </div>
   );
 }
@@ -881,8 +993,8 @@ function FamilyRows({ life, countryName, stageText }) {
   const fam = life.family;
   return (
     <div className="pp-fam">
-      {fam?.length ? fam.map((m) => (
-        <div key={m.role} className={'row' + (m.alive ? '' : ' gone')}>
+      {fam?.length ? fam.map((m, i) => (
+        <div key={m.role + i} className={'row' + (m.alive ? '' : ' gone')}>
           <span>{m.role}</span>
           <span>
             {m.name && <>{m.name}{m.alive && m.age != null ? ` · ${m.age}세` : ''} </>}

@@ -1,4 +1,5 @@
-/* 공통 부품 모양 (design.css 변수 사용 - 라이트 노을 코랄 / 다크 밤하늘) */
+/* 공통 부품 모양 (design.css 변수 사용 - 라이트 안개 회청 / 다크 저녁 남색 + 금빛)
+   버튼·메뉴는 알약, 카드는 유리 + 머리띠 제목 줄, 큰 그림자 */
 
 /* ---------- 버튼 ---------- */
 .btn {
@@ -12,11 +13,11 @@
   font-size: var(--fs-md);
   font-weight: 500;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill); /* 둥근 알약 (시안 2번) */
   background: transparent;
   color: var(--ink);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s, box-shadow 0.15s;
   white-space: nowrap;
 }
 .btn:hover { background: var(--panel-2); border-color: var(--ink-light); }
@@ -37,32 +38,52 @@
 .btn-ghost { border-color: transparent; color: var(--ink-sub); }
 .btn-ghost:hover { background: var(--panel-2); border-color: transparent; color: var(--ink); }
 .btn-sm { height: 36px; padding: 0 var(--sp-3); font-size: var(--fs-sm); }
-.btn-lg { height: 56px; padding: 0 var(--sp-5); font-size: var(--fs-lg); border-radius: 12px; }
+.btn-lg { height: 56px; padding: 0 var(--sp-5); font-size: var(--fs-lg); }
+.btn-primary.btn-lg { box-shadow: var(--glow); }
 .btn-block { width: 100%; }
 .btn-pill { border-radius: var(--radius-pill); }
 
-/* ---------- 카드 (패널) ---------- */
+/* ---------- 카드 (패널): 유리 오로라 + 머리띠 제목 줄 + 떠 있는 그림자 ---------- */
 .panel {
-  background: var(--panel);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border: var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow);
 }
+/* 제목 줄 = 카드 맨 위 색 띠 (시안 6번 머리띠) */
 .panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-2);
-  margin-bottom: var(--sp-3);
+  margin: calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4)) var(--sp-3);
+  padding: 12px var(--sp-4);
+  background: var(--band);
+  border-bottom: var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   font-size: var(--fs-sm);
   color: var(--ink-sub);
 }
 .panel-title {
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 400;
   color: var(--ink);
 }
+.panel-title::before { /* 강조색 막대 */
+  content: '';
+  width: 4px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--band-bar);
+}
+.panel-title:empty { display: none; }
 
 /* ---------- 능력치 바 ---------- */
 .stat {
@@ -164,7 +185,8 @@
 .header {
   border-bottom: var(--border);
   background: var(--header-bg);
-  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  backdrop-filter: blur(12px) saturate(1.15);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -188,8 +210,14 @@
   color: var(--ink);
 }
 .header-logo:hover { color: var(--ink); }
-.header-nav { display: flex; gap: var(--sp-4); font-size: var(--fs-sm); }
-.header-nav a.on { color: var(--ink); }
+.header-nav { /* 알약 메뉴 (시안 2번) */
+  display: flex; gap: 2px; padding: 4px;
+  font-size: var(--fs-sm);
+  background: var(--panel-2); border: var(--border); border-radius: var(--radius-pill);
+}
+.header-nav a { padding: 6px 16px; border-radius: var(--radius-pill); color: var(--ink-sub); transition: background 0.15s, color 0.15s; }
+.header-nav a:hover { color: var(--ink); }
+.header-nav a.on { color: var(--ink); background: var(--panel); box-shadow: var(--shadow-sm); font-weight: 600; }
 .header-space { flex: 1; }
 .header-right { display: flex; gap: var(--sp-2); align-items: center; }
 .header-user { font-size: var(--fs-sm); color: var(--ink-sub); }
@@ -625,7 +653,7 @@
   width: min(560px, 100%);
   background: var(--panel);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.45);
   overflow: hidden;
   animation: rise-in 0.25s var(--ease);
@@ -634,7 +662,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 18px;
+  padding: 12px 20px;
+  background: var(--band);
   border-bottom: 1px solid var(--line);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -685,3 +714,14 @@
 .dec-opt.off:hover { border-color: var(--line-strong); }
 .dec-hint { margin: 12px 0 0; font-size: var(--fs-xs); color: var(--ink-light); text-align: center; }
 .dec-foot { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+/* 운에 맡기기 (선택 이벤트 창 아래) */
+.dec-fate { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; }
+.dec-fate-b {
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--ink);
+  padding: 7px 16px; border-radius: 999px; cursor: pointer;
+  background: var(--panel-2); border: 1px dashed var(--line-strong);
+}
+.dec-fate-b:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.dec-fate-b:disabled { opacity: 0.5; cursor: default; }
+.dec-fate-auto { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-sub); cursor: pointer; }
+.dec-fate-auto input { accent-color: var(--primary); }
