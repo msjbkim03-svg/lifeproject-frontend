@@ -6,14 +6,14 @@ import CheckItem from '../../common/ui/CheckItem';
 import LevelDots from '../../common/ui/LevelDots';
 import Panel from '../../common/ui/Panel';
 import styles from './QuestPage.module.css';
+import { TRAIT_VIEW } from '../../utils/traits';
 
 // 퀘스트 설정 (C01)  주소: /quest   ← 메인에서 회원이 [태어나기]를 누르면 옴
 // 와이어프레임 4쪽: 왼쪽 퀘스트 목록 / 오른쪽 고른 퀘스트 + 특성 레벨 + 버튼
 // 고른 퀘스트는 /birth 로 같이 넘기고, 태어난 뒤 출생 화면이 POST /api/quests/life 로 저장
 const MAX_PICK = 3; // 1~3개
 
-// 특성 짧은 이름 (DB 이름은 길어서 화면용으로)
-const TRAIT_LABEL = { INVEST: '투자 성공', DISEASE: '질병 예방', LOVE: '연애 성공', STUDY: '학업 능력' };
+// 특성 짧은 이름은 utils/traits.js 의 TRAIT_VIEW (특성 강화 화면과 같이 씀)
 
 function QuestPage() {
   const navigate = useNavigate();
@@ -34,7 +34,19 @@ function QuestPage() {
       navigate('/birth', { state: { decade } }); // 비회원은 퀘스트 없이 바로 출생
       return;
     }
-    client.get('/api/quests').then((res) => setQuests(res.data)).catch(() => setError('퀘스트 목록을 불러오지 못했어요.'));
+    client.get('/api/quests')
+      .then((res) => setQuests(res.data))
+      .catch((err) => {
+        // 토큰 만료·탈퇴(401) → 로그인 정보 지우고 로그인 화면으로 (마이페이지와 같은 방식)
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('nickname');
+          localStorage.removeItem('memberRole');
+          navigate('/login');
+          return;
+        }
+        setError('퀘스트 목록을 불러오지 못했어요.');
+      });
     client.get('/api/members/me/traits').then((res) => setTraits(res.data)).catch(() => {});
   }, [decade, navigate]);
 
@@ -100,7 +112,7 @@ function QuestPage() {
           <Panel title="특성 레벨">
             <div className={styles.traits}>
               {traits.map((t) => (
-                <LevelDots key={t.traitId} label={TRAIT_LABEL[t.traitId] || t.traitName} level={t.traitLevel} max={t.maxLevel} />
+                <LevelDots key={t.traitId} label={TRAIT_VIEW[t.traitId]?.label || t.traitName} level={t.traitLevel} max={t.maxLevel} />
               ))}
             </div>
             <Button block size="sm" className={styles.traitBtn} onClick={() => navigate('/mypage/traits')}>
