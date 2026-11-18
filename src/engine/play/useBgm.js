@@ -1,7 +1,7 @@
 // 배경음악(BGM) - 인생 진행 화면 진행 막대의 ♪ 버튼이 씀
 // - 음악 파일 없이 브라우저가 그 자리에서 만들어 내는 음악 (Web Audio, 저작권 걱정 없음)
-//   컨셉: '노을빛 환승' - 느린 로파이 오르골. 따뜻한 패드 화음 4마디가 돌고(Ⅰmaj7 → ⅵ7 → Ⅳmaj7 → Ⅴ),
-//   그 위에 오르골 같은 5음 음계 아르페지오가 매번 조금씩 다르게 흘러요. 레코드 잡음을 아주 살짝.
+//   컨셉: '노을빛 환승' - 산뜻한 오르골 산책. 밝은 화음이 한 마디씩 바뀌고(Ⅰ → Ⅴ → Ⅳ → Ⅴ, D장조 add9),
+//   그 위에 오르골 같은 5음 음계 멜로디가 위쪽으로 자주 걸어 올라가요. (예전 버전은 느리고 우울해서 밝게 바꿈) (예전에 넣었던 레코드 잡음은 지직거려서 뺐어요)
 // - public/audio/bgm-play.mp3 파일을 넣으면 그 파일을 대신 틀어요 (나중에 진짜 곡을 고르면 파일만 넣기)
 // - 켜기/끄기·음량은 브라우저에 기억 (localStorage 'bgm', 'bgmVol')
 // 사용: const bgm = useBgm();  bgm.on, bgm.toggle(), bgm.volume, bgm.setVolume(0~1), bgm.missing(늘 false)
@@ -14,18 +14,18 @@ const write = (k, v) => {
   try { localStorage.setItem(k, String(v)); } catch { /* 저장 못 해도 소리는 바뀜 */ }
 };
 
-const BPM = 68;
+const BPM = 84; // 예전 68 → 조금 빠르게 (걷는 속도)
 const BEAT = 60 / BPM;
 const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
 
-// D장조: Dmaj7 · Bm7 · Gmaj7 · A(sus) - 한 화음 2마디(8박)
+// D장조 밝은 진행: Dadd9 · A · Gadd9 · A - 한 화음 1마디(4박), 단조 화음 없음
 const CHORDS = [
-  [50, 57, 61, 66, 69],
-  [47, 54, 57, 62, 66],
-  [43, 50, 54, 59, 62],
-  [45, 52, 57, 59, 64],
+  [50, 57, 62, 64, 66],
+  [45, 52, 57, 61, 64],
+  [43, 50, 55, 57, 59],
+  [45, 52, 57, 61, 66],
 ];
-const PENTA = [74, 76, 78, 81, 83, 86, 88, 90]; // D 5음 음계 (오르골 높은 자리)
+const PENTA = [74, 76, 78, 81, 83, 86, 88, 90, 93]; // D 5음 음계 (오르골 높은 자리)
 
 // 소리 만드는 엔진 (켜질 때 한 번 만들고, 꺼지면 조용히 멈춤)
 function makeSynth() {
@@ -36,35 +36,27 @@ function makeSynth() {
   master.gain.value = 0;
   const lp = ctx.createBiquadFilter(); // 로파이 느낌: 높은 소리 깎기
   lp.type = 'lowpass';
-  lp.frequency.value = 2600;
+  lp.frequency.value = 4800; // 예전 2600 → 높은 소리를 덜 깎아 더 맑게
   lp.Q.value = 0.4;
   lp.connect(master);
-  master.connect(ctx.destination);
+  // 여러 음이 겹쳐 소리가 커질 때 찢어지는(지직) 것 막기
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -18;
+  comp.knee.value = 12;
+  comp.ratio.value = 4;
+  comp.attack.value = 0.005;
+  comp.release.value = 0.25;
+  master.connect(comp);
+  comp.connect(ctx.destination);
 
   // 공간감: 짧은 피드백 딜레이
   const delay = ctx.createDelay(1);
   delay.delayTime.value = BEAT * 0.75;
   const fb = ctx.createGain();
-  fb.gain.value = 0.32;
+  fb.gain.value = 0.24;
   const wet = ctx.createGain();
   wet.gain.value = 0.28;
   delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(lp);
-
-  // 레코드 잡음 (아주 작게)
-  const len = ctx.sampleRate * 2;
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = Math.random() < 0.0015 ? (Math.random() * 2 - 1) * 0.6 : (Math.random() * 2 - 1) * 0.012;
-  const noise = ctx.createBufferSource();
-  noise.buffer = buf;
-  noise.loop = true;
-  const ng = ctx.createGain();
-  ng.gain.value = 0.35;
-  const nf = ctx.createBiquadFilter();
-  nf.type = 'bandpass';
-  nf.frequency.value = 3200;
-  noise.connect(nf); nf.connect(ng); ng.connect(master);
-  noise.start();
 
   // 패드 한 음 (부드럽게 차오르고 사라짐)
   const pad = (midi, t, dur) => {
@@ -75,8 +67,8 @@ function makeSynth() {
       o.detune.value = det;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.035, t + 1.6);
-      g.gain.setValueAtTime(0.035, t + dur - 1.4);
+      g.gain.linearRampToValueAtTime(0.024, t + 0.8);
+      g.gain.setValueAtTime(0.024, t + Math.max(0.9, dur - 0.8));
       g.gain.linearRampToValueAtTime(0, t + dur + 0.6);
       o.connect(g); g.connect(lp);
       o.start(t); o.stop(t + dur + 0.7);
@@ -103,10 +95,10 @@ function makeSynth() {
     o.frequency.value = hz(midi - 12);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.09, t + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + BEAT * 1.8);
+    g.gain.linearRampToValueAtTime(0.07, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + BEAT * 0.9);
     o.connect(g); g.connect(lp);
-    o.start(t); o.stop(t + BEAT * 2);
+    o.start(t); o.stop(t + BEAT);
   };
 
   // 박 단위로 조금 앞서 예약 (탭이 바빠도 박자가 밀리지 않게)
@@ -117,17 +109,21 @@ function makeSynth() {
   const schedule = () => {
     while (next < ctx.currentTime + 0.6) {
       const bar = Math.floor(beat / 4);
-      const chord = CHORDS[Math.floor(bar / 2) % CHORDS.length];
-      if (beat % 8 === 0) chord.forEach((m) => pad(m, next, BEAT * 8));
-      if (beat % 2 === 0) bass(chord[0], next);
-      // 오르골: 반박마다 확률로, 앞 음에서 가까운 음으로 걸어감
+      const chord = CHORDS[bar % CHORDS.length];
+      if (beat % 4 === 0) chord.forEach((m) => pad(m, next, BEAT * 4));
+      bass(chord[0], next); // 박마다 통통 튀는 베이스
+      // 반박(뒷박)마다 화음 음 하나를 가볍게 (경쾌한 리듬)
+      bell(chord[2 + (beat % 3)] + 12, next + BEAT * 0.5, 0.022);
+      // 오르골 멜로디: 반박마다 확률로, 앞 음에서 가까운 음으로 - 위로 가는 쪽을 조금 더 자주
       [0, 0.5].forEach((off) => {
-        const p = off === 0 ? 0.62 : 0.34;
+        const p = off === 0 ? 0.78 : 0.42;
         if (Math.random() < p) {
-          const i = Math.max(0, Math.min(PENTA.length - 1, PENTA.indexOf(last) + Math.round((Math.random() - 0.5) * 3)));
+          const step = Math.round(Math.random() * 3 - 1.2); // -1 ~ +2, 위쪽이 더 많음
+          let i = PENTA.indexOf(last) + step;
+          if (i >= PENTA.length - 1) i = 2 + Math.floor(Math.random() * 3); // 너무 높아지면 가운데로 돌아옴
+          i = Math.max(0, Math.min(PENTA.length - 1, i));
           last = PENTA[i];
-          const swing = off ? BEAT * 0.08 : 0; // 살짝 늘어지는 리듬
-          bell(last, next + off * BEAT + swing, off ? 0.04 : 0.055);
+          bell(last, next + off * BEAT, off ? 0.05 : 0.068);
         }
       });
       beat += 1;
