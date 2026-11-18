@@ -1,4 +1,4 @@
 /* 전체 화면 공통 디자인 규칙 (동현님 관리) */
-/* 글꼴: 제목·숫자는 고운바탕(명조), 본문·버튼은 IBM Plex Sans KR */
-@import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+/* 글꼴: 메인 로고·큰 숫자는 Black Han Sans(라이트), 제목·숫자는 고운바탕(명조), 본문·버튼은 IBM Plex Sans KR, 나이·기록 숫자는 IBM Plex Mono */
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
 @import './common/design.css';

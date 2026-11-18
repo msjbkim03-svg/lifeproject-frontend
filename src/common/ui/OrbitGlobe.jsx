@@ -1,4 +1,4 @@
-// 지구본 + 시대 궤도 (메인 H01 - M01 시안)
+// 지구본 + 시대 궤도 (메인 H01 - M01 시안, 라이트 노을 / 다크 밤하늘)
 // 시대 고르는 방법
 //   1) 궤도 위 점 누르기   2) 지구본·궤도를 좌우로 끌기   3) 지구본 왼쪽/오른쪽 누르기 (한 칸씩)
 //   4) 키보드: 지구본을 선택(Tab)한 뒤 ← →
@@ -10,7 +10,9 @@
 //
 // 버벅임 방지: 지구본은 <canvas>에 직접 그리고(React 다시 그리기 없음), 궤도 점 위치도 ref로 바로 옮겨요.
 import { useEffect, useRef } from 'react';
-import { ASIA, OTHER } from './globeDots';
+import { ASIA_LAND, OTHER_LAND } from './globeLand';
+import { ASIA as ASIA_DOTS, OTHER as OTHER_DOTS } from './globeDots';
+import { getTheme } from '../theme';
 import './ui.css';
 
 export const DECADES = [1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020];
@@ -44,7 +46,7 @@ const rad = (d) => (d * Math.PI) / 180;
 const easeInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 const animTime = (dist) => 380 + Math.min(4, dist) * 80;
 
-// 점 데이터를 미리 삼각함수 값으로 바꿔 둠 (매 프레임 계산 줄이기)
+// 경도·위도 데이터를 미리 삼각함수 값으로 바꿔 둠 (매 프레임 계산 줄이기)
 function prepare(list) {
   const n = list.length / 2;
   const lon = new Float32Array(n);
@@ -57,8 +59,12 @@ function prepare(list) {
   }
   return { n, lon, sinLat, cosLat };
 }
-const ASIA_P = prepare(ASIA);
-const OTHER_P = prepare(OTHER);
+// 땅 덩어리마다 미리 계산 (예전 점 지도 대신 실제 지구본처럼 땅을 채워 그림)
+const ASIA_P = ASIA_LAND.map(prepare);
+// 라이트(메인 시안): 점으로 찍은 지도 - 아시아는 진한 밤색 점, 그 밖은 옅은 점
+const ASIA_D = prepare(ASIA_DOTS);
+const OTHER_D = prepare(OTHER_DOTS);
+const OTHER_P = OTHER_LAND.map(prepare);
 
 // 경도·위도 → 화면 좌표 (정사영). z > 0 이면 앞면(보임)
 function project(lonDeg, latDeg, lon0) {
@@ -94,8 +100,54 @@ function orbitPath(from, to) {
   return path;
 }
 
-// 땅 점 찍기 (다른 대륙은 흐리게, 아시아는 밝게)
-function drawDots(ctx, P, lon0, color, base, amp, rBase, rAmp) {
+// 땅 채우기: 뒤쪽(안 보이는 쪽) 점은 지구본 테두리에 붙여서, 잘린 땅도 테두리를 따라 자연스럽게 닫힘
+function drawLand(ctx, rings, lon0, fill, stroke) {
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 0.6;
+  for (const P of rings) {
+    let front = false;
+    ctx.beginPath();
+    for (let i = 0; i < P.n; i++) {
+      const dl = P.lon[i] - lon0;
+      const c = Math.cos(dl);
+      const z = SIN0 * P.sinLat[i] + COS0 * P.cosLat[i] * c;
+      let x = R * P.cosLat[i] * Math.sin(dl);
+      let y = -R * (COS0 * P.sinLat[i] - SIN0 * P.cosLat[i] * c);
+      if (z < 0) {
+        const d = Math.hypot(x, y) || 1;
+        x = (x / d) * R;
+        y = (y / d) * R;
+      } else {
+        front = true;
+      }
+      if (i === 0) ctx.moveTo(CX + x, CY + y);
+      else ctx.lineTo(CX + x, CY + y);
+    }
+    if (!front) continue; // 통째로 뒤쪽이면 안 그림
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+// 테마별 지구본 색: 둘 다 전형적인 파란 지구 (파란 바다 + 초록 땅, 아시아는 밝은 연두로 강조)
+//   궤도·별은 테마 색 그대로 (라이트 코랄 / 다크 남보라)
+const PAL = {
+  light: {
+    grid: 'rgba(255, 255, 255, 0.16)', orbitBack: '#f6cbb6', orbitFront: '#f26b38',
+    other: ['#5aa55a', '#478a47'], asia: ['#8fd16a', '#5f9f3f'], death: '#a07f88',
+    star: [246, 178, 58], atm: [110, 180, 255], sea: ['#5cb4f2', '#1b5fae'],
+  },
+  dark: {
+    grid: 'rgba(200, 225, 255, 0.12)', orbitBack: '#2f3870', orbitFront: '#6f79bd',
+    other: ['#3f7d4a', '#336a3d'], asia: ['#79c25e', '#9fe07f'], death: '#8a93c8',
+    star: [242, 213, 140], atm: [91, 150, 255], sea: ['#2f78c4', '#0e2f6b'],
+  },
+};
+
+// 점 지도 (라이트): 앞면 점만, 테두리 쪽은 작고 흐리게
+function drawDots(ctx, P, lon0, color, size) {
   ctx.fillStyle = color;
   for (let i = 0; i < P.n; i++) {
     const dl = P.lon[i] - lon0;
@@ -104,22 +156,50 @@ function drawDots(ctx, P, lon0, color, base, amp, rBase, rAmp) {
     if (z <= 0.02) continue;
     const x = CX + R * P.cosLat[i] * Math.sin(dl);
     const y = CY - R * (COS0 * P.sinLat[i] - SIN0 * P.cosLat[i] * c);
-    ctx.globalAlpha = base + amp * z;
+    ctx.globalAlpha = 0.35 + 0.65 * z;
     ctx.beginPath();
-    ctx.arc(x, y, rBase + rAmp * z, 0, Math.PI * 2);
+    ctx.arc(x, y, size * (0.55 + 0.45 * z), 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 }
 
+// 경선·위선 (30도 간격, 앞쪽만)
+function drawGrid(ctx, lon0, pal) {
+  ctx.strokeStyle = pal.grid;
+  ctx.lineWidth = 0.7;
+  const line = (pts) => {
+    ctx.beginPath();
+    let on = false;
+    pts.forEach(([lo, la]) => {
+      const p = project(lo, la, lon0);
+      if (p.z <= 0) { on = false; return; }
+      if (!on) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      on = true;
+    });
+    ctx.stroke();
+  };
+  for (let lo = -180; lo < 180; lo += 30) {
+    const pts = [];
+    for (let la = -90; la <= 90; la += 5) pts.push([lo, la]);
+    line(pts);
+  }
+  for (let la = -60; la <= 60; la += 30) {
+    const pts = [];
+    for (let lo = -180; lo <= 180; lo += 5) pts.push([lo, la]);
+    line(pts);
+  }
+}
+
 // 지구본 한 장 그리기
 function draw(ctx, cur, now, births, deaths, paths) {
+  const pal = paths.pal;
   const lon0 = rad(92 + (cur - 4) * 8); // 시대 한 칸마다 8도씩 돌아감
   ctx.clearRect(0, 0, W, H);
 
   // 궤도 뒤쪽 반
   ctx.lineWidth = 1.1;
-  ctx.strokeStyle = '#2f3870';
+  ctx.strokeStyle = pal.orbitBack;
   ctx.stroke(paths.back);
 
   // 대기 빛 + 바다
@@ -128,11 +208,17 @@ function draw(ctx, cur, now, births, deaths, paths) {
   ctx.fillStyle = paths.sea;
   ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.fill();
 
-  drawDots(ctx, OTHER_P, lon0, '#343d72', 0.35, 0.5, 1, 1.1);
-  drawDots(ctx, ASIA_P, lon0, '#c9d2ff', 0.35, 0.65, 1, 1.3);
+  if (pal.dots) {
+    drawDots(ctx, OTHER_D, lon0, pal.other[0], 1.8);
+    drawDots(ctx, ASIA_D, lon0, pal.asia[0], 2.3);
+  } else {
+    drawGrid(ctx, lon0, pal);
+    drawLand(ctx, OTHER_P, lon0, pal.other[0], pal.other[1]);
+    drawLand(ctx, ASIA_P, lon0, pal.asia[0], pal.asia[1]);
+  }
 
   // 떠난 사람 (빈 원)
-  ctx.strokeStyle = '#8a93c8';
+  ctx.strokeStyle = pal.death;
   ctx.lineWidth = 1.3;
   deaths.forEach((d) => {
     const p = project(d.lon, d.lat, lon0);
@@ -149,19 +235,20 @@ function draw(ctx, cur, now, births, deaths, paths) {
     const pop = age < 1.2 ? 1 + (1.2 - age) * 2.2 : 1;
     const tw = 0.65 + 0.35 * Math.sin(now / 450 + i * 1.7);
     const gl = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 10 * pop);
-    gl.addColorStop(0, 'rgba(242,213,140,0.7)');
-    gl.addColorStop(1, 'rgba(242,213,140,0)');
+    const [sr, sg, sb] = pal.star;
+    gl.addColorStop(0, `rgba(${sr},${sg},${sb},0.7)`);
+    gl.addColorStop(1, `rgba(${sr},${sg},${sb},0)`);
     ctx.fillStyle = gl;
     ctx.beginPath(); ctx.arc(p.x, p.y, 10 * pop, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = tw;
-    ctx.fillStyle = '#f2d58c';
+    ctx.fillStyle = `rgb(${sr},${sg},${sb})`;
     ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
   });
 
   // 궤도 앞쪽 반
   ctx.lineWidth = 1.3;
-  ctx.strokeStyle = '#6f79bd';
+  ctx.strokeStyle = pal.orbitFront;
   ctx.stroke(paths.front);
 }
 
@@ -203,14 +290,20 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
     const ctx = canvas.getContext('2d');
 
     // 매 프레임 새로 만들 필요 없는 것들
-    const atm = ctx.createRadialGradient(CX, CY, 0, CX, CY, R * 1.16);
-    atm.addColorStop(0.84, 'rgba(91,124,255,0)');
-    atm.addColorStop(0.92, 'rgba(91,124,255,0.3)');
-    atm.addColorStop(1, 'rgba(91,124,255,0)');
-    const sea = ctx.createRadialGradient(CX - R * 0.2, CY - R * 0.3, 0, CX, CY, R);
-    sea.addColorStop(0, '#1a2660');
-    sea.addColorStop(1, '#0c1338');
-    const paths = { front: orbitPath(0, 180), back: orbitPath(180, 360), atm, sea };
+    // 테마마다 대기 빛·바다 색 (테마가 바뀌면 다시 만듦)
+    const paths = { front: orbitPath(0, 180), back: orbitPath(180, 360), theme: null };
+    const paint = (theme) => {
+      const pal = PAL[theme];
+      const [ar, ag, ab] = pal.atm;
+      const atm = ctx.createRadialGradient(CX, CY, 0, CX, CY, R * 1.16);
+      atm.addColorStop(0.84, `rgba(${ar},${ag},${ab},0)`);
+      atm.addColorStop(0.92, `rgba(${ar},${ag},${ab},0.3)`);
+      atm.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+      const sea = ctx.createRadialGradient(CX - R * 0.2, CY - R * 0.3, 0, CX, CY, R);
+      sea.addColorStop(0, pal.sea[0]);
+      sea.addColorStop(1, pal.sea[1]);
+      Object.assign(paths, { theme, pal, atm, sea });
+    };
 
     const resize = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -235,6 +328,8 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
         if (k >= 1) s.anim = null;
       }
 
+      const theme = getTheme();
+      if (paths.theme !== theme) paint(theme);
       draw(ctx, s.cur, now, b, d, paths);
 
       // 궤도 점 옮기기 (DOM 직접)

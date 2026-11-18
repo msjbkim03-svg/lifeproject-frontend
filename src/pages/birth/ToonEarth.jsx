@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { ASIA, OTHER } from '../../common/ui/globeDots';
+import { getTheme } from '../../common/theme';
 
 // ───────────────────────────────────────────────
 // 밤하늘 점 지구 (three.js) - 메인 지구본과 같은 디자인 (동작은 민승 버전 그대로)
@@ -14,17 +15,32 @@ import { ASIA, OTHER } from '../../common/ui/globeDots';
 const EARTH_RADIUS = 5;
 const ORBIT_RADIUS = 6.5;
 
-// 디자인 색 (design.css 와 같은 값)
-const C = {
-  sea: 0x0c1338,
-  atmosphere: 0x5b7cff,
-  asia: 0xc9d2ff,
-  other: 0x343d72,
-  gold: 0xf2d58c,
-  ink: 0xe8e9f5,
-  sub: 0xa3a8cc,
-  edge: 0x1d2546,
+// 디자인 색 (design.css 와 같은 값) - 라이트: 노을 코랄 / 다크: 예전 밤하늘
+const PALETTE = {
+  // 전형적인 파란 지구: 파란 바다 + 초록 땅 점, 아시아는 밝은 연두로 강조
+  light: {
+    sea: 0x2f86d6,
+    atmosphere: 0x7cc4ff,
+    asia: 0x9be070,
+    other: 0x4e9a4e,
+    gold: 0xf0a03a,
+    ink: 0x2a1a22,
+    sub: 0x6b5560,
+    edge: 0x1a4f8f,
+  },
+  dark: {
+    sea: 0x1f5fa8,
+    atmosphere: 0x5b9cff,
+    asia: 0x9fe07f,
+    other: 0x3f7d4a,
+    gold: 0xf2d58c,
+    ink: 0xe8e9f5,
+    sub: 0xa3a8cc,
+    edge: 0x0f2c5a,
+  },
 };
+// 지금 테마 색 (BirthPage 에서 key={theme} 으로 다시 만들 때 새로 고름)
+let C = PALETTE.dark;
 
 // 위도·경도 → 지구 표면 좌표
 function latLngToVector(lat, lng, radius) {
@@ -119,6 +135,7 @@ function ToonEarth({ phase, target, onParked }) {
   }, [onParked]);
 
   useEffect(() => {
+    C = PALETTE[getTheme()];
     const mount = mountRef.current;
     let width = mount.clientWidth;
     let height = mount.clientHeight;

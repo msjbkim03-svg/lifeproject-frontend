@@ -1,0 +1,276 @@
+/* C03 인생 진행 화면 (/play) - 원작(1in8b) 진행 화면 구색
+   색은 전부 공통 변수(design.css) → 라이트는 노을 코랄, 다크는 예전 밤하늘로 같이 바뀌어요. */
+.pp {
+  --pp-gap: 20px;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.pp-wrap { max-width: 1440px; margin: 0 auto; padding-inline: 24px; }
+
+/* ───── 진행 막대 (원작 topbar) ───── */
+.pp-top {
+  position: sticky;
+  top: 65px; /* 공통 머리글(64px + 선 1px) 아래 */
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.pp-top-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-block: 10px; }
+.pp-agebox { display: flex; align-items: baseline; gap: 12px; flex: 1; min-width: 240px; }
+.pp-age { font-family: var(--font-display); font-size: 40px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.pp-age small { font-size: 18px; font-weight: 500; margin-left: 2px; }
+.pp-yr { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 5px; }
+.pp-yr-t { font-family: var(--font-mono); font-size: 12px; color: var(--ink-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-prog { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; max-width: 420px; }
+.pp-prog i { display: block; width: 100%; height: 100%; background: var(--primary); transform-origin: left center; will-change: transform; }
+
+.pp-speed { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pp-b, .pp-sps button, .pp-bgm button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pp-b:hover:not(:disabled), .pp-sps button:hover, .pp-bgm button:hover { border-color: var(--primary); }
+.pp-b[aria-pressed='true'], .pp-sps button[aria-pressed='true'] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.pp-b:disabled { opacity: 0.45; cursor: default; }
+.pp-b.ghost { background: transparent; }
+.pp-sps { display: inline-flex; }
+.pp-sps button { min-width: 38px; padding: 0 6px; border-radius: 0; margin-left: -1px; font-family: var(--font-mono); font-size: 12px; }
+.pp-sps button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+.pp-sps button:last-child { border-radius: 0 6px 6px 0; }
+.pp-sps button[aria-pressed='true'] { position: relative; z-index: 1; }
+.pp-sps .x { font-size: 10px; margin-left: 1px; opacity: 0.8; }
+
+/* BGM 자리: ♪ 버튼 + 음량 막대를 한 덩어리로 */
+.pp-bgm {
+  display: inline-flex; align-items: center; gap: 0;
+  border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel);
+  overflow: hidden;
+}
+.pp-bgm button { border: 0; border-radius: 0; background: transparent; }
+.pp-bgm.on button { color: var(--primary); font-weight: 600; }
+.pp-bgm input[type='range'] { width: 72px; margin: 0 10px 0 2px; accent-color: var(--primary); }
+.pp-bgm input:disabled { opacity: 0.35; }
+
+.pp-notice {
+  position: fixed; left: 50%; top: 140px; transform: translateX(-50%); z-index: 60;
+  padding: 8px 16px; border-radius: 6px;
+  background: var(--ink); color: var(--bg); font-size: 13px;
+  box-shadow: var(--shadow);
+}
+
+/* ───── 세 칸 배치 (원작: 320px | 가운데 | 340px) ───── */
+.pp-life {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 340px;
+  gap: var(--pp-gap);
+  padding-block: 20px 72px;
+  align-items: start;
+}
+.pp-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.pp-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px;
+  min-width: 0;
+  box-shadow: var(--shadow-sm);
+}
+.pp-h {
+  margin: 0 0 10px;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  font-family: var(--font-display); font-size: 17px; font-weight: 700;
+}
+.pp-lbl { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-light); }
+.pp-sub { font-size: 13px; color: var(--ink-sub); }
+.pp-center { text-align: center; padding-top: 80px; }
+.pp-center-card { max-width: 420px; margin: 80px auto; display: flex; flex-direction: column; gap: 12px; }
+
+/* ───── 신원 기록 (여권 카드) ───── */
+.pp-id { position: relative; overflow: hidden; padding: 0; }
+.pp-guilloche {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  fill: none; stroke: var(--primary); stroke-width: 0.8; opacity: 0.12;
+  pointer-events: none;
+}
+.pp-id-top {
+  position: relative;
+  display: flex; justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--primary); color: var(--on-primary);
+  font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em;
+}
+.pp-id-in { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding: 14px 14px 10px; }
+.pp-photo { width: 64px; height: 80px; border: 1px solid var(--line-strong); border-radius: 2px; image-rendering: pixelated; }
+.pp-id-nm { font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+.pp-id-dl { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 2px 8px; margin: 0; font-size: 12.5px; }
+.pp-id-dl dt { color: var(--ink-light); font-size: 12px; }
+.pp-id-dl dd { margin: 0; }
+.pp-dot { display: inline-block; width: 8px; height: 8px; margin-right: 3px; border-radius: 50%; border: 1.5px solid var(--ink); }
+.pp-dot.on { background: var(--ink); }
+.pp-mrz {
+  position: relative;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; line-height: 1.5;
+  color: var(--ink-sub);
+  padding: 8px 14px 12px;
+  border-top: 1px dashed var(--line-strong);
+  white-space: nowrap; overflow: hidden;
+}
+
+/* ───── 상태 ───── */
+.pp-stat { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) 2.2em; gap: 10px; align-items: center; font-size: 13.5px; padding-block: 4px; }
+.pp-stat > span:first-child { color: var(--ink-sub); }
+.pp-bar { position: relative; height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.pp-bar i { position: absolute; inset: 0 auto 0 0; transition: width 0.5s ease; }
+.pp-v { text-align: right; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.pp-help { margin-top: 8px; font-size: 13px; color: var(--ink-sub); }
+.pp-help summary { cursor: pointer; color: var(--ink-light); font-size: 12.5px; }
+.pp-help ul { margin: 6px 0; padding-left: 18px; }
+.pp-help li { margin: 2px 0; }
+.pp-help b { color: var(--ink); font-weight: 600; margin-right: 4px; }
+.pp-help p { margin: 4px 0 0; font-size: 12px; }
+.pp-money2 { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line-strong); display: flex; flex-direction: column; gap: 10px; }
+.pp-mrow small { display: block; color: var(--ink-light); font-size: 12px; line-height: 1.45; }
+.pp-mrow small em { font-style: normal; font-size: 10.5px; padding: 0 5px; margin-left: 4px; border-radius: 999px; background: var(--chip-bg, var(--panel-2)); color: var(--ink-sub); }
+.pp-mrow b { display: block; font-family: var(--font-hero, var(--font-display)); font-weight: var(--hero-weight, 700); font-size: 22px; margin: 1px 0; letter-spacing: -0.01em; }
+.pp-money2 .neg { color: var(--red); }
+.pp-money2 .pos { color: var(--green); }
+.pp-rank { margin: 0; font-size: 12.5px; color: var(--ink-sub); }
+.pp-rank b { color: var(--ink); font-weight: 600; }
+.pp-flow { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.pp-flow .hd { font-size: 12.5px; color: var(--ink-sub); margin-bottom: 4px; }
+.pp-flow .hd b { font-family: var(--font-mono); font-size: 13px; margin-left: 4px; }
+.pp-flow ul { list-style: none; margin: 0; padding: 0; }
+.pp-flow li { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; padding: 2px 0; }
+.pp-flow li span:first-child { color: var(--ink-sub); }
+.pp-flow li span:last-child { font-family: var(--font-mono); font-size: 12px; }
+.pp-own { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 12.5px; }
+.pp-own dt { color: var(--ink-light); }
+.pp-own dd { margin: 0; color: var(--ink); }
+
+/* ───── 마을 ───── */
+.pp-scene { padding: 0; overflow: hidden; }
+.pp-scene .village { border: 0; border-radius: 0; border-bottom: 1px solid var(--line); }
+.pp-scenecap { margin: 0; padding: 10px 16px 12px; font-size: 14px; line-height: 1.55; }
+
+/* ───── 올해의 초점 ───── */
+.pp-status { font-size: 14px; color: var(--ink-sub); margin-bottom: 10px; }
+.pp-baby { margin: 0; line-height: 1.6; }
+.pp-tip { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--primary); background: var(--primary-light); font-size: 13px; }
+.pp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pp-chip {
+  display: inline-flex; flex-direction: column; align-items: flex-start;
+  padding: 6px 12px; line-height: 1.25; text-align: left;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--panel); color: var(--ink);
+  font-family: var(--font-body); font-size: 13.5px;
+  cursor: pointer;
+}
+.pp-chip small { font-size: 11px; color: var(--ink-light); }
+.pp-chip:hover { border-color: var(--primary); }
+.pp-chip[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.pp-chip[aria-pressed='true'] small { color: var(--on-primary); opacity: 0.85; }
+
+/* ───── 삶을 마침 ───── */
+.pp-end { border-color: var(--primary); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.pp-end p { margin: 0; }
+
+/* ───── 인생 기록 (원작 feed: 나이 | 문장) ───── */
+.pp-tgline { margin: -2px 0 6px; font-size: 12.5px; color: var(--ink-light); }
+.pp-feed { list-style: none; margin: 0; padding: 0; max-height: 640px; overflow-y: auto; overscroll-behavior: contain; }
+.pp-feed li {
+  display: grid; grid-template-columns: 3.4em minmax(0, 1fr); gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+  animation: pp-in 0.4s ease;
+}
+.pp-feed li:last-child { border-bottom: 0; }
+.pp-feed .a { font-family: var(--font-mono); font-size: 12px; color: var(--ink-light); padding-top: 3px; }
+.pp-feed li.big .x { font-weight: 600; }
+/* 원작 기록 색: 중요도에 따라 (lifeText.feedKind) */
+.pp-feed li.bad .x { color: var(--red); font-weight: 600; }
+.pp-feed li.ms .x { color: var(--teal); font-weight: 600; }
+.pp-feed li.hist .x { color: var(--ink-sub); border-left: 3px solid var(--line-strong); padding-left: 8px; }
+.pp-feed li.hist .x::before { content: '◆ '; color: var(--ink-light); font-size: 11px; }
+.pp-feed li.note .x { color: var(--teal); font-family: var(--font-display); font-size: 15px; }
+.pp-feed li.dec { padding: 5px 0; }
+.pp-feed li.dec .x { color: var(--ink-light); font-size: 12.5px; }
+.pp-feed li.death .x { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--ink); }
+.pp-feed li.ledger { padding: 5px 0; }
+.pp-feed li.ledger .x { font-family: var(--font-mono); font-size: 12px; color: var(--ink-sub); }
+.pp-feed .effects { display: flex; margin-top: 4px; }
+@keyframes pp-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* ───── 가족과 삶 ───── */
+.pp-fam { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.pp-fam .row { display: flex; justify-content: space-between; gap: 10px; }
+.pp-fam .row span:first-child { color: var(--ink-sub); }
+.pp-fam .row span:last-child { text-align: right; font-weight: 500; }
+.pp-fam .pwork { font-weight: 400; font-size: 11.5px; color: var(--ink-light); }
+.pp-fam .row.gone span:last-child { color: var(--ink-light); font-weight: 400; }
+
+/* ───── 같은 1초에 태어난 사람들 (원작 companions) ───── */
+.pp-peers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pp-peers li { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.pp-peers li:last-child { border-bottom: 0; }
+.pp-peers b { font-size: 14px; font-weight: 600; }
+.pp-peers small { align-self: center; font-size: 11.5px; color: var(--ink-light); }
+.pp-peers span { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-sub); }
+.pp-peers li.gone b { color: var(--ink-light); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.pp-peers li.gone span { color: var(--red); }
+
+/* ───── 인생 지도 (한 칸 = 1년, 행복할수록 진하게) ───── */
+.pp-grid10 { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; }
+.pp-grid10 .c { aspect-ratio: 1; border-radius: 2px; background: var(--line); position: relative; }
+.pp-grid10 .c.lv1, .pp-gridkey i.lv1 { background: color-mix(in srgb, var(--primary) 28%, var(--panel)); }
+.pp-grid10 .c.lv2, .pp-gridkey i.lv2 { background: color-mix(in srgb, var(--primary) 58%, var(--panel)); }
+.pp-grid10 .c.lv3, .pp-gridkey i.lv3 { background: var(--primary); }
+.pp-grid10 .c.le, .pp-gridkey i.le { box-shadow: inset 0 0 0 1.5px var(--ink-light); }
+.pp-grid10 .c.cur { outline: 2px solid var(--primary); outline-offset: -1px; animation: pp-blink 1.6s ease-in-out infinite; }
+.pp-grid10 .c.dead { background: var(--ink) !important; }
+@keyframes pp-blink { 50% { outline-color: transparent; } }
+.pp-gridkey { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--ink-light); }
+.pp-gridkey span { display: inline-flex; align-items: center; gap: 3px; }
+.pp-gridkey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--line); }
+
+/* ───── 생존 곡선 ───── */
+.pp-chart svg { width: 100%; height: auto; display: block; }
+.pp-chart text { font-family: var(--font-mono); font-size: 10px; fill: var(--ink-light); }
+.pp-chart .gl { stroke: var(--line); stroke-width: 1; }
+.pp-chart .cv { fill: none; stroke: var(--primary); stroke-width: 2; }
+.pp-chart .now { stroke: var(--ink-light); stroke-dasharray: 3 3; }
+.pp-chart .dot { fill: var(--primary); stroke: var(--panel); stroke-width: 2; }
+.pp-chart .dot.end { fill: var(--ink); }
+.pp-chart .lab { fill: var(--ink); font-size: 11px; font-weight: 600; }
+
+/* ───── 나라 ───── */
+.pp-cty dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13.5px; }
+.pp-cty dt { color: var(--ink-sub); }
+.pp-cty dd { margin: 0; text-align: right; font-family: var(--font-mono); font-size: 13px; }
+
+/* ───── 좁은 화면 ───── */
+@media (max-width: 1180px) {
+  .pp-life { grid-template-columns: 300px minmax(0, 1fr); }
+  .pp-life > .pp-col:last-child { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .pp-wrap { padding-inline: 12px; }
+  .pp-life { grid-template-columns: minmax(0, 1fr); }
+  .pp-life > .pp-col:last-child { display: flex; }
+  .pp-life > .pp-col:nth-child(2) { order: -1; }
+  .pp-age { font-size: 32px; }
+  .pp-bgm input[type='range'] { display: none; }
+}

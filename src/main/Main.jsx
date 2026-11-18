@@ -52,30 +52,13 @@ function Main() {
     setLuck(false);
   };
 
-  // 아무 시대에나: 궤도를 점점 느리게 몇 번 돌리다가 무작위 시대에서 멈춤
+  // 아무 시대에나: 누르면 바로 무작위 시대로 태어나기 (궤도 돌리는 연출 없이)
   const spin = () => {
     if (spinning) return;
     setSpinning(true);
-    setLuck(false);
     const final = DECADES[Math.floor(Math.random() * DECADES.length)];
-    const delays = [0, 140, 300, 490, 720, 1000, 1340];
-    let last = decade;
-    delays.forEach((ms, i) => {
-      timers.current.push(setTimeout(() => {
-        let d = final;
-        if (i < delays.length - 1) {
-          do { d = DECADES[Math.floor(Math.random() * DECADES.length)]; } while (d === last);
-        }
-        last = d;
-        setDecade(d);
-        if (i === delays.length - 1) {
-          setSpinning(false);
-          setLuck(true);
-          // 골라진 시대를 1.2초 보여 준 뒤 그 시대로 태어나기
-          timers.current.push(setTimeout(() => goBirth(d), 1200));
-        }
-      }, ms));
-    });
+    setDecade(final);
+    goBirth(final);
   };
 
   return (

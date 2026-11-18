@@ -1,10 +1,17 @@
-/* 출생 추첨 화면 - 밤하늘 디자인 (design.css 변수 사용) */
+/* 출생 추첨 화면 - 라이트 노을 / 다크 밤하늘 (design.css 변수 사용) */
 
 /* ===== 화면 전체 (별이 뜬 밤하늘) ===== */
 .page {
   position: relative;
   height: calc(100vh - 65px); /* 헤더 높이만큼 빼기 */
   overflow: hidden;
+  /* 라이트: 노을 하늘 (해가 지는 쪽이 아래) */
+  background:
+    radial-gradient(ellipse at 50% 72%, rgba(255, 160, 120, 0.55) 0%, transparent 58%),
+    linear-gradient(180deg, #ffe9df 0%, #ffd3c0 55%, #ffbfa6 100%);
+}
+/* 다크: 예전 별이 뜬 밤하늘 그대로 */
+:global(:root[data-theme='dark']) .page {
   background:
     radial-gradient(ellipse at 50% 60%, #16205a 0%, transparent 60%),
     radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
@@ -22,7 +29,7 @@
   z-index: 0;
   width: 160px;
   height: 52px;
-  background: rgba(160, 175, 255, 0.05);
+  background: var(--cloud, rgba(255, 255, 255, 0.55));
   border-radius: 999px;
   filter: blur(2px);
   animation: drift linear infinite;
@@ -32,7 +39,7 @@
 .cloud::after {
   content: '';
   position: absolute;
-  background: rgba(160, 175, 255, 0.05);
+  background: var(--cloud, rgba(255, 255, 255, 0.55));
   border-radius: 999px 999px 0 0;
 }
 
@@ -114,7 +121,7 @@
   font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
-  background: rgba(15, 21, 48, 0.9);
+  background: var(--chip-bg);
   border: 1px solid var(--primary);
   border-radius: 999px;
   box-shadow: var(--glow);
@@ -168,7 +175,7 @@
   padding: 7px 14px;
   font-size: 13px;
   color: var(--ink-sub);
-  background: rgba(15, 21, 48, 0.85);
+  background: var(--chip-bg);
   border: 1px solid var(--line-strong);
   border-radius: 999px;
 }
@@ -303,6 +310,8 @@
   background: var(--panel-2);
 }
 
+/* 다크: 구름은 아주 옅게 (예전 그대로) */
+:global(:root[data-theme='dark']) .cloud { --cloud: rgba(160, 175, 255, 0.05); }
 /* 퀘스트 저장 실패 안내 (C01) - 빨간 글씨 + [다시 저장] / [로그인하러 가기] 버튼 */
 .questError {
   display: flex;
