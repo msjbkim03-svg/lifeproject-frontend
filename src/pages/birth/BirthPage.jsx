@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
 import ToonEarth from './ToonEarth';
+import { useTheme } from '../../common/theme';
 import styles from './BirthPage.module.css';
 
 // ───────────────────────────────────────────────
@@ -89,6 +90,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // ───────────────────────────────────────────────
 function BirthPage() {
   const navigate = useNavigate();
+  const theme = useTheme(); // 라이트 노을 / 다크 밤하늘 (지구 색)
   const location = useLocation();
   const decade = location.state?.decade; // 메인에서 고른 시대
   const questIds = location.state?.questIds; // 퀘스트 화면(C01)에서 고른 퀘스트 (회원만)
@@ -214,7 +216,8 @@ function BirthPage() {
       <div className={`${styles.cloud} ${styles.cloud3}`} />
 
       {/* 밤하늘 점 지구 + 비행기 (three.js) */}
-      <ToonEarth phase={phase} target={target} onParked={handleParked} />
+      {/* 테마가 바뀌면 지구를 새 색으로 다시 그림 */}
+      <ToonEarth key={theme} phase={phase} target={target} onParked={handleParked} />
 
       {/* 낙하산 타고 떨어지는 아기 */}
       {jump && (phase === 'drop' || phase === 'landed') && (
@@ -296,13 +299,13 @@ function BirthPage() {
             <button type="button" className={styles.ghostBtn} onClick={() => navigate('/')}>
               메인으로
             </button>
-            {/* TODO: 출생신고서 화면(C02) 만들면 연결 */}
+            {/* C03 인생 진행 화면으로 (state 로 넘기면 서버를 한 번 덜 부름) */}
             <button
               type="button"
               className={styles.primaryBtn}
-              onClick={() => navigate('/certificate', { state: { life } })}
+              onClick={() => navigate('/play', { state: { life } })}
             >
-              출생신고서 보기
+              삶을 시작하기
             </button>
           </div>
         </section>
@@ -324,18 +327,19 @@ function BirthPage() {
   );
 }
 
-// 낙하산 + 아기 바구니 (밤하늘 디자인 색)
+// 낙하산 + 아기 바구니 (테마 색: 라이트 노을 / 다크 밤하늘)
 function Parachute() {
+  const line = { stroke: 'var(--outline)' };
   return (
     <svg width="84" height="105" viewBox="0 0 64 80" aria-hidden="true">
       <g className={styles.canopy}>
-        <path d="M4 26 Q32 -8 60 26 Z" fill="#f2d58c" stroke="#0a0f22" strokeWidth="1.5" />
-        <path d="M18 26 Q32 -4 46 26 Z" fill="#e8e9f5" stroke="#0a0f22" strokeWidth="1.2" />
-        <path d="M28 26 Q32 4 36 26 Z" fill="#f2d58c" stroke="#0a0f22" strokeWidth="1.2" />
+        <path d="M4 26 Q32 -8 60 26 Z" style={{ ...line, fill: 'var(--primary)' }} strokeWidth="1.5" />
+        <path d="M18 26 Q32 -4 46 26 Z" style={{ ...line, fill: 'var(--paper-mid)' }} strokeWidth="1.2" />
+        <path d="M28 26 Q32 4 36 26 Z" style={{ ...line, fill: 'var(--primary)' }} strokeWidth="1.2" />
       </g>
-      <path d="M6 27 L28 58 M58 27 L36 58 M22 28 L30 58 M42 28 L34 58" stroke="#a3a8cc" strokeWidth="1" />
-      <circle cx="32" cy="60" r="5" fill="#f2c9a0" stroke="#0a0f22" strokeWidth="1.2" />
-      <path d="M24 64 h16 l-2 10 h-12 Z" fill="#7aa8ff" stroke="#0a0f22" strokeWidth="1.2" />
+      <path d="M6 27 L28 58 M58 27 L36 58 M22 28 L30 58 M42 28 L34 58" style={{ stroke: 'var(--ink-sub)' }} strokeWidth="1" />
+      <circle cx="32" cy="60" r="5" fill="#f2c9a0" style={line} strokeWidth="1.2" />
+      <path d="M24 64 h16 l-2 10 h-12 Z" style={{ ...line, fill: 'var(--blue)' }} strokeWidth="1.2" />
     </svg>
   );
 }
