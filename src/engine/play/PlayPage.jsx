@@ -5,12 +5,15 @@
 //   오른쪽: 가족과 삶 · 같은 1초에 태어난 사람들 · 인생 지도 · 생존 곡선 · 나라
 // - 시간 흐름은 원작과 같아요: 1배속에서 한 해 = 3600 ÷ 기대수명 초 (12~120초, 기대수명까지 약 1시간)
 //   배속 1·2·4·8·12·16×, '다음 결정까지'는 결정 창이 뜰 때까지 빠르게 감기
-// - 한 해가 시작될 때 서버에 그해를 미리 요청(POST /api/engine/next)하고,
-//   그해 일어난 일을 진행 막대가 차는 동안 하나씩 보여 준 뒤, 막대가 다 차면 나이가 올라가요
+// - 한 해 막대가 3/4쯤 찼을 때 서버에 그해를 요청(POST /api/engine/next)하고 (빠른 배속은 더 일찍),
+//   그해 일어난 일을 남은 막대 동안 하나씩 보여 준 뒤, 막대가 다 차면 나이가 올라가요
+//   → 그 전에 바꾼 '올해의 초점'은 그해 계산에 바로 들어가요 (원작도 한 해가 끝날 때 그해 초점으로 계산)
+// - 인생 지도 칸에 마우스를 올리거나 누르면 그해 행복·건강·순자산·큰 일 (원작 인생 지도 말풍선, GET /api/engine/years)
+// - 나라 패널은 그해와 가장 가까운 연대의 나라·권역 통계 (원작 나라 패널, GET /api/engine/country)
 // - 출생 화면에서 state.life 로 들어오거나, 새로고침·이어하기면 GET /api/engine/current 로 불러옴
 // - 큰 결정(선택 이벤트 C09, 이민 목적지 C10, 직업 제안 C06)만 창으로 띄우고 진행을 멈춤
 // - 죽으면(status ENDED) 잠깐 보여 주고 /result/:lifeId 로 이동 (C18)
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
 import EventChoiceModal from '../../common/ui/EventChoiceModal';
@@ -29,6 +32,10 @@ const PACE_MIN = 60;                         // 기대수명까지 약 60분 (�
 const SPEEDS = [1, 2, 4, 8, 12, 16];         // 원작과 같은 배속
 const FF_SEC = 0.6;                          // '다음 결정까지' 감을 때 한 해 길이 (초)
 const yearSecOf = (le) => Math.min(120, Math.max(12, (PACE_MIN * 60) / Math.max(le || 70, 60)));
+// 그해 요청 시점 (막대 비율): 남은 막대가 4초쯤 되게, 최대 3/4 (빠른 배속·빨리 감기는 바로)
+const fetchAtOf = (ys) => Math.min(0.75, Math.max(0, 1 - 4 / ys));
+// '1년 ≈ n초' 표시 (10초 미만은 소수 한 자리)
+const secText = (v) => (v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
 const RESULT_DELAY = 3500;                   // 죽은 뒤 결과 화면까지
 const MAX_FEED = 400;                        // 화면에 남겨 둘 기록 줄 수
 
@@ -95,6 +102,16 @@ const money = (v) => {
   return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString();
 };
 
+// 큰 수 (원작 koBig): 1억 이상 "1.4억", 1만 이상 "5,170만", 그 아래 쉼표
+const koBig = (v) => {
+  if (v == null) return '—';
+  const n = Math.abs(v);
+  if (n >= 1e8) return (Math.round((v / 1e8) * 10) / 10).toLocaleString() + '억';
+  if (n >= 1e4) return Math.round(v / 1e4).toLocaleString() + '만';
+  return Math.round(v).toLocaleString();
+};
+const fix1 = (v) => (Math.round(v * 10) / 10).toLocaleString();
+
 // 서버 오류 문구 꺼내기
 const errText = (err) => {
   const msg = err.response?.data;
@@ -157,12 +174,15 @@ function PlayPage() {
   const [skipJobAge, setSkipJobAge] = useState(null); // 이 나이엔 직업 제안 건너뜀
   const [destPick, setDestPick] = useState(null);     // 이민 목적지: 한 번 누르면 표시, 한 번 더 누르면 결정
   const [hidden, setHidden] = useState(typeof document !== 'undefined' && document.hidden);
-  const [moodMap, setMoodMap] = useState({});         // 인생 지도: 나이 → 그해 행복
+  const [years, setYears] = useState({});             // 인생 지도: 나이 → { h 행복, hl 건강, nw 순자산, flow 그해 돈 내역 }
+  const [mapTip, setMapTip] = useState(null);         // 인생 지도 말풍선 { age, x, y }
+  const [ctyView, setCtyView] = useState('cur');      // 나라 패널: cur 사는 나라 / born 태어난 나라 (이민했을 때)
+  const [cty, setCty] = useState(null);               // 나라 패널 통계 (GET /api/engine/country)
 
   const guestToken = localStorage.getItem('token') ? null : localStorage.getItem('guestToken');
 
   // 한 해 진행 상태 (화면을 매 프레임 다시 그리지 않게 ref)
-  const yr = useRef({ data: null, fetching: false, t: 0, shown: 0, focus: null });
+  const yr = useRef({ data: null, fetching: false, t: 0, t0: 0, shown: 0, focus: null, focusing: false });
   const busyRef = useRef(false);
   const lifeRef = useRef(life);
   useEffect(() => { lifeRef.current = life; }, [life]);
@@ -174,24 +194,34 @@ function PlayPage() {
   };
 
   // ───────── 기록 ─────────
+  const lineSeq = useRef(0); // 기록 줄마다 고유 번호 (React key)
   const pushLines = useCallback((lines) => {
     if (!lines.length) return;
-    setFeed((f) => [...lines.slice().reverse(), ...f].slice(0, MAX_FEED));
+    const withId = lines.map((x) => ({ ...x, id: ++lineSeq.current }));
+    setFeed((f) => [...withId.reverse(), ...f].slice(0, MAX_FEED));
   }, []);
 
-  // 인생 지도 색 (행복) - 새로고침해도 남게 sessionStorage
+  // 인생 지도: 방금 지나간 해의 상태 (서버 LIFE_YEAR_LOG 와 같은 값, 돈 내역은 진행 중에만)
   const remember = useCallback((l, age) => {
     if (!l) return;
-    setMoodMap((m) => {
-      const next = { ...m, [age]: Math.round(l.happiness || 0) };
-      try { sessionStorage.setItem('ppMood' + l.lifeId, JSON.stringify(next)); } catch { /* 무시 */ }
-      return next;
-    });
+    setYears((m) => ({
+      ...m,
+      [age]: { h: Math.round(l.happiness || 0), hl: Math.round(l.health || 0), nw: l.assets, flow: l.moneyFlow || [] },
+    }));
   }, []);
 
   // 지금까지의 인생 기록 불러오기 (새로고침·이어하기해도 기록이 비지 않게)
   const loadLogs = useCallback(async (l) => {
-    try { setMoodMap(JSON.parse(sessionStorage.getItem('ppMood' + l.lifeId) || '{}')); } catch { setMoodMap({}); }
+    // 인생 지도: 연도 기록은 나이가 오른 뒤 상태로 저장돼요 (나이 n 기록 = n-1세 한 해를 보낸 결과)
+    client.get('/api/engine/years', { params: { lifeId: l.lifeId, guestToken } })
+      .then((res) => {
+        const m = {};
+        (res.data || []).forEach((g) => {
+          if (g.age > 0) m[g.age - 1] = { h: g.happiness, hl: g.health, nw: g.assets, flow: [] };
+        });
+        setYears((old) => ({ ...m, ...old }));
+      })
+      .catch((err) => console.log('인생 지도 불러오기 실패', err.response?.data));
     try {
       const res = await client.get('/api/engine/logs', { params: { lifeId: l.lifeId, guestToken } });
       // 서버는 최근 나이부터, 같은 나이는 일어난 순서 → 화면은 최신이 맨 위
@@ -200,7 +230,7 @@ function PlayPage() {
       const ages = Object.keys(byAge).map(Number).sort((a, b) => b - a);
       const out = [];
       ages.forEach((age) => {
-        byAge[age].slice().reverse().forEach((g) => out.push({ age, text: g.logText, big: !!g.eventId, eventId: g.eventId }));
+        byAge[age].slice().reverse().forEach((g) => out.push({ id: ++lineSeq.current, age, text: g.logText, big: !!g.eventId, eventId: g.eventId }));
       });
       setFeed(out.slice(0, MAX_FEED));
     } catch (err) {
@@ -210,7 +240,7 @@ function PlayPage() {
 
   // ① 진행 중인 인생 불러오기 (새로고침, 이어하기, 409 뒤)
   const reload = useCallback(async () => {
-    yr.current = { data: null, fetching: false, t: 0, shown: 0, focus: null };
+    yr.current = { data: null, fetching: false, t: 0, t0: 0, shown: 0, focus: null, focusing: false };
     setProg(0);
     try {
       const res = await client.get('/api/engine/current', { params: { guestToken } });
@@ -254,17 +284,24 @@ function PlayPage() {
     }
   }, [guestToken, pushLines, reload]);
 
-  // 올해의 초점 (진행을 멈추지 않음): 미리 받아 둔 해가 있으면 그다음 해부터 적용돼요
+  // 올해의 초점 (진행을 멈추지 않음)
+  //   그해를 아직 서버에 요청하기 전이면 올해 계산에 바로 들어가고, 이미 요청했으면 다음 해부터 적용돼요
+  //   저장이 끝날 때까지는 그해를 요청하지 않아요 (요청이 겹치면 예전 초점으로 덮어써질 수 있어서)
   const chooseFocus = useCallback(async (focus) => {
     const l = lifeRef.current;
     if (!l) return;
+    const y = yr.current;
+    const late = !!(y.data || y.fetching);
     setLife((x) => ({ ...x, focusCode: focus, needFocus: false }));
-    yr.current.focus = focus;
-    pushLines([{ age: l.currentAge, kind: 'dec', text: `올해의 초점을 '${focusLabel(focus, l)}'(으)로 정했다.` }]);
+    y.focus = focus;
+    y.focusing = true;
+    pushLines([{ age: l.currentAge, kind: 'dec', text: `${late ? '다음 해' : '올해'}의 초점을 '${focusLabel(focus, l)}'(으)로 정했다.` }]);
     try {
       await client.post('/api/engine/focus', { lifeId: l.lifeId, guestToken, focus });
     } catch (err) {
       setNotice(errText(err));
+    } finally {
+      y.focusing = false;
     }
   }, [guestToken, pushLines]);
 
@@ -290,14 +327,15 @@ function PlayPage() {
     let last = performance.now();
     let alive = true;
     const y = yr.current;
+    y.hold = false; // 결정 창을 닫고 다시 돌기 시작
 
     const fetchYear = async () => {
       const l = lifeRef.current;
       y.fetching = true;
-      y.focus = null;
       try {
         const res = await client.post('/api/engine/next', { lifeId: l.lifeId, guestToken: loopRef.current.guestToken });
         y.data = res.data;
+        y.t0 = y.t;      // 받은 때부터 남은 막대 동안 그해 일을 나눠 보여 줌
         y.shown = 0;
       } catch (err) {
         if (!alive) return;
@@ -313,7 +351,9 @@ function PlayPage() {
       const dt = Math.min(0.5, (now - last) / 1000); // 프레임이 느려도 시간은 같게
       last = now;
       const { yearSec: ys, pushLines: push, remember: mem } = loopRef.current;
-      if (!y.data && !y.fetching) fetchYear();
+      if (y.hold) return; // 결정 창(직업·선택·이민)이나 사망: 화면이 멈출 때까지 다음 해를 요청하지 않음
+      // 막대가 요청 시점을 넘으면 그해를 요청 (초점 저장 중이면 끝날 때까지 기다림)
+      if (!y.data && !y.fetching && !y.focusing && y.t >= fetchAtOf(ys)) fetchYear();
 
       // 서버 응답 전에는 막대가 끝까지 차지 않게 (응답이 오면 바로 이어서 참)
       y.t = Math.min(y.data ? 1 : 0.985, y.t + dt / ys);
@@ -323,8 +363,9 @@ function PlayPage() {
         const d = y.data;
         const age = d.status === 'ENDED' ? d.currentAge : d.currentAge - 1;
         const lines = toLines(age, d.events);
-        // 그해 일을 막대 위에 고르게 나눠서 하나씩
-        const due = Math.min(lines.length, Math.floor(y.t * (lines.length + 1)));
+        // 그해 일을 남은 막대 위에 고르게 나눠서 하나씩
+        const part = y.t0 >= 1 ? 1 : (y.t - y.t0) / (1 - y.t0);
+        const due = Math.min(lines.length, Math.floor(part * (lines.length + 1)));
         if (due > y.shown) {
           push(lines.slice(y.shown, due));
           y.shown = due;
@@ -335,12 +376,19 @@ function PlayPage() {
           mem(d, age);
           y.data = null;
           y.t = 0;
+          y.t0 = 0;
           y.shown = 0;
+          y.focus = null;
           setProg(0);
           // 해가 끝난 뒤 고른 초점은 서버에 이미 반영돼 있으니 화면에서도 유지
           setLife(focus ? { ...d, focusCode: focus, needFocus: false } : d);
-          // 결정 창·사망이면 running 이 꺼지며 멈추고, 아니면 다음 해를 곧바로 요청
-          if (d.status !== 'ENDED' && !d.needChoice && !d.needDestination && !d.needJob) fetchYear();
+          // 결정 창·사망이면 running 이 꺼질 때까지 다음 해를 요청하지 않음
+          // (예전엔 여기서 멈춰도 다음 프레임이 한 번 더 돌아 다음 해를 미리 요청해 버려서,
+          //  서버 나이가 한 살 앞서 가고 직업 제안을 눌러도 '제안받은 직업이 아니에요'로 거절됐음)
+          if (d.status === 'ENDED' || d.needChoice || d.needDestination || d.needJob) {
+            y.hold = true;
+            return;
+          }
         }
       }
       frame = requestAnimationFrame(tick);
@@ -365,6 +413,28 @@ function PlayPage() {
     const t = setTimeout(() => navigate(`/result/${life.lifeId}`), RESULT_DELAY);
     return () => clearTimeout(t);
   }, [ended, life, navigate]);
+
+  // ④ 나라 패널: 사는 나라(또는 태어난 나라)·연대가 바뀔 때만 다시 불러옴
+  const ctyCode = life ? (ctyView === 'born' ? life.birthCountry : life.currentCountry) : null;
+  const ctyDecade = life ? Math.floor((life.birthYear + life.currentAge) / 10) * 10 : null;
+  useEffect(() => {
+    if (!life?.lifeId || !ctyCode) return undefined;
+    let alive = true;
+    client.get('/api/engine/country', { params: { lifeId: life.lifeId, guestToken, view: ctyView } })
+      .then((res) => { if (alive) setCty(res.data); })
+      .catch((err) => console.log('나라 통계 불러오기 실패', err.response?.data));
+    return () => { alive = false; };
+  }, [life?.lifeId, ctyCode, ctyDecade, ctyView, guestToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 이민 전이면 태어난 나라 보기 단추가 없으니 사는 나라로
+  useEffect(() => { if (life && life.birthCountry === life.currentCountry) setCtyView('cur'); }, [life?.currentCountry]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 인생 지도 말풍선은 화면을 굴리면 닫힘 (원작과 같음)
+  useEffect(() => {
+    if (!mapTip) return undefined;
+    const close = () => setMapTip(null);
+    window.addEventListener('scroll', close, { passive: true });
+    return () => window.removeEventListener('scroll', close);
+  }, [mapTip]);
 
   // 안내 문구는 3초 뒤 사라짐
   useEffect(() => {
@@ -430,7 +500,7 @@ function PlayPage() {
   const mapYears = Math.max(90, Math.ceil(Math.max(lived + 1, le + 1) / 10) * 10);
   const region = THEMES[(COUNTRIES[life.currentCountry] || [])[1]]?.name;
   const aliveNow = curve ? curve[Math.min(curve.length - 1, life.currentAge)] : null;
-  const secPerYear = Math.round(yearSecOf(life.lifeExpectancy));
+  const migrated = life.birthCountry !== life.currentCountry;
 
   return (
     <div className="pp">
@@ -440,7 +510,7 @@ function PlayPage() {
           <div className="pp-agebox">
             <div className="pp-age">{ended ? deathAge : life.currentAge}<small>세</small></div>
             <div className="pp-yr">
-              <span className="pp-yr-t">{year}년 · {life.name} · 1년 ≈ {secPerYear}초</span>
+              <span className="pp-yr-t">{year}년 · {life.name} · {ff ? '다음 결정까지 빨리 감는 중' : `1년 ≈ ${secText(yearSec)}초`}</span>
               <div className="pp-prog" aria-hidden="true">
                 <i ref={progRef} style={{ transform: `scaleX(${ended ? 1 : yr.current.t})` }} />
               </div>
@@ -577,7 +647,7 @@ function PlayPage() {
             ) : (
               <ul className="pp-feed">
                 {feed.map((e, i) => (
-                  <li key={feed.length - i} className={feedKind(e)}>
+                  <li key={e.id ?? `k${i}`} className={feedKind(e) ? 'fk-' + feedKind(e) : undefined}>
                     <span className="a">{e.age}세</span>
                     <span className="x">
                       {e.text}
@@ -614,26 +684,39 @@ function PlayPage() {
 
           <section className="pp-panel">
             <h3 className="pp-h"><span>인생 지도</span><span className="pp-lbl">한 칸 = 1년</span></h3>
-            <div className="pp-grid10" aria-label={`${lived}년을 살았어요`}>
+            {/* 원작처럼 칸에 마우스를 올리면(터치는 누르면) 그해 말풍선 */}
+            <div className="pp-grid10" aria-label={`인생 지도: 한 칸이 1년, ${lived}년을 살았어요. 칸을 누르면 그해 이야기가 보여요.`}
+              onMouseLeave={() => setMapTip(null)}>
               {Array.from({ length: mapYears }, (_, i) => {
-                const done = i < lived - (ended ? 0 : 0) && !(ended && i === deathAge);
-                const mood = moodMap[i];
-                const lvl = mood == null ? 2 : mood >= 70 ? 3 : mood >= 50 ? 2 : 1;
+                const done = i < lived && !(ended && i === deathAge);
+                const y = years[i];
+                const lvl = y == null ? 2 : y.h >= 70 ? 3 : y.h >= 50 ? 2 : 1;
+                const show = (e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setMapTip({ age: i, x: Math.min(window.innerWidth - 260, r.left), y: r.bottom + 6 });
+                };
                 return (
-                  <span key={i}
+                  <button key={i} type="button"
                     className={'c'
                       + (done ? ' lv' + lvl : '')
                       + (!ended && i === life.currentAge ? ' cur' : '')
                       + (ended && i === deathAge ? ' dead' : '')
-                      + (i === Math.round(le) ? ' le' : '')}
-                    title={`${i}세 (${life.birthYear + i}년)${mood != null ? ' · 행복 ' + mood : ''}`} />
+                      + (i === Math.floor(le) ? ' le' : '')}
+                    aria-label={`${i}세 (${life.birthYear + i}년)`}
+                    onMouseEnter={show} onFocus={show} onBlur={() => setMapTip(null)}
+                    onClick={(e) => (mapTip?.age === i ? setMapTip(null) : show(e))} />
                 );
               })}
             </div>
             <div className="pp-gridkey">
-              <span><i className="lv1" /><i className="lv2" /><i className="lv3" /> 행복할수록 진하게</span>
+              <span><i className="lv1" /><i className="lv2" /><i className="lv3" /> 색이 선명할수록 행복했던 해</span>
               <span><i className="le" /> 기대수명 {le.toFixed(1)}세</span>
             </div>
+            {mapTip && (
+              <div className="pp-maptip" role="status" style={{ left: mapTip.x, top: mapTip.y }}>
+                <MapTipText age={mapTip.age} life={life} y={years[mapTip.age]} feed={feed} le={le} />
+              </div>
+            )}
           </section>
 
           {curve && (
@@ -644,14 +727,26 @@ function PlayPage() {
           )}
 
           <section className="pp-panel pp-cty">
-            <h3 className="pp-h"><span>{countryName}</span>{region && <span className="pp-lbl">{region}</span>}</h3>
+            <h3 className="pp-h">
+              <span>{cty?.nameKo || countryName}{cty?.decade ? ` · ${cty.decade}년대` : ''}</span>
+              {migrated && (
+                <button type="button" className="pp-ctysw" onClick={() => setCtyView(ctyView === 'born' ? 'cur' : 'born')}>
+                  {ctyView === 'born' ? '사는 나라 보기' : '태어난 나라 보기'}
+                </button>
+              )}
+            </h3>
             <dl>
-              {life.histName && life.histName !== countryName && (<><dt>당시 국가명</dt><dd>{life.histName}</dd></>)}
-              <dt>기대수명</dt><dd>{life.lifeExpectancy ? life.lifeExpectancy.toFixed(1) + '세' : '—'}</dd>
-              <dt>영아 사망률</dt><dd>{life.infantMortality != null ? `1,000명당 ${life.infantMortality.toFixed(1)}` : '—'}</dd>
-              <dt>1인당 GDP</dt><dd>{life.gdpPerCapita ? money(life.gdpPerCapita) : '—'}</dd>
-              <dt>사는 곳</dt><dd>{town}</dd>
+              {ctyView === 'cur' && life.histName && life.histName !== countryName && (<><dt>당시 국가명</dt><dd>{life.histName}</dd></>)}
+              {countryRows(cty).map(([k, v]) => (<Fragment key={k}><dt>{k}</dt><dd>{v}</dd></Fragment>))}
+              {ctyView === 'cur' && (<><dt>사는 곳</dt><dd>{town}</dd></>)}
             </dl>
+            {cty && (
+              <p className="pp-src">
+                {cty.sourceTitle ? `출처: ${cty.sourceTitle}` : '출처: 유엔·세계은행 공개 통계'}
+                {cty.isEstimated === 'Y' ? ' (일부 추정값)' : ''}
+                {cty.regionName || region ? ` · 진학률·종사 비율은 ${cty.regionName || region} 권역 값` : ''}
+              </p>
+            )}
           </section>
         </div>
       </div>
@@ -685,6 +780,51 @@ function PlayPage() {
         footer={<Button type="ghost" size="sm" disabled={busy} onClick={() => setSkipJobAge(life.currentAge)}>올해는 넘기기</Button>} />
     </div>
   );
+}
+
+// 인생 지도 말풍선 (원작과 같은 내용): 나이·연도 / 행복·건강·순자산(15세부터) / 그해 돈 내역 3개 / 그해 큰 일 한 줄
+function MapTipText({ age, life, y, feed, le }) {
+  const year = life.birthYear + age;
+  if (!y) {
+    return <><b>{age}세 ({year}년)</b>{age === Math.floor(le) ? ' · 기대수명' : ''}</>;
+  }
+  const k = life.krwPerUsd;
+  const big = feed.find((e) => e.age === age && (e.big || e.kind === 'death'));
+  const flow = (y.flow || []).slice(0, 3);
+  return (
+    <>
+      <b>{age}세 · {year}년</b><br />
+      행복 {y.h} · 건강 {y.hl}{age >= 15 && y.nw != null ? ` · 순자산 ${won(y.nw, k)}` : ''}
+      {flow.length > 0 && (<><br />{flow.map((m) => `${m.label} ${won(m.amount, k, true)}`).join(' · ')}</>)}
+      {big && (<><br />{big.text.slice(0, 90)}</>)}
+    </>
+  );
+}
+
+// 나라 패널 줄 (원작 countryRows 중 우리 DB에 있는 값만, 값이 없는 줄은 뺌)
+function countryRows(c) {
+  if (!c) return [];
+  const rows = [
+    ['연간 출생아', c.births != null ? koBig(c.births) + '명' : null],
+    ['인구', c.population != null ? koBig(c.population) + '명' : null],
+    ['기대수명', c.lifeExpectancy != null ? c.lifeExpectancy.toFixed(1) + '세' : null],
+    ['영아 사망률', c.infantMortality != null ? `1,000명당 ${fix1(c.infantMortality)}` : null],
+    ['5세 미만 사망률', c.u5Mortality != null ? `1,000명당 ${fix1(c.u5Mortality)}` : null],
+    ['1인당 GDP', c.gdpPerCapita != null ? money(c.gdpPerCapita) : null],
+    ['도시 거주', c.urbanRate != null ? fix1(c.urbanRate) + '%' : null],
+    ['농업 종사', c.agriRate != null ? fix1(c.agriRate) + '%' : null],
+    ['공업 종사', c.industryRate != null ? fix1(c.industryRate) + '%' : null],
+    ['서비스업 종사', c.serviceRate != null ? fix1(c.serviceRate) + '%' : null],
+    ['초등 진학률', c.enrollElem != null ? fix1(c.enrollElem) + '%' : null],
+    ['중등 진학률', c.enrollMiddle != null ? fix1(c.enrollMiddle) + '%' : null],
+    ['고등 진학률', c.enrollHigh != null ? fix1(c.enrollHigh) + '%' : null],
+    ['대학 진학률', c.enrollUni != null ? fix1(c.enrollUni) + '%' : null],
+    ['합계출산율', c.tfr != null ? `${fix1(c.tfr)}명` : null],
+    ['출생 성비', c.sexRatioBirth != null ? `여아 100명당 남아 ${Math.round(c.sexRatioBirth * 100)}명` : null],
+    ['실업률', c.unemploymentRate != null ? fix1(c.unemploymentRate) + '%' : null],
+    ['순이민률', c.netMigrationRate != null ? `1,000명당 ${c.netMigrationRate > 0 ? '+' : ''}${fix1(c.netMigrationRate)}` : null],
+  ];
+  return rows.filter((r) => r[1] != null);
 }
 
 // 살림 (원작 살림 패널): 순자산 · 소득(한국 체감, $PPP, 월) · 배우자 소득 · 소득 위치 · 지난 1년 순자산 내역 · 가진 것 · 다니는 길
