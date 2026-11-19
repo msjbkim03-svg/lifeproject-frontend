@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import client from '../../api/api';
 import Button from '../../common/ui/Button';
 import { formatPhone } from '../../utils/phone';
+import RecaptchaBox from './RecaptchaBox';
 import styles from './JoinPage.module.css';
 
 // 회원가입 화면 (M01)
@@ -22,6 +23,9 @@ function JoinPage() {
   // 개인정보 수집·이용 동의 (필수)
   const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(false); // 동의 내용 펼치기
+
+  // 로봇 확인 (reCAPTCHA) - 체크하면 구글이 준 토큰, 안 했거나 풀리면 ''
+  const [captchaToken, setCaptchaToken] = useState('');
 
   // 중복 확인 통과 여부 (true 여야 가입 가능)
   const [checked, setChecked] = useState({ loginId: false, nickname: false, email: false });
@@ -102,14 +106,21 @@ function JoinPage() {
     if (!agreed) {
       return setError('개인정보 수집·이용에 동의해 주세요.');
     }
+    if (!captchaToken) {
+      return setError('"로봇이 아닙니다"에 체크해 주세요.');
+    }
 
     try {
       // 서버로 보내기 (동의 여부는 DB 값에 맞춰 Y / N 으로)
-      await client.post('/api/members', { ...form, privacyAgreed: agreed ? 'Y' : 'N' });
+      // captchaToken 도 같이 보내면 서버가 구글에 진짜인지 확인함
+      await client.post('/api/members', { ...form, privacyAgreed: agreed ? 'Y' : 'N', captchaToken });
       // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸)
       navigate('/login', { state: { message: '회원가입을 마쳤어요. 로그인해 주세요.' } });
     } catch (err) {
       setError(err.response?.data?.message || '서버에 연결할 수 없어요.');
+      // 토큰은 한 번만 쓸 수 있어서, 실패하면 체크박스를 비우고 다시 체크하게 함
+      window.grecaptcha?.reset();
+      setCaptchaToken('');
     }
   };
 
@@ -213,6 +224,11 @@ function JoinPage() {
                 <p className={styles.agreeNote}>동의하지 않으면 회원가입을 할 수 없어요. 비회원으로는 계속 이용할 수 있어요.</p>
               </div>
             )}
+          </div>
+
+          {/* 로봇 확인 (reCAPTCHA) */}
+          <div className={styles.captcha}>
+            <RecaptchaBox onChange={setCaptchaToken} />
           </div>
         </div>
 

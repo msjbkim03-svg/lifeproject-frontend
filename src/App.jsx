@@ -3,6 +3,7 @@ import Header from './common/ui/Header';
 import ThemeToggle from './common/ui/ThemeToggle';
 import Main from './main/Main';
 import LoginPage from './pages/login/LoginPage';
+import KakaoCallback from './pages/login/KakaoCallback';
 import JoinPage from './pages/join/JoinPage';
 import BirthPage from './pages/birth/BirthPage';
 import PlayPage from './engine/play/PlayPage';
@@ -27,14 +28,16 @@ function App() {
         {/* H01 메인 */}
         <Route path="/" element={<Main />} />
         <Route path="/login" element={<LoginPage />} />
+        {/* M02 카카오 로그인 - 카카오가 code 를 붙여 돌려보내는 주소 */}
+        <Route path="/oauth/kakao" element={<KakaoCallback />} />
         <Route path="/join" element={<JoinPage />} />
         <Route path="/find" element={<FindPage />} />
 
         <Route path="/mypage" element={<MyPageLayout />}>
-          <Route index element={<MyPage />} />             {/* /mypage        M04 */}
-          <Route path="edit" element={<EditPage />} />     {/* /mypage/edit   M05·M06 */}
-          <Route path="lives" element={<LivesPage />} />   {/* /mypage/lives  M07 */}
-          <Route path="traits" element={<TraitsPage />} /> {/* /mypage/traits M08 */}
+          <Route index element={<MyPage />} />             
+          <Route path="edit" element={<EditPage />} />     
+          <Route path="lives" element={<LivesPage />} />   
+          <Route path="traits" element={<TraitsPage />} /> 
         </Route>
         
         {/* C01 퀘스트 설정 (회원이 태어나기 전) */}

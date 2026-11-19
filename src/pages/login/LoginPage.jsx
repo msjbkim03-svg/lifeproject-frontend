@@ -5,6 +5,16 @@ import Button from '../../common/ui/Button';
 import styles from './LoginPage.module.css';
 
 // 로그인 화면 (M02)
+// 카카오 로그인 (M02 소셜) - 카카오 동의 화면 주소
+//   client_id = REST API 키 (백엔드 kakao.client.id 와 같은 값)
+//   redirect_uri = 카카오 개발자 콘솔에 등록한 주소와 글자 하나까지 같아야 함
+const KAKAO_CLIENT_ID = 'a01d11e4928741d24d7eb0b8045f28aa';
+const KAKAO_REDIRECT_URI = 'http://localhost:5173/oauth/kakao';
+const KAKAO_AUTH_URL = 'https://kauth.kakao.com/oauth/authorize'
+  + '?response_type=code'
+  + '&client_id=' + KAKAO_CLIENT_ID
+  + '&redirect_uri=' + encodeURIComponent(KAKAO_REDIRECT_URI);
+
 function LoginPage() {
   const navigate = useNavigate();
   const notice = useLocation().state?.message; // 회원가입·비밀번호 변경 뒤 넘어온 안내 문구
@@ -67,6 +77,11 @@ function LoginPage() {
           {/* 엔터로 로그인되게 하는 숨은 버튼 (공통 Button 은 type="button" 이라 엔터 제출이 안 됨) */}
           <button type="submit" hidden />
           <Button type="primary" size="lg" block className={styles.mainBtn} onClick={handleSubmit}>로그인</Button>
+
+          {/* 카카오로 시작하기 → 카카오 동의 화면으로 이동 (돌아오면 KakaoCallback 이 처리) */}
+          <button type="button" className={styles.kakaoBtn} onClick={() => { window.location.href = KAKAO_AUTH_URL; }}>
+            카카오로 시작하기
+          </button>
 
           <div className={styles.links}>
             <Link to="/find">아이디·비밀번호 찾기</Link>
