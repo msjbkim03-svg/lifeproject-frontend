@@ -87,3 +87,33 @@
 .ms-source { margin: 4px 0 0; font-size: 11px; line-height: 1.5; color: var(--ink-light); }
 
 .ms-guest { margin: var(--sp-2) 0 0; font-size: var(--fs-xs); color: var(--ink-light); text-align: center; }
+
+/* ===== 메인 첫 화면 시안 6번 '질문 헤드라인' (디자인 캔버스 6-1 메인 첫 화면 2차) =====
+   환승인생은 작은 로고 줄(.ms-brand)로, 제목 자리에는 "다음 생은 / 어디서 / 태어날까?"(.ms-q, 가운데 줄 강조색)
+   시대 카드(.ms-pick)는 빼고, 태어나기 버튼 글자에 시대가 들어감 (Main.jsx 마크업은 민승님이 바꿈) */
+.ms-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--sp-3);
+  font-family: var(--font-hero);
+  font-weight: var(--hero-weight);
+  font-size: 26px;
+  color: var(--ink);
+}
+.ms-q {
+  margin: var(--sp-3) 0 0;
+  font-family: var(--font-hero);
+  font-weight: var(--hero-weight);
+  font-size: 76px;
+  line-height: 1.08;
+  letter-spacing: 1px;
+  color: var(--ink);
+  text-shadow: 0 0 40px var(--title-glow);
+}
+.ms-q em { font-style: normal; color: var(--primary); }
+.ms-q + .ms-lead { margin-top: var(--sp-3); }
+.ms-cta.luck { box-shadow: 0 0 0 3px var(--primary-light), var(--glow); }
+@media (max-width: 640px) {
+  .ms-q { font-size: 50px; }
+}
