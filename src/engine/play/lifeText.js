@@ -24,11 +24,33 @@ export const won = (usd, k, sign = false) => {
   return w < 0 ? '−' + s : s;
 };
 
-// 달러 → 구매력 달러 ("$PPP 8,200")
+// 달러 → 구매력 달러 ("$8,200"), 화면에는 '국제 비교 $8,200' 으로 씀
+//   PPP(구매력 평가) 달러: 나라마다 다른 물가를 맞춰서 나라끼리 견줄 수 있게 한 달러 (원작과 같은 단위)
+export const PPP_TIP = '구매력 기준 달러예요. 나라마다 물가가 달라서, 같은 물건을 살 수 있는 돈으로 맞춰 나라끼리 견줘요. 한국 체감 원은 이 값 × 850원이에요.';
 export const ppp = (usd, k) => {
   if (usd == null) return '—';
   const p = Math.round((usd * (k || KRW)) / KRW);
-  return (p < 0 ? '−' : '') + '$PPP ' + Math.abs(p).toLocaleString();
+  return (p < 0 ? '−' : '') + '$' + Math.abs(p).toLocaleString();
+};
+
+// 특성 칸 한 줄: 지금 인생에 실제로 곱해지는 효과 (효과값이 없으면 기본)
+//   INVEST: 투자 성공 확률 50% × (1 + 효과값)   (윤아님 applyChoice)
+//   DISEASE·LOVE: 그 이벤트가 일어날 확률 × (1 + 효과값)   (윤아님 occurTraitRate)
+//   STUDY: 타고난 공부 재능 + 효과값 (효과 표에 없으면 (레벨-1) × 0.25, 엔진 studyEffect)
+export const traitLine = (t) => {
+  const e = t.effect ?? (t.traitId === 'STUDY' ? (t.level - 1) * 0.25 : 0);
+  const pct = (v) => `${v > 0 ? '+' : '−'}${Math.round(Math.abs(v) * 100)}%`;
+  if (!e) {
+    const base = { INVEST: '투자 성공 확률 50% (기본)', DISEASE: '병에 걸릴 확률 기본', LOVE: '좋은 만남 확률 기본', STUDY: '공부 재능 기본' };
+    return { on: false, text: base[t.traitId] || '효과 없음' };
+  }
+  switch (t.traitId) {
+    case 'INVEST': return { on: true, text: `투자 성공 확률 ${Math.round(50 * (1 + e))}%` };
+    case 'DISEASE': return { on: true, text: `병에 걸릴 확률 ${pct(e)}` };
+    case 'LOVE': return { on: true, text: `좋은 만남 확률 ${pct(e)}` };
+    case 'STUDY': return { on: true, text: `공부 재능 ${e > 0 ? '+' : ''}${e.toFixed(2)} (또래 대비)` };
+    default: return { on: true, text: `효과 ${e}` };
+  }
 };
 
 // 원작 rankStr: 0.5 이상 "상위 N%", 아래면 "하위 N%"

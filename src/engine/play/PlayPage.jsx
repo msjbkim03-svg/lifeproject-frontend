@@ -16,6 +16,7 @@
 //   선택 이벤트는 '운에 맡기기'로 무작위 결정, '앞으로도 맡기기'를 켜면 알아서 골라요 (localStorage autoChoice)
 // - 죽으면(status ENDED) 잠깐 보여 주고 /result/:lifeId 로 이동 (C18)
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
 import EventChoiceModal from '../../common/ui/EventChoiceModal';
@@ -27,7 +28,8 @@ import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
-import { won, ppp, rankStr, feedKind, belongings, commute } from './lifeText';
+import { won, ppp, PPP_TIP, rankStr, feedKind, belongings, commute, traitLine } from './lifeText';
+import { TRAIT_VIEW } from '../../utils/traits';
 import './play.css';
 
 // ───────── 시간 (원작과 같은 공식) ─────────
@@ -209,6 +211,7 @@ function PlayPage() {
   const [hidden, setHidden] = useState(typeof document !== 'undefined' && document.hidden);
   const [years, setYears] = useState({});             // 인생 지도: 나이 → { h 행복, hl 건강, nw 순자산, flow 그해 돈 내역 }
   const [mapTip, setMapTip] = useState(null);         // 인생 지도 말풍선 { age, x, y }
+  const [traits, setTraits] = useState(null);         // 특성 칸 { traits: [{ traitId, level, effect }], temper }
   const [ctyView, setCtyView] = useState('cur');      // 나라 패널: cur 사는 나라 / born 태어난 나라 (이민했을 때)
   const [cty, setCty] = useState(null);               // 나라 패널 통계 (GET /api/engine/country)
   const [shopOpen, setShopOpen] = useState(false);    // 돈 쓰기 · 투자 창 (여는 동안 시간 멈춤)
@@ -502,6 +505,17 @@ function PlayPage() {
       .catch((err) => console.log('나라 통계 불러오기 실패', err.response?.data));
     return () => { alive = false; };
   }, [life?.lifeId, ctyCode, ctyDecade, ctyView, guestToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ⑤ 특성 칸 (C13): 인생마다 한 번 + 어릴 때 기질을 고른 뒤(5세까지 선택 창이 닫힐 때) 다시
+  const traitKey = life ? (life.currentAge <= 5 ? `${life.currentAge}-${life.needChoice ? 1 : 0}` : 'grown') : null;
+  useEffect(() => {
+    if (!life?.lifeId) return undefined;
+    let alive = true;
+    client.get('/api/engine/traits', { params: { lifeId: life.lifeId, guestToken } })
+      .then((res) => { if (alive) setTraits(res.data); })
+      .catch((err) => console.log('특성 불러오기 실패', err.response?.data));
+    return () => { alive = false; };
+  }, [life?.lifeId, traitKey, guestToken]); // eslint-disable-line react-hooks/exhaustive-deps
   // 이민 전이면 태어난 나라 보기 단추가 없으니 사는 나라로
   useEffect(() => { if (life && life.birthCountry === life.currentCountry) setCtyView('cur'); }, [life?.currentCountry]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -769,6 +783,11 @@ function PlayPage() {
           )}
 
           <section className="pp-panel">
+            <h3 className="pp-h"><span>특성</span><span className="pp-lbl">지금 적용 중</span></h3>
+            <TraitRows data={traits} age={life.currentAge} />
+          </section>
+
+          <section className="pp-panel">
             <h3 className="pp-h"><span>인생 지도</span><span className="pp-lbl">한 칸 = 1년</span></h3>
             {/* 원작처럼 칸에 마우스를 올리면(터치는 누르면) 그해 말풍선 */}
             <div className="pp-grid10" aria-label={`인생 지도: 한 칸이 1년, ${lived}년을 살았어요. 칸을 누르면 그해 이야기가 보여요.`}
@@ -798,10 +817,13 @@ function PlayPage() {
               <span><i className="lv1" /><i className="lv2" /><i className="lv3" /> 색이 선명할수록 행복했던 해</span>
               <span><i className="le" /> 기대수명 {le.toFixed(1)}세</span>
             </div>
-            {mapTip && (
+            {/* 말풍선은 body 에 붙임: 유리 카드(backdrop-filter)가 position: fixed 의 기준이 되어
+                말풍선이 카드 밖 엉뚱한 곳(화면 밖)에 그려져 안 보이던 문제 */}
+            {mapTip && createPortal(
               <div className="pp-maptip" role="status" style={{ left: mapTip.x, top: mapTip.y }}>
                 <MapTipText age={mapTip.age} life={life} y={years[mapTip.age]} feed={feed} le={le} />
-              </div>
+              </div>,
+              document.body,
             )}
           </section>
 
@@ -851,11 +873,14 @@ function PlayPage() {
         footer={<FateFooter onFate={fateDest} busy={busy} auto={autoChoice} onAuto={setAutoChoice} />} />
 
       {/* C06-3 돈 쓰기 · 투자 */}
-      <ShopSheet open={shopOpen} life={life} age={life.currentAge} guestToken={guestToken}
-        waitIdle={waitIdle} onDone={onShopDone} onClose={closeShop} />
+      {shopOpen && (
+        <ShopSheet life={life} age={life.currentAge} guestToken={guestToken}
+          waitIdle={waitIdle} onDone={onShopDone} onClose={closeShop} />
+      )}
 
       {/* C09 선택 이벤트 */}
-      <EventChoiceModal open={showChoice} event={life.pendingEvent} busy={busy} costs={life.choiceCosts} krw={life.krwPerUsd}
+      <EventChoiceModal key={life.pendingEvent?.eventId || 'none'}
+        open={showChoice} event={life.pendingEvent} busy={busy} costs={life.choiceCosts} krw={life.krwPerUsd}
         age={life.currentAge - 1} year={year - 1}
         auto={autoChoice} onAutoChange={setAutoChoice}
         onChoose={(choiceId) => decide('/api/engine/choice', { choiceId })} />
@@ -891,6 +916,34 @@ function FateFooter({ onFate, busy, auto, onAuto, children }) {
         앞으로 나오는 결정도 맡기기
       </label>
     </div>
+  );
+}
+
+// 특성 칸 (C13): 특성 4종 레벨과 지금 인생에 적용되는 효과 한 줄 + 2세에 고른 기질
+//   효과 문장은 lifeText.traitLine (윤아님 이벤트 확률·엔진 공부 재능에 실제로 곱해지는 값)
+function TraitRows({ data, age }) {
+  const list = data?.traits || [];
+  const any = list.some((t) => (t.effect || 0) !== 0);
+  return (
+    <ul className="pp-traits">
+      <li>
+        <span className="pp-tr-i" aria-hidden="true">🌱</span>
+        <b>기질</b>
+        <span>{data?.temper ? `${data.temper} 아이` : age < 3 ? '두 살 무렵 정해져요' : '정해지지 않음'}</span>
+      </li>
+      {list.map((t) => {
+        const v = TRAIT_VIEW[t.traitId] || { label: t.traitId, icon: '•' };
+        const line = traitLine(t);
+        return (
+          <li key={t.traitId} className={line.on ? 'on' : ''}>
+            <span className="pp-tr-i" aria-hidden="true">{v.icon}</span>
+            <b>{v.label} <small>Lv.{t.level}</small></b>
+            <span>{line.text}</span>
+          </li>
+        );
+      })}
+      {list.length > 0 && !any && <li className="pp-tr-note">회원은 마이페이지에서 특성을 키우면 다음 인생부터 적용돼요.</li>}
+    </ul>
   );
 }
 
@@ -939,7 +992,7 @@ function countryRows(c) {
   return rows.filter((r) => r[1] != null);
 }
 
-// 살림 (원작 살림 패널): 순자산 · 소득(한국 체감, $PPP, 월) · 배우자 소득 · 소득 위치 · 지난 1년 순자산 내역 · 가진 것 · 다니는 길
+// 살림 (원작 살림 패널): 순자산 · 소득(한국 체감, 국제 비교 $(구매력 기준), 월) · 배우자 소득 · 소득 위치 · 지난 1년 순자산 내역 · 가진 것 · 다니는 길
 function MoneyPanel({ life, year, countryName }) {
   const k = life.krwPerUsd;
   const kid = life.currentAge < 18;
@@ -951,20 +1004,20 @@ function MoneyPanel({ life, year, countryName }) {
       <div className="pp-mrow">
         <small>순자산 <em>한국 체감</em></small>
         <b className={life.assets < 0 ? 'neg' : ''}>{won(life.assets, k)}</b>
-        <small>{ppp(life.assets, k)} · {kid ? '아직 부모님 집에서 지내요' : life.assets < 0 ? '빚이 있어요' : '모아 둔 돈'}</small>
+        <small title={PPP_TIP}>국제 비교 {ppp(life.assets, k)} · {kid ? '아직 부모님 집에서 지내요' : life.assets < 0 ? '빚이 있어요' : '모아 둔 돈'}</small>
       </div>
       {life.income > 0 && (
         <div className="pp-mrow">
           <small>{life.jobStatus === 'RETIRED' ? '연금' : '내 소득'} <em>한국 체감</em></small>
           <b>{won(life.income, k)}</b>
-          <small>{ppp(life.income, k)} · 월 {won(life.income / 12, k)}</small>
+          <small title={PPP_TIP}>국제 비교 {ppp(life.income, k)} · 월 {won(life.income / 12, k)}</small>
         </div>
       )}
       {life.spouseIncome > 0 && (
         <div className="pp-mrow">
           <small>배우자 소득 <em>한국 체감</em></small>
           <b>{won(life.spouseIncome, k)}</b>
-          <small>{ppp(life.spouseIncome, k)} · 월 {won(life.spouseIncome / 12, k)}</small>
+          <small title={PPP_TIP}>국제 비교 {ppp(life.spouseIncome, k)} · 월 {won(life.spouseIncome / 12, k)}</small>
         </div>
       )}
       {cRank && (

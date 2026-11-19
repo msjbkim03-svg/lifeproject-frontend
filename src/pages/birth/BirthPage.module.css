@@ -1,26 +1,28 @@
-/* 출생 추첨 화면 - 라이트 노을 / 다크 밤하늘 (design.css 변수 사용) */
+/* 출생 추첨 화면 - 라이트 안개 회청 / 다크 저녁 남색 (design.css 변수 사용)
+   지구는 맑은 물방울(ToonEarth)이라 뒤 배경이 비침: 화면 가운데 옅은 빛 + 유리 오로라(--aurora) */
 
-/* ===== 화면 전체 (별이 뜬 밤하늘) ===== */
+/* ===== 화면 전체 ===== */
 .page {
   position: relative;
   height: calc(100vh - 65px); /* 헤더 높이만큼 빼기 */
   overflow: hidden;
-  /* 라이트: 노을 하늘 (해가 지는 쪽이 아래) */
   background:
-    radial-gradient(ellipse at 50% 72%, rgba(255, 160, 120, 0.55) 0%, transparent 58%),
-    linear-gradient(180deg, #ffe9df 0%, #ffd3c0 55%, #ffbfa6 100%);
+    radial-gradient(ellipse at 50% 58%, rgba(255, 255, 255, 0.7) 0%, transparent 55%),
+    var(--aurora),
+    var(--bg);
 }
-/* 다크: 예전 별이 뜬 밤하늘 그대로 */
+/* 다크: 저녁 남색 + 옅은 별 */
 :global(:root[data-theme='dark']) .page {
   background:
-    radial-gradient(ellipse at 50% 60%, #16205a 0%, transparent 60%),
-    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 120px 80px, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 210px 160px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 300px 40px, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(1px 1px at 260px 260px, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(ellipse at 50% 58%, rgba(159, 184, 255, 0.16) 0%, transparent 58%),
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 120px 80px, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 210px 160px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 300px 40px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 260px 260px, rgba(255, 255, 255, 0.25), transparent),
+    var(--aurora),
     var(--bg);
-  background-size: auto, 340px 300px, 340px 300px, 340px 300px, 340px 300px, 340px 300px, auto;
+  background-size: auto, 340px 300px, 340px 300px, 340px 300px, 340px 300px, 340px 300px, auto, auto, auto; /* 빛 1 + 별 5 + 오로라 3 */
 }
 
 /* ===== 흘러가는 구름 (밤이라 아주 옅게) ===== */
