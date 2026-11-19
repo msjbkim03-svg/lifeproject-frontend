@@ -62,7 +62,10 @@ export const fateCandidates = (choices, costs) => {
   const costOf = (c) => (costs || []).find((k) => k.choiceId === c.choiceId);
   const ok = (choices || []).filter((c) => { const k = costOf(c); return !k || k.ok; });
   const noLoan = ok.filter((c) => { const k = costOf(c); return !k || !(k.loan > 0); });
-  return noLoan.length ? noLoan : ok;
+  const pool = noLoan.length ? noLoan : ok;
+  // 진학 선택(엔진 ENG_SCHOOL_*)은 운에 맡겨도 대개 진학하게: 첫 선택지(간다)를 세 번 넣음 (75%)
+  if (pool[0]?.eventId?.startsWith('ENG_SCHOOL_')) return [pool[0], pool[0], ...pool];
+  return pool;
 };
 
 function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects = false, costs = [], krw, auto = false, onAutoChange }) {
