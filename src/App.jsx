@@ -3,6 +3,7 @@ import Header from './common/ui/Header';
 import ThemeToggle from './common/ui/ThemeToggle';
 import Main from './main/Main';
 import LoginPage from './pages/login/LoginPage';
+import KakaoCallback from './pages/login/KakaoCallback';
 import JoinPage from './pages/join/JoinPage';
 import BirthPage from './pages/birth/BirthPage';
 import PlayPage from './engine/play/PlayPage';
@@ -27,6 +28,8 @@ function App() {
         {/* H01 메인 */}
         <Route path="/" element={<Main />} />
         <Route path="/login" element={<LoginPage />} />
+        {/* M02 카카오 로그인 - 카카오가 code 를 붙여 돌려보내는 주소 */}
+        <Route path="/oauth/kakao" element={<KakaoCallback />} />
         <Route path="/join" element={<JoinPage />} />
         <Route path="/find" element={<FindPage />} />
 
