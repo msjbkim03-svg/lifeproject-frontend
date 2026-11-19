@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { ASIA, OTHER } from '../../common/ui/globeDots';
+import { ASIA_LAND, OTHER_LAND } from '../../common/ui/globeLand';
 import { getTheme } from '../../common/theme';
 
 // ───────────────────────────────────────────────
-// 밤하늘 점 지구 (three.js) - 메인 지구본과 같은 디자인 (동작은 민승 버전 그대로)
+// 맑은 물방울 지구 (three.js) - 메인 지구본(OrbitGlobe)과 같은 디자인 시안 3번 (동작은 민승 버전 그대로)
+//  - 거의 투명한 바다 구 + 흰 땅(아시아만 강조색) 무늬 구 + 화면 쪽 유리 빛(그늘·빛·반사 띠·굴절 빛줄기·테두리)
+//  - 바다가 투명해서 뒤로 돌아간 비행기도 비쳐 보임 (물방울 느낌)
 //  - phase: 'flying' | 'approach' | 'drop' | 'landed' | 'error'
 //  - target: { lat, lng }  태어날 나라 위치 (approach 부터 사용)
 //  - onParked({ x, y, tx, ty }): 비행기가 멈췄을 때 화면 좌표
@@ -15,28 +17,22 @@ import { getTheme } from '../../common/theme';
 const EARTH_RADIUS = 5;
 const ORBIT_RADIUS = 6.5;
 
-// 디자인 색 (design.css 와 같은 값) - 라이트: 노을 코랄 / 다크: 예전 밤하늘
+// 디자인 색 (design.css 와 같은 값) - 라이트 안개 회청 / 다크 저녁 남색
+//   sea·seaOpacity: 바다 구 (투명), other·asia: 땅 무늬 (캔버스 색), gold: 강조색 (비행기 날개·핀·꼬리 별빛)
 const PALETTE = {
-  // 전형적인 파란 지구: 파란 바다 + 초록 땅 점, 아시아는 밝은 연두로 강조
   light: {
-    sea: 0x2f86d6,
-    atmosphere: 0x7cc4ff,
-    asia: 0x9be070,
-    other: 0x4e9a4e,
-    gold: 0xf0a03a,
-    ink: 0x2a1a22,
-    sub: 0x6b5560,
-    edge: 0x1a4f8f,
+    sea: 0x9cc4e8, seaOpacity: 0.35, atmosphere: 0xffffff,
+    other: 'rgba(255, 255, 255, 0.6)', otherEdge: 'rgba(255, 255, 255, 0.95)',
+    asia: 'rgba(194, 77, 39, 0.6)', asiaEdge: 'rgba(194, 77, 39, 0.95)',
+    rim: 'rgba(255, 255, 255, 0.7)',
+    gold: 0xc24d27, ink: 0x1a2230, sub: 0x566173, edge: 0x3a4556,
   },
   dark: {
-    sea: 0x1f5fa8,
-    atmosphere: 0x5b9cff,
-    asia: 0x9fe07f,
-    other: 0x3f7d4a,
-    gold: 0xf2d58c,
-    ink: 0xe8e9f5,
-    sub: 0xa3a8cc,
-    edge: 0x0f2c5a,
+    sea: 0x5a8ccf, seaOpacity: 0.22, atmosphere: 0x9fb8ff,
+    other: 'rgba(238, 241, 247, 0.28)', otherEdge: 'rgba(238, 241, 247, 0.65)',
+    asia: 'rgba(242, 198, 109, 0.65)', asiaEdge: 'rgba(242, 198, 109, 1)',
+    rim: 'rgba(255, 255, 255, 0.55)',
+    gold: 0xf2c66d, ink: 0xeef1f7, sub: 0x9ea9be, edge: 0x121926,
   },
 };
 // 지금 테마 색 (BirthPage 에서 key={theme} 으로 다시 만들 때 새로 고름)
@@ -67,32 +63,88 @@ function createToonObject(geometry, color, outlineScale = 1.05) {
   return group;
 }
 
-// 동그란 점 모양 (Points 가 네모로 안 보이게)
-function createDotTexture() {
+// 땅 무늬 (경위도 지도 한 장 → 구에 감음): 메인 지구본과 같은 땅 테두리 데이터(globeLand)
+//   한 덩어리가 경도 ±180 을 넘어가도 끊기지 않게 경도를 이어 붙인 뒤, 왼쪽·오른쪽으로 한 바퀴씩 옮겨 한 번 더 그림
+function createLandTexture() {
+  const TW = 2048;
+  const TH = 1024;
   const c = document.createElement('canvas');
-  c.width = 32;
-  c.height = 32;
+  c.width = TW;
+  c.height = TH;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(16, 16, 14, 0, Math.PI * 2);
-  ctx.fill();
-  return new THREE.CanvasTexture(c);
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 1.6;
+  const draw = (rings, fill, stroke) => {
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+    rings.forEach((P) => {
+      const pts = [];
+      let prev = null;
+      for (let i = 0; i < P.length; i += 2) {
+        let lon = P[i];
+        if (prev != null) {
+          while (lon - prev > 180) lon -= 360;
+          while (lon - prev < -180) lon += 360;
+        }
+        prev = lon;
+        pts.push([lon, P[i + 1]]);
+      }
+      [-360, 0, 360].forEach((shift) => {
+        ctx.beginPath();
+        pts.forEach(([lo, la], k) => {
+          const x = ((lo + shift + 180) / 360) * TW;
+          const y = ((90 - la) / 180) * TH;
+          if (k) ctx.lineTo(x, y);
+          else ctx.moveTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      });
+    });
+  };
+  draw(OTHER_LAND, C.other, C.otherEdge);
+  draw(ASIA_LAND, C.asia, C.asiaEdge);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
 }
 
-// 땅 점 묶음 (경도,위도 배열 → 지구 표면 점들)
-function createLandDots(list, color, size, opacity, texture) {
-  const positions = [];
-  for (let i = 0; i < list.length; i += 2) {
-    const v = latLngToVector(list[i + 1], list[i], EARTH_RADIUS + 0.02);
-    positions.push(v.x, v.y, v.z);
-  }
-  const geom = new THREE.BufferGeometry();
-  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  const mat = new THREE.PointsMaterial({
-    color, size, map: texture, transparent: true, opacity, alphaTest: 0.3, sizeAttenuation: true,
-  });
-  return new THREE.Points(geom, mat);
+// 물방울 유리 빛 (화면 쪽에 붙이는 원판 한 장): 오른쪽 아래 그늘 + 왼쪽 위 빛 + 반사 띠 + 굴절 빛줄기 + 흰 테두리
+//   메인 지구본 OrbitGlobe 의 그리기와 같은 비율 (반지름 150 기준 숫자를 r 에 맞춰 줄임)
+function createGlassTexture() {
+  const S = 512;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const ctx = c.getContext('2d');
+  const m = S / 2;
+  const r = S / 2 - 2;
+  const k = r / 150;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(m, m, r, 0, Math.PI * 2); ctx.clip();
+  const shade = ctx.createRadialGradient(m + r * 0.4, m + r * 0.5, 0, m + r * 0.4, m + r * 0.5, r * 1.2);
+  shade.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+  shade.addColorStop(1, 'rgba(0, 0, 0, 0.28)');
+  ctx.fillStyle = shade; ctx.fillRect(0, 0, S, S);
+  const hi = ctx.createRadialGradient(m - r * 0.36, m - r * 0.5, 0, m - r * 0.36, m - r * 0.5, r * 0.9);
+  hi.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+  hi.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = hi; ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.beginPath(); ctx.ellipse(m - 62 * k, m - 92 * k, 46 * k, 22 * k, (-28 * Math.PI) / 180, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+  ctx.lineWidth = 3 * k;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(m, m, r - 10 * k, (48.4 * Math.PI) / 180, (13.7 * Math.PI) / 180, true); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = C.rim;
+  ctx.lineWidth = 1.5 * k;
+  ctx.beginPath(); ctx.arc(m, m, r - 0.5 * k, 0, Math.PI * 2); ctx.stroke();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 // 지구 위 한 점(local)이 카메라 쪽(dir)을 보도록 돌리는 회전값
@@ -158,22 +210,41 @@ function ToonEarth({ phase, target, onParked }) {
     sun.position.set(10, 20, 10);
     scene.add(sun);
 
-    // ③ 지구 (남색 바다 + 대기 빛) + 땅 점 (아시아는 밝게, 나머지는 흐리게)
+    // ③ 지구 (맑은 물방울): 투명한 바다 구 + 땅 무늬 구 (앞면만 보여서 뒤쪽 땅은 안 비침) + 대기 빛
+    //    투명한 것들은 깊이를 안 써서, 뒤로 돌아간 비행기도 바다 너머로 비쳐 보임
     const earthGroup = new THREE.Group();
     scene.add(earthGroup);
     earthGroup.add(new THREE.Mesh(
       new THREE.SphereGeometry(EARTH_RADIUS, 64, 64),
-      new THREE.MeshPhongMaterial({ color: C.sea, shininess: 8 }),
+      new THREE.MeshPhongMaterial({
+        color: C.sea, transparent: true, opacity: C.seaOpacity, shininess: 90, specular: 0xffffff, depthWrite: false,
+      }),
+    ));
+    const landTexture = createLandTexture();
+    earthGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_RADIUS + 0.02, 96, 64),
+      new THREE.MeshBasicMaterial({ map: landTexture, transparent: true, depthWrite: false }),
     ));
     const glow = new THREE.Mesh(
       new THREE.SphereGeometry(EARTH_RADIUS * 1.05, 48, 48),
-      new THREE.MeshBasicMaterial({ color: C.atmosphere, transparent: true, opacity: 0.07, side: THREE.BackSide }),
+      new THREE.MeshBasicMaterial({ color: C.atmosphere, transparent: true, opacity: 0.12, side: THREE.BackSide }),
     );
     scene.add(glow);
 
-    const dotTexture = createDotTexture();
-    earthGroup.add(createLandDots(OTHER, C.other, 0.12, 0.9, dotTexture));
-    earthGroup.add(createLandDots(ASIA, C.asia, 0.14, 1, dotTexture));
+    // 유리 빛 원판: 카메라에서 본 지구 테두리(실루엣)와 꼭 맞는 크기·위치에 놓고 카메라를 보게 함
+    //   (지구는 돌아도 빛은 늘 왼쪽 위에 있게 지구 묶음이 아니라 장면에 붙임)
+    //   앞쪽을 지나는 비행기는 원판보다 가까워서 가려지지 않음
+    const glassTexture = createGlassTexture();
+    const camDist = camera.position.length();
+    const silR = (EARTH_RADIUS * Math.sqrt(camDist * camDist - EARTH_RADIUS * EARTH_RADIUS)) / camDist;
+    const glass = new THREE.Mesh(
+      new THREE.PlaneGeometry(silR * 2, silR * 2),
+      new THREE.MeshBasicMaterial({ map: glassTexture, transparent: true, depthWrite: false }),
+    );
+    glass.position.copy(camera.position).normalize().multiplyScalar((EARTH_RADIUS * EARTH_RADIUS) / camDist);
+    glass.lookAt(camera.position);
+    glass.renderOrder = 5;
+    scene.add(glass);
 
     // ④ 비행기 + 별빛 꼬리
     const pivot = new THREE.Group();
@@ -348,7 +419,8 @@ function ToonEarth({ phase, target, onParked }) {
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', onResize);
       renderer.dispose();
-      dotTexture.dispose();
+      landTexture.dispose();
+      glassTexture.dispose();
       mount.removeChild(renderer.domElement);
     };
   }, []);

@@ -15,6 +15,8 @@
 //   - '앞으로 나오는 선택도 맡기기' 체크: 켜 두면 선택 창이 뜰 때마다 AUTO_MS 동안 보여 준 뒤 알아서 골라요
 //     (auto / onAutoChange, 진행 화면이 localStorage 'autoChoice' 에 저장). 그 전에 직접 고르면 직접 고른 게 들어가요
 // 꼭 골라야 하는 창이라 바깥을 눌러도 안 닫혀요. 고르는 중(busy)에는 버튼이 잠겨요.
+// 엔진 선택지(C06-4, eventType 'SMALL', 선택지 번호 음수)도 같은 창으로 띄우고, 머리말만 '작은 선택'으로 바꿔요.
+// 돈·신용이 모자라 고를 수 없는 선택지는 엔진이 아예 빼고 보내요 (남은 비용 정보만 costs 로 옴).
 import { useEffect, useRef, useState } from 'react';
 import DecisionModal from './DecisionModal';
 import './ui.css';
@@ -71,7 +73,7 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   const poolRef = useRef([]);
   useEffect(() => { chooseRef.current = onChoose; }, [onChoose]);
   useEffect(() => { poolRef.current = fateCandidates(event?.choices, costs); }, [event, costs]);
-  useEffect(() => { setArmed(null); setFate(null); }, [event?.eventId, open]);
+  // 이벤트가 바뀌면 고른 표시는 처음부터: 진행 화면이 key={이벤트 ID} 로 창을 새로 만들어요
 
   // 운에 맡기기: 하나 골라 표시 (결정은 아래 효과에서)
   const leaveToFate = () => {
@@ -93,7 +95,11 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   // 운이 고른 게 보이고 나서 결정
   useEffect(() => {
     if (!fate) return undefined;
-    const t = setTimeout(() => { if (chooseRef.current) chooseRef.current(fate); }, FATE_MS);
+    const t = setTimeout(() => {
+      // 보낸 결정이 끝나면 운이 고른 표시를 풀어 둠: 성공하면 창이 닫히고,
+      // 실패해서(409 등) 창이 그대로 남으면 다시 고를 수 있게
+      Promise.resolve(chooseRef.current && chooseRef.current(fate)).finally(() => setFate(null));
+    }, FATE_MS);
     return () => clearTimeout(t);
   }, [fate]);
 
@@ -121,7 +127,7 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   else if (auto) hint = '선택을 운에 맡기는 중이에요. 잠시 뒤 운이 골라요. 그 전에 직접 골라도 돼요.';
 
   return (
-    <DecisionModal open label="중대 결정" meta={meta}
+    <DecisionModal open label={event.eventType === 'SMALL' ? '작은 선택' : '중대 결정'} meta={meta}
       title={event.title || '인생의 갈림길'} text={event.logText}
       options={choices.map((c) => {
         const k = costOf(c);

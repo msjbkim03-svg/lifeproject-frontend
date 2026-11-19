@@ -4,8 +4,9 @@
 //   POST /api/engine/invest  { investType, atAge }  여유 자금 굴리기 방식 바꾸기
 // - 여는 동안 시간은 멈춰요 (진행 화면이 running 을 끔)
 // - 그해를 서버에 요청하는 중이면 끝날 때까지 기다렸다가 보냄 (waitIdle) - 같은 인생 줄을 동시에 고치지 않게
-// 사용법: <ShopSheet open life={life} age={화면 나이} guestToken={…} waitIdle={async () => …}
-//            onDone={(dto) => 돈·능력치 반영 + 기록} onClose={() => …} />
+// 사용법: {shopOpen && <ShopSheet life={life} age={화면 나이} guestToken={…} waitIdle={async () => …}
+//            onDone={(dto) => 돈·능력치 반영 + 기록} onClose={() => …} />}
+//   열 때마다 새로 만들어서(조건부 렌더링) 목록을 처음부터 불러와요
 import { useCallback, useEffect, useState } from 'react';
 import client from '../../api/api';
 import { won } from './lifeText';
@@ -17,7 +18,7 @@ const errText = (err) => {
   return err.response ? '서버에서 오류가 났어요.' : '서버에 연결할 수 없어요.';
 };
 
-function ShopSheet({ open, life, age, guestToken, waitIdle, onDone, onClose }) {
+function ShopSheet({ open = true, life, age, guestToken, waitIdle, onDone, onClose }) {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -32,9 +33,9 @@ function ShopSheet({ open, life, age, guestToken, waitIdle, onDone, onClose }) {
     }
   }, [life?.lifeId, guestToken]);
 
+  // 열리면 목록 불러오기 (load 는 서버 응답을 기다린 뒤에 상태를 바꿈)
   useEffect(() => {
     if (open) load();
-    else setData(null);
   }, [open, load]);
 
   // Esc 로 닫기
