@@ -1,4 +1,5 @@
-// 지구본 + 시대 궤도 (메인 H01 - M01 시안, 라이트 노을 / 다크 밤하늘)
+// 지구본 + 시대 궤도 (메인 H01, 디자인 시안 '5-1 유리 구슬 변형' 3번 맑은 물방울 · 라이트 안개 회청 / 다크 저녁 남색)
+// 출생 화면 ToonEarth(3D)도 같은 디자인
 // 시대 고르는 방법
 //   1) 궤도 위 점 누르기   2) 지구본·궤도를 좌우로 끌기   3) 지구본 왼쪽/오른쪽 누르기 (한 칸씩)
 //   4) 키보드: 지구본을 선택(Tab)한 뒤 ← →
@@ -131,18 +132,24 @@ function drawLand(ctx, rings, lon0, fill, stroke) {
   }
 }
 
-// 테마별 지구본 색: 둘 다 전형적인 파란 지구 (파란 바다 + 초록 땅, 아시아는 밝은 연두로 강조)
-//   궤도·별은 테마 색 그대로 (라이트 코랄 / 다크 남보라)
+// 테마별 지구본 색 (디자인 시안 3번 맑은 물방울): 거의 투명한 물방울 안에 흰 땅이 떠 있고, 뒤 배경이 비침
+//   유리 패널(design.css --glass)과 같은 언어: 옅은 바다 + 흰 땅, 아시아만 강조색 (라이트 주황 / 다크 금빛)
+//   물방울 느낌: 오른쪽 아래 그늘 + 왼쪽 위 강한 빛 + 반사 띠 + 오른쪽 아래 굴절 빛줄기 + 흰 테두리 (paint 에서 한 번 만들어 둠)
+//   궤도·별은 테마 색 (궤도 뒤 = 궤도 점 테두리 --orbit-ring, 앞 = --primary)
 const PAL = {
   light: {
-    grid: 'rgba(255, 255, 255, 0.16)', orbitBack: '#f6cbb6', orbitFront: '#f26b38',
-    other: ['#5aa55a', '#478a47'], asia: ['#8fd16a', '#5f9f3f'], death: '#a07f88',
-    star: [246, 178, 58], atm: [110, 180, 255], sea: ['#5cb4f2', '#1b5fae'],
+    grid: null, orbitBack: '#b9c3d3', orbitFront: '#c24d27',
+    other: ['rgba(255, 255, 255, 0.55)', 'rgba(255, 255, 255, 0.95)'],
+    asia: ['rgba(194, 77, 39, 0.55)', 'rgba(194, 77, 39, 0.9)'], death: '#566173',
+    star: [194, 77, 39], atm: [255, 255, 255], atmA: 0.35,
+    sea: ['rgba(220, 238, 250, 0.25)', 'rgba(120, 170, 215, 0.35)'], rim: 'rgba(255, 255, 255, 0.7)',
   },
   dark: {
-    grid: 'rgba(200, 225, 255, 0.12)', orbitBack: '#2f3870', orbitFront: '#6f79bd',
-    other: ['#3f7d4a', '#336a3d'], asia: ['#79c25e', '#9fe07f'], death: '#8a93c8',
-    star: [242, 213, 140], atm: [91, 150, 255], sea: ['#2f78c4', '#0e2f6b'],
+    grid: null, orbitBack: '#7a88a4', orbitFront: '#f2c66d',
+    other: ['rgba(238, 241, 247, 0.22)', 'rgba(238, 241, 247, 0.6)'],
+    asia: ['rgba(242, 198, 109, 0.6)', 'rgba(242, 198, 109, 0.95)'], death: '#c3cbdb',
+    star: [242, 198, 109], atm: [159, 184, 255], atmA: 0.35,
+    sea: ['rgba(120, 170, 230, 0.12)', 'rgba(60, 100, 160, 0.35)'], rim: 'rgba(255, 255, 255, 0.55)',
   },
 };
 
@@ -212,10 +219,27 @@ function draw(ctx, cur, now, births, deaths, paths) {
     drawDots(ctx, OTHER_D, lon0, pal.other[0], 1.8);
     drawDots(ctx, ASIA_D, lon0, pal.asia[0], 2.3);
   } else {
-    drawGrid(ctx, lon0, pal);
+    if (pal.grid) drawGrid(ctx, lon0, pal);
     drawLand(ctx, OTHER_P, lon0, pal.other[0], pal.other[1]);
     drawLand(ctx, ASIA_P, lon0, pal.asia[0], pal.asia[1]);
   }
+
+  // 유리 구슬: 그늘 → 빛 → 반사 띠 (구 안쪽만) + 흰 테두리
+  ctx.save();
+  ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = paths.shade; ctx.fillRect(CX - R, CY - R, R * 2, R * 2);
+  ctx.fillStyle = paths.hilite; ctx.fillRect(CX - R, CY - R, R * 2, R * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)'; // 반사 띠 (왼쪽 위, 28도 기울인 타원)
+  ctx.beginPath(); ctx.ellipse(CX - 62, CY - 92, 46, 22, rad(-28), 0, Math.PI * 2); ctx.fill();
+  // 굴절 빛줄기 (오른쪽 아래 가장자리를 따라 짧은 흰 호)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(CX, CY, R - 10, rad(48.4), rad(13.7), true); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = pal.rim;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(CX, CY, R - 0.5, 0, Math.PI * 2); ctx.stroke();
 
   // 떠난 사람 (빈 원)
   ctx.strokeStyle = pal.death;
@@ -297,12 +321,19 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
       const [ar, ag, ab] = pal.atm;
       const atm = ctx.createRadialGradient(CX, CY, 0, CX, CY, R * 1.16);
       atm.addColorStop(0.84, `rgba(${ar},${ag},${ab},0)`);
-      atm.addColorStop(0.92, `rgba(${ar},${ag},${ab},0.3)`);
+      atm.addColorStop(0.92, `rgba(${ar},${ag},${ab},${pal.atmA ?? 0.3})`);
       atm.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
       const sea = ctx.createRadialGradient(CX - R * 0.2, CY - R * 0.3, 0, CX, CY, R);
       sea.addColorStop(0, pal.sea[0]);
       sea.addColorStop(1, pal.sea[1]);
-      Object.assign(paths, { theme, pal, atm, sea });
+      // 유리 구슬 그늘(오른쪽 아래)·빛(왼쪽 위)
+      const shade = ctx.createRadialGradient(CX + R * 0.4, CY + R * 0.5, 0, CX + R * 0.4, CY + R * 0.5, R * 1.2);
+      shade.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+      shade.addColorStop(1, 'rgba(0, 0, 0, 0.28)');
+      const hilite = ctx.createRadialGradient(CX - R * 0.36, CY - R * 0.5, 0, CX - R * 0.36, CY - R * 0.5, R * 0.9);
+      hilite.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+      hilite.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      Object.assign(paths, { theme, pal, atm, sea, shade, hilite });
     };
 
     const resize = () => {
