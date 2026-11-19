@@ -34,10 +34,10 @@ function App() {
         <Route path="/find" element={<FindPage />} />
 
         <Route path="/mypage" element={<MyPageLayout />}>
-          <Route index element={<MyPage />} />             {/* /mypage        M04 */}
-          <Route path="edit" element={<EditPage />} />     {/* /mypage/edit   M05·M06 */}
-          <Route path="lives" element={<LivesPage />} />   {/* /mypage/lives  M07 */}
-          <Route path="traits" element={<TraitsPage />} /> {/* /mypage/traits M08 */}
+          <Route index element={<MyPage />} />             
+          <Route path="edit" element={<EditPage />} />     
+          <Route path="lives" element={<LivesPage />} />   
+          <Route path="traits" element={<TraitsPage />} /> 
         </Route>
         
         {/* C01 퀘스트 설정 (회원이 태어나기 전) */}
