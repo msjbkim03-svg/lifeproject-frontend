@@ -50,7 +50,6 @@ function MyPage() {
                 <b>{my.lifeName}</b>
                 <span>{my.countryName} · {my.currentAge}살</span>
               </div>
-              {/* TODO: 게임 진행 화면 주소가 정해지면 바꾸기 (C03, 엔진 담당) */}
               <Button type="primary" onClick={() => navigate('/play', { state: { lifeId: my.lifeId } })}>
                 이어서 살기
               </Button>

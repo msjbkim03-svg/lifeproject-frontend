@@ -181,3 +181,10 @@
   margin-top: var(--sp-1) !important;
   color: var(--ink-light);
 }
+
+/* 로봇 확인 (reCAPTCHA) 체크박스 가운데 */
+.captcha {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-3);
+}
