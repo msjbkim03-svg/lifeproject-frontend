@@ -1,6 +1,6 @@
 // C03 인생 진행 화면 (주소: /play) - 원작(1in8b) 진행 화면 구색을 따름
 //   위: 진행 막대 (나이 · 연도 · 한 해 진행 막대 · 멈춤 · 배속 1~16× · 다음 결정까지 · 음악 · 나가기)
-//   왼쪽: 신원 기록(여권 카드) · 상태(능력치) · 살림 (한국 체감 원, 소득 위치, 지난 1년 순자산 내역, 가진 것, 다니는 길)
+//   왼쪽: 신원 기록(여권 카드) · 상태(능력치) · 살림 (한국 체감 원, 소득 위치, 지난 1년 순자산 내역, 내 물건, 주로 다니는 곳)
 //         + '돈 쓰기 · 투자' 단추 (C06-3 ShopSheet: 물건 사기 · 여행·용돈 같은 돈 쓰기 · 여유 자금 굴리기, 여는 동안 시간 멈춤)
 //   가운데: 마을(게임 화면) · 올해의 초점(칩, 진행을 멈추지 않음) · 인생 기록
 //   오른쪽: 가족과 삶 · 같은 1초에 태어난 사람들 · 인생 지도 · 생존 곡선 · 나라
@@ -180,10 +180,11 @@ function Flag({ cc }) {
   return code ? <img className="pp-flag" src={`https://flagcdn.com/w40/${code}.png`} alt="" width="18" height="12" /> : null;
 }
 
-// 엔진 응답 events → 기록 줄 [{ age, text, big, fx, eventId }] (색은 feedKind)
-const toLines = (age, events) => (events || [])
+// 엔진 응답 events → 기록 줄 [{ age, text, big, fx, eventId, alert }] (색은 feedKind)
+//   alert: 서버가 고른 '큰 사건' 문장 (alerts) 에 들어 있으면 경고등
+const toLines = (age, events, alerts) => (events || [])
   .filter((e) => e && e.logText)
-  .map((e) => ({ age, text: e.logText, big: !!e.eventId, fx: e, eventId: e.eventId, ...(e.eventType === 'INHERIT' ? { kind: 'ledger' } : {}) }));
+  .map((e) => ({ age, text: e.logText, big: !!e.eventId, fx: e, eventId: e.eventId, alert: (alerts || []).includes(e.logText), ...(e.eventType === 'INHERIT' ? { kind: 'ledger' } : {}) }));
 // 세상을 떠난 해의 상속 줄(INHERIT)은 사망 줄 뒤에 (원작 순서)
 const isInherit = (l) => l.fx?.eventType === 'INHERIT';
 
@@ -305,7 +306,7 @@ function PlayPage() {
       const ages = Object.keys(byAge).map(Number).sort((a, b) => b - a);
       const out = [];
       ages.forEach((age) => {
-        byAge[age].slice().reverse().forEach((g) => out.push({ id: ++lineSeq.current, age, text: g.logText, big: !!g.eventId, eventId: g.eventId }));
+        byAge[age].slice().reverse().forEach((g) => out.push({ id: ++lineSeq.current, age, text: g.logText, big: !!g.eventId, eventId: g.eventId, hist: g.eventType === 'HIST', alert: g.alert === 'Y' }));
       });
       setFeed(out.slice(0, MAX_FEED));
     } catch (err) {
@@ -352,7 +353,7 @@ function PlayPage() {
       const res = await client.post(url, { lifeId: l.lifeId, guestToken, ...body });
       setLife(res.data);
       // 원작처럼 '결정: 고른 것' 줄 바로 뒤에 그 결과(효과 칩 포함)를 이어 보여 줌
-      const lines = toLines(res.data.currentAge - 1, res.data.events);
+      const lines = toLines(res.data.currentAge - 1, res.data.events, res.data.alerts);
       if (label) lines.unshift({ age: res.data.currentAge - 1, kind: 'dec', text: `결정: ${label}` });
       pushLines(lines);
     } catch (err) {
@@ -510,7 +511,7 @@ function PlayPage() {
       if (y.data) {
         const d = y.data;
         const age = d.status === 'ENDED' ? d.currentAge : d.currentAge - 1;
-        const all = toLines(age, d.events);
+        const all = toLines(age, d.events, d.alerts);
         const lines = all.filter((l) => !isInherit(l));
         // 그해 일을 남은 막대 위에 고르게 나눠서 하나씩
         const part = y.t0 >= 1 ? 1 : (y.t - y.t0) / (1 - y.t0);
@@ -558,6 +559,7 @@ function PlayPage() {
     const patch = {
       assets: dto.assets, health: dto.health, happiness: dto.happiness, knowledge: dto.knowledge,
       relation: dto.relation, investType: dto.investType, owns: dto.owns,
+      houseValue: dto.houseValue, carValue: dto.carValue,
     };
     setLife((x) => ({ ...x, ...patch }));
     if (yr.current.data) yr.current.data = { ...yr.current.data, ...patch };
@@ -752,7 +754,14 @@ function PlayPage() {
                   <dt>출생</dt><dd><Flag cc={life.birthCountry} />{countryText} · {life.birthYear}년</dd>
                   <dt>거주</dt><dd><Flag cc={life.currentCountry} />{countryName} · {town}</dd>
                   <dt>출신 가정</dt>
-                  <dd><Spoon level={life.wealthClass} /></dd>
+                  <dd>
+                    <Spoon level={life.originClass ?? life.wealthClass} />
+                    {life.originClass != null && life.originClass !== life.wealthClass && (
+                      <span className="pp-spoon-now" title="부모님 형편이 바뀐 뒤 지금 집안 형편이에요">
+                        {life.wealthClass < life.originClass ? '▼' : '▲'} 지금 <Spoon level={life.wealthClass} size={14} />
+                      </span>
+                    )}
+                  </dd>
                   <dt>학력</dt><dd>{schoolText(life)}</dd>
                   <dt>직업</dt><dd>{jobText(life)}</dd>
                 </dl>
@@ -1210,7 +1219,7 @@ function countryRows(c) {
   return rows.filter((r) => r[1] != null);
 }
 
-// 살림 (원작 살림 패널): 순자산 · 소득(한국 체감, 국제 비교 $(구매력 기준), 월) · 배우자 소득 · 소득 위치 · 지난 1년 순자산 내역 · 가진 것 · 다니는 길
+// 살림 (원작 살림 패널): 순자산 · 소득(한국 체감, 국제 비교 $(구매력 기준), 월) · 배우자 소득 · 소득 위치 · 지난 1년 순자산 내역 · 재산 합계 · 내 물건 · 주로 다니는 곳
 function MoneyPanel({ life, year, countryName }) {
   const k = life.krwPerUsd;
   const kid = life.currentAge < 18;
@@ -1222,8 +1231,9 @@ function MoneyPanel({ life, year, countryName }) {
       <div className="pp-mrow">
         <small>순자산 <em>한국 체감</em></small>
         <b className={life.assets < 0 ? 'neg' : ''}>{won(life.assets, k)}</b>
-        <small title={PPP_TIP}>국제 비교 {ppp(life.assets, k)} · {kid ? '아직 부모님 집에서 지내요' : life.assets < 0 ? '빚이 있어요' : '모아 둔 돈'}</small>
+        <small title={PPP_TIP}>국제 비교 {ppp(life.assets, k)} · {kid ? '아직 부모님 집에서 지내요' : life.assets < 0 ? '빚이 있어요' : life.houseValue ? '내 집 시세 포함' : '모아 둔 돈'}</small>
       </div>
+      <WorthBox life={life} k={k} />
       {life.income > 0 && (
         <div className="pp-mrow">
           <small>{life.jobStatus === 'RETIRED' ? '연금 (한 해)' : '내 소득 (연봉)'} <em>한국 체감</em></small>
@@ -1252,15 +1262,41 @@ function MoneyPanel({ life, year, countryName }) {
         </div>
       )}
       <dl className="pp-own">
-        <dt>가진 것</dt><dd>{belongings(life, year)}</dd>
-        <dt>다니는 길</dt><dd>{commute(life, year)}</dd>
+        <dt>내 물건</dt><dd>{belongings(life, year)}</dd>
+        <dt>주로 다니는 곳</dt><dd>{commute(life, year)}</dd>
       </dl>
     </div>
   );
 }
 
+// 재산 합계 (11/20): 현금·투자 + 내 집 시세 + 탈것 중고 시세 = 총계
+//   순자산(assets)에는 내 집 시세가 이미 들어 있고, 자동차·오토바이는 산 값을 써서 빠져 있어요
+function WorthBox({ life, k }) {
+  const house = life.houseValue || 0;
+  const car = life.carValue || 0;
+  if (!house && !car) return null;
+  const money = (life.assets || 0) - house;
+  const rate = life.houseRate;
+  return (
+    <div className="pp-worth">
+      <div className="hd">재산 합계</div>
+      <ul>
+        <li><span>{money < 0 ? '빚 (집 대출 등)' : '현금·예금·투자'}</span><span className={money < 0 ? 'neg' : ''}>{won(money, k)}</span></li>
+        {house > 0 && (
+          <li>
+            <span>내 집 시세{rate != null && <em className={rate < 0 ? 'neg' : 'pos'}> {rate < 0 ? '▼' : '▲'}{Math.abs(rate * 100).toFixed(1)}%</em>}</span>
+            <span>{won(house, k)}</span>
+          </li>
+        )}
+        {car > 0 && <li><span>탈것 (중고 시세)</span><span>{won(car, k)}</span></li>}
+      </ul>
+      <div className="tot"><span>총계</span><b className={money + house + car < 0 ? 'neg' : ''}>{won(money + house + car, k)}</b></div>
+    </div>
+  );
+}
+
 // 가족과 삶 (원작 famRows: 역할 | 이름 · 나이 · 덧붙임 <small>· 사이</small> <small>직업</small>)
-//   어머니·아버지·형제자매·배우자·아들·딸·친구·손주 + 가진 것 · 사는 곳 · 지금 시기
+//   어머니·아버지·형제자매·배우자·아들·딸·친구·손주 + 내 물건 · 사는 곳 · 지금 시기
 // 취미 이름 (EngineChoice.HOBBIES 와 같은 코드) · 병역 종류
 const HOBBY_NAME = {
   sport: '운동', music: '노래·악기 연주', dance: '춤', screen: '텔레비전·영화 보기', sns: '스마트폰·SNS', games: '비디오 게임',
@@ -1308,7 +1344,7 @@ function FamilyRows({ life, countryName, stageText }) {
       )}
       {hob && <div className="row"><span>취미</span><span>{hob}</span></div>}
       {svcText && <div className="row"><span>병역</span><span>{svcText}</span></div>}
-      {owned.length > 0 && <div className="row"><span>가진 것</span><span>{owned.join(', ')}</span></div>}
+      {owned.length > 0 && <div className="row"><span>내 물건</span><span>{owned.join(', ')}</span></div>}
       <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
     </div>
