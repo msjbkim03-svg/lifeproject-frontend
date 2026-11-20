@@ -111,7 +111,12 @@ function LivesPage() {
                   <td className={styles.cause}>{l.deathCause || '-'}</td>
                   <td>{l.questTotal > 0 ? `${l.questDone} / ${l.questTotal}` : '-'}</td>
                   <td>{l.point}P</td>
-                  <td><Button size="sm" onClick={() => navigate(`/result/${l.lifeId}`)}>결과 보기</Button></td>
+                  <td>
+                    <div className="row" style={{ gap: 'var(--sp-1)', flexWrap: 'nowrap' }}>
+                      <Button size="sm" onClick={() => navigate(`/result/${l.lifeId}`)}>결과 보기</Button>
+                      <Button size="sm" onClick={() => navigate(`/memorial/${l.lifeId}`)}>추모관</Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
