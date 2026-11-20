@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
 import ToonEarth from './ToonEarth';
+import { COUNTRIES } from '../../engine/village/villageData'; // 국기용 2자리 코드 (C02-4)
 import { useTheme } from '../../common/theme';
+import Spoon from '../../common/ui/Spoon.jsx';
 import styles from './BirthPage.module.css';
 
 // ───────────────────────────────────────────────
@@ -198,6 +200,8 @@ function BirthPage() {
     };
 
     run();
+    // 시대가 정해지면 한 번만 출생 요청 (startedRef 로 막음) - 퀘스트·저장 함수는 그때 값이면 충분
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decade]);
 
   const landed = phase === 'landed';
@@ -258,12 +262,18 @@ function BirthPage() {
             {life.name}
             <span className={styles.resultGender}>{genderText}</span>
           </h2>
-          <p className={styles.resultCountry}>{countryText}</p>
+          <p className={styles.resultCountry}>
+            {COUNTRIES[life.birthCountry]?.[0] && (
+              <img className={styles.flag} src={`https://flagcdn.com/w40/${COUNTRIES[life.birthCountry][0]}.png`}
+                alt="" width="24" height="16" />
+            )}
+            {countryText}
+          </p>
 
           <ul className={styles.facts}>
             <li>
               <span>가정형편</span>
-              <strong>소득 {life.wealthClass}분위</strong>
+              <strong><Spoon level={life.wealthClass} /> <small>소득 {life.wealthClass}분위</small></strong>
             </li>
             <li>
               <span>사는 곳</span>
@@ -272,6 +282,10 @@ function BirthPage() {
             <li>
               <span>기대수명</span>
               <strong>{life.lifeExpectancy ? `${Math.round(life.lifeExpectancy)}세` : '-'}</strong>
+            </li>
+            <li>
+              <span>영아사망률</span>
+              <strong>{life.infantMortality ? `1,000명당 ${Math.round(life.infantMortality)}명` : '-'}</strong>
             </li>
             <li>
               <span>1인당 GDP</span>

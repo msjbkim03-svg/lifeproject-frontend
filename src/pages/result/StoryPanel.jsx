@@ -22,21 +22,24 @@ function StoryPanel({ lifeId }) {
   useEffect(() => {
     const isLogin = !!localStorage.getItem('token');
     const guestToken = isLogin ? null : localStorage.getItem('guestToken');
-    setError('');
+    let alive = true;
 
+    // 오류 문구 지우기는 [다시 시도] 단추에서 (effect 안에서 바로 상태를 바꾸지 않게)
     client.get(`/api/story/${lifeId}`, { params: { guestToken }, timeout: 60000 })
-      .then((res) => setStory(res.data))
+      .then((res) => { if (alive) { setStory(res.data); setError(''); } })
       .catch((err) => {
+        if (!alive) return;
         const msg = err.response?.data;
         setError(typeof msg === 'string' && msg ? msg : 'AI 이야기를 불러오지 못했어요.');
       });
+    return () => { alive = false; };
   }, [lifeId, tryNo]);
 
   if (error) {
     return (
       <Panel title="AI 인생 이야기">
         <p>{error}</p>
-        <Button onClick={() => setTryNo(tryNo + 1)}>다시 시도</Button>
+        <Button onClick={() => { setError(''); setTryNo((n) => n + 1); }}>다시 시도</Button>
       </Panel>
     );
   }

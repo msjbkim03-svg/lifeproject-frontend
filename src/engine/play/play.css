@@ -204,17 +204,29 @@
 .pp-feed li:last-child { border-bottom: 0; }
 .pp-feed .a { font-family: var(--font-mono); font-size: 12px; color: var(--ink-light); padding-top: 3px; }
 .pp-feed li.fk-big .x { font-weight: 600; }
-/* 원작 기록 색: 중요도에 따라 (lifeText.feedKind), 클래스 앞에 fk- (전역 .ms .dec 같은 다른 화면 클래스와 안 겹치게) */
-.pp-feed li.fk-bad .x { color: var(--red); font-weight: 600; }
-.pp-feed li.fk-ms .x { color: var(--teal); font-weight: 600; }
-.pp-feed li.fk-hist .x { color: var(--ink-sub); border-left: 3px solid var(--line-strong); padding-left: 8px; }
-.pp-feed li.fk-hist .x::before { content: '◆ '; color: var(--ink-light); font-size: 11px; }
-.pp-feed li.fk-note .x { color: var(--teal); font-family: var(--font-display); font-size: 15px; }
-.pp-feed li.fk-dec { padding: 5px 0; }
-.pp-feed li.fk-dec .x { color: var(--ink-light); font-size: 12.5px; }
-.pp-feed li.fk-death .x { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--ink); }
-.pp-feed li.fk-ledger { padding: 5px 0; }
-.pp-feed li.fk-ledger .x { font-family: var(--font-mono); font-size: 12px; color: var(--ink-sub); }
+/* 원작 기록 색 (원작 .feed li.* 와 같은 규칙, 색은 우리 밤하늘 변수로): 클래스 앞에 fk- (다른 화면 클래스와 안 겹치게)
+   bad 빨강 · ms 청록 · hist 회색 작은 글씨 + 왼쪽 줄 + 나이 옆 ◆ · warm 진한 글씨 + 나이 옆 금색 점
+   loss 굵게 + 나이 옆 ✿ · note 제목 글꼴 청록 · dec 작은 회색 + ▸ · death 큰 제목 글꼴 · ledger 작은 돈 줄 */
+.pp-feed li.fk-bad .x { color: var(--red); }
+.pp-feed li.fk-ms .x { color: var(--teal); }
+.pp-feed li.fk-hist .x { color: var(--ink-sub); font-size: 14px; border-left: 2px solid var(--line-strong); padding-left: 8px; }
+.pp-feed li.fk-hist .a::after { content: ' ◆'; color: var(--ink-light); font-size: 9px; vertical-align: 2px; }
+.pp-feed li.fk-warm .x { color: var(--ink); }
+.pp-feed li.fk-warm .a::after { content: ' ·'; color: var(--primary); }
+.pp-feed li.fk-loss .x { font-weight: 600; }
+.pp-feed li.fk-loss .a::after { content: ' ✿'; }
+.pp-feed li.fk-alert .x { color: var(--red); font-weight: 600; border-left: 3px solid var(--red); padding-left: 8px; }
+.pp-feed li.fk-alert { background: linear-gradient(90deg, rgba(229, 72, 77, 0.10), transparent 70%); }
+/* 큰 사건 경고등 (빨간 줄 아래, 처음 생길 때 세 번 깜빡임) */
+.pp-alert { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--red); }
+.pp-alert i { width: 9px; height: 9px; border-radius: 50%; background: var(--red); box-shadow: 0 0 6px 2px rgba(229, 72, 77, 0.6); animation: pp-alert 0.45s ease-in-out 6 alternate; }
+@keyframes pp-alert { from { opacity: 1; transform: scale(1); } to { opacity: 0.15; transform: scale(0.7); } }
+@media (prefers-reduced-motion: reduce) { .pp-alert i { animation: none; } }
+.pp-feed li.fk-note .x { color: var(--teal); font-family: var(--font-display); font-size: 15.5px; }
+.pp-feed li.fk-dec .x { color: var(--ink-sub); font-size: 13px; }
+.pp-feed li.fk-dec .x::before { content: '▸ '; color: var(--primary); }
+.pp-feed li.fk-death .x { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--ink); }
+.pp-feed li.fk-ledger .x { color: var(--ink-sub); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .pp-feed .effects { display: flex; margin-top: 4px; }
 /* 새 줄: 살짝 내려오며 배경만 잠깐 칠함 (투명도는 안 건드림 - 탭을 오가도 줄이 안 보이는 일 없게) */
 @keyframes pp-in { from { transform: translateY(-4px); background: var(--primary-light, rgba(0, 0, 0, 0.04)); } to { transform: none; background: transparent; } }
@@ -347,3 +359,31 @@
 .pp-traits li.on > span:last-child { color: var(--primary); font-weight: 600; }
 .pp-tr-i { text-align: center; }
 .pp-traits li.pp-tr-note { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-light); }
+
+/* 기록 줄 안의 돈: 들어온 돈 초록 · 나간 돈(대출·이자 포함) 빨강 */
+.pp-feed .fm-pos { color: var(--green); font-weight: 600; }
+.pp-feed .fm-neg { color: var(--red); font-weight: 600; }
+
+/* 내 퀘스트 칸 */
+.pp-quests ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pp-quests li b { display: block; font-size: 14px; }
+.pp-quests li small { display: block; color: var(--ink-light); font-size: 12px; line-height: 1.45; }
+.pp-quests li.done b { color: var(--teal); }
+.pp-quests li.done b::after { content: ' ✓'; }
+
+/* 비회원 안내 (C03-8) */
+.pp-guest p { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--ink-sub); }
+.pp-guest-b { display: flex; gap: 8px; }
+
+/* 나라 국기 (출생·거주·마을 설명·또래·나라 패널) */
+.pp-flag { display: inline-block; width: 18px; height: 12px; margin-right: 5px; vertical-align: -1px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15); }
+
+/* 지난 1년 순자산 줄: 누르면 돈 내역 */
+.pp-ledger-b { all: unset; cursor: pointer; display: inline; }
+.pp-ledger-b:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.pp-ledger-b i { font-style: normal; margin-left: 4px; color: var(--ink-sub); }
+.pp-ledger-d { list-style: none; margin: 6px 0 2px; padding: 8px 10px; border-radius: 10px; background: var(--panel-2, rgba(0,0,0,0.04)); display: grid; gap: 3px; font-size: 12.5px; }
+.pp-ledger-d li { display: flex; justify-content: space-between; gap: 12px; }
+.pp-ledger-d .neg { color: var(--stat-health); }
+.pp-ledger-d .pos { color: var(--stat-relation); }
+.pp-qdone { font-style: normal; font-size: 11px; color: var(--stat-relation); margin-left: 4px; }

@@ -9,26 +9,27 @@
 //   - 내 돈으로 되면: "집·땅값 3,400만 원 · 내 돈 1,200만 원" (한국 체감)
 //   - 모자라지만 대출이 되면: 대출액·이자를 보여 주고 한 번 더 눌러야 결정
 //   - 대출로도 안 되면: 고를 수 없음 ("돈이 모자라요")
-// 운에 맡기기 (원작 '자동으로 맡기기'):
-//   - '운에 맡기기' 단추: 고를 수 있는 선택지 가운데 하나를 무작위로 골라 잠깐 보여 준 뒤 결정
+// 자동으로 선택하기 (원작 '자동으로 맡기기', 11/20 이름 바꿈 - 예전 '운에 맡기기'):
+//   - '자동으로 선택하기' 단추: 고를 수 있는 선택지 가운데 하나를 무작위로 골라 잠깐 보여 준 뒤 결정
 //     (대출이 드는 선택지는 다른 게 있으면 빼요)
-//   - '앞으로 나오는 선택도 맡기기' 체크: 켜 두면 선택 창이 뜰 때마다 AUTO_MS 동안 보여 준 뒤 알아서 골라요
-//     (auto / onAutoChange, 진행 화면이 localStorage 'autoChoice' 에 저장). 그 전에 직접 고르면 직접 고른 게 들어가요
+//   - '앞으로 나오는 선택도 자동으로' 체크: 켜 두면 원작처럼 고를 칸을 먼저 표시하고 진행 막대와 함께
+//     글 길이만큼(5~14초, 16배속이면 절반) 기다린 뒤 넘어가요 (auto / onAutoChange, localStorage 'autoChoice')
+//     그 전에 직접 고르면 직접 고른 게 들어가고, 카드를 누르면 이번 창은 자동 결정을 멈춰요
 // 꼭 골라야 하는 창이라 바깥을 눌러도 안 닫혀요. 고르는 중(busy)에는 버튼이 잠겨요.
 // 엔진 선택지(C06-4, eventType 'SMALL', 선택지 번호 음수)도 같은 창으로 띄우고, 머리말만 '작은 선택'으로 바꿔요.
 // 돈·신용이 모자라 고를 수 없는 선택지는 엔진이 아예 빼고 보내요 (남은 비용 정보만 costs 로 옴).
 import { useEffect, useRef, useState } from 'react';
 import DecisionModal from './DecisionModal';
+import { autoWaitSec, autoPickOf } from './autoPick';
 import './ui.css';
 
-const AUTO_MS = 1600;  // '앞으로도 맡기기'일 때 창을 보여 주는 시간
-const FATE_MS = 700;   // 운이 고른 선택지를 보여 주는 시간
+const FATE_MS = 700;   // '자동으로 선택하기' 단추로 고른 선택지를 보여 주는 시간
 
 // 큰 결정: 나라·직업 상태가 바뀌는 선택지, 또는 재산이 30% 이상 줄어드는 선택지 (투자·창업 제외)
 const BIG_ACTIONS = ['MIGRATE', 'EARLY_RETIRE', 'DIVORCE'];
 const MONEY_EVENT = /^LE_INVEST/;            // 가게 차리기(LE_INVEST_BUSINESS), 주식(LE_INVEST_STOCK) …
 const MONEY_WORDS = /주식|투자|가게|창업|장사|코인|펀드|적금|예금/;
-export const isBigChoice = (c, event) => {
+const isBigChoice = (c, event) => {
   if (!c) return false;
   if (BIG_ACTIONS.includes(c.resultAction)) return true;
   if (MONEY_EVENT.test(event?.eventId || '') || MONEY_WORDS.test(c.choiceText || '')) return false;
@@ -58,7 +59,7 @@ const wonOf = (krw) => (v) => {
 };
 
 // 운에 맡길 때 고를 후보: 고를 수 있는 것, 대출 없는 것 우선
-export const fateCandidates = (choices, costs) => {
+const fateCandidates = (choices, costs) => {
   const costOf = (c) => (costs || []).find((k) => k.choiceId === c.choiceId);
   const ok = (choices || []).filter((c) => { const k = costOf(c); return !k || k.ok; });
   const noLoan = ok.filter((c) => { const k = costOf(c); return !k || !(k.loan > 0); });
@@ -68,11 +69,15 @@ export const fateCandidates = (choices, costs) => {
   return pool;
 };
 
-function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects = false, costs = [], krw, auto = false, onAutoChange }) {
+function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects = false, costs = [], krw, auto = false, onAutoChange, speed = 1 }) {
   const usd = wonOf(krw);
   const [armed, setArmed] = useState(null); // 한 번 누른 큰 결정 (한 번 더 누르면 결정)
   const [fate, setFate] = useState(null);   // 운이 고른 선택지 (잠깐 표시한 뒤 결정)
+  const [stopped, setStopped] = useState(false); // 카드를 눌러 이번 창의 자동 결정을 멈춤 (창은 이벤트마다 새로 만들어짐)
   const chooseRef = useRef(onChoose);
+  // 반려동물 이름 (원작 petNameAsk): 엔진 반려동물 창에만 이름 칸, 비우면 서버가 그 나라 흔한 이름으로
+  const [petName, setPetName] = useState('');
+  const nameRef = useRef('');
   const poolRef = useRef([]);
   useEffect(() => { chooseRef.current = onChoose; }, [onChoose]);
   useEffect(() => { poolRef.current = fateCandidates(event?.choices, costs); }, [event, costs]);
@@ -85,15 +90,16 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
     setFate(pool[Math.floor(Math.random() * pool.length)].choiceId);
   };
 
-  // 앞으로도 맡기기: 창이 뜨면 잠깐 보여 준 뒤 알아서 고름
+  // 자동 결정 (원작): 고를 것을 먼저 정해 표시하고, 읽을 시간만큼 기다린 뒤 넘어감
+  const autoOn = !!(open && event && auto && !stopped && !fate);
+  const autoPick = autoOn ? autoPickOf(fateCandidates(event.choices, costs), `${event.eventId}|${age}|${event.title}`) : null;
+  const autoSec = autoWaitSec([event?.title, event?.logText, ...(event?.choices || []).map((c) => c.choiceText)], speed);
+  const autoId = autoPick?.choiceId;
   useEffect(() => {
-    if (!open || !event || !auto || busy || fate) return undefined;
-    const t = setTimeout(() => {
-      const pool = poolRef.current;
-      if (pool.length) setFate(pool[Math.floor(Math.random() * pool.length)].choiceId);
-    }, AUTO_MS);
+    if (!autoOn || busy || autoId == null) return undefined;
+    const t = setTimeout(() => { if (chooseRef.current) chooseRef.current(autoId, nameRef.current); }, autoSec * 1000);
     return () => clearTimeout(t);
-  }, [open, event, auto, busy, fate]);
+  }, [autoOn, busy, autoId, autoSec]);
 
   // 운이 고른 게 보이고 나서 결정
   useEffect(() => {
@@ -101,13 +107,14 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
     const t = setTimeout(() => {
       // 보낸 결정이 끝나면 운이 고른 표시를 풀어 둠: 성공하면 창이 닫히고,
       // 실패해서(409 등) 창이 그대로 남으면 다시 고를 수 있게
-      Promise.resolve(chooseRef.current && chooseRef.current(fate)).finally(() => setFate(null));
+      Promise.resolve(chooseRef.current && chooseRef.current(fate, nameRef.current)).finally(() => setFate(null));
     }, FATE_MS);
     return () => clearTimeout(t);
   }, [fate]);
 
   if (!open || !event) return null;
   const choices = event.choices || [];
+  const askName = /^ENG_PET_(ADOPT|BEG)$/.test(event.eventId || '');
 
   const costOf = (c) => (costs || []).find((k) => k.choiceId === c.choiceId);
 
@@ -120,20 +127,22 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
       setArmed(c.choiceId);
       return;
     }
-    if (onChoose) onChoose(c.choiceId);
+    if (onChoose) onChoose(c.choiceId, askName ? petName : undefined);
   };
 
   const meta = age != null ? `${age}세${year ? ' · ' + year + '년' : ''}` : undefined;
   const locked = busy || !!fate;
   let hint = '누르면 바로 결정되고, 되돌릴 수 없어요. 숫자 키로도 고를 수 있어요.';
-  if (fate) hint = '운에 맡겼어요. 곧 결정돼요.';
-  else if (auto) hint = '선택을 운에 맡기는 중이에요. 잠시 뒤 운이 골라요. 그 전에 직접 골라도 돼요.';
+  if (fate) hint = '자동으로 골랐어요. 곧 결정돼요.';
+  else if (auto && stopped) hint = '이번 선택은 자동 결정을 멈췄어요. 직접 골라 주세요.';
 
   return (
     <DecisionModal open label={event.eventType === 'SMALL' ? '작은 선택' : '중대 결정'} meta={meta}
       title={event.title || '인생의 갈림길'} text={event.logText}
       options={choices.map((c) => {
         const k = costOf(c);
+        // 선택지 끝의 괄호 설명은 아랫줄로 (원작 sub: '한 해 약 ○○ · 10~15년 함께')
+        const m = /^(.*\S)\s*\(([^()]+)\)$/.exec(c.choiceText || '');
         let sub = showEffects ? effLine(c) : undefined;
         let note;
         let confirm;
@@ -145,22 +154,31 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
             confirm = `대출 ${usd(k.loan)}을 받아요. 한 번 더 누르면 결정됩니다.`;
           }
         }
+        if (m) sub = sub ? `${m[2]} · ${sub}` : m[2];
         return {
-          key: c.choiceId, choice: c, title: c.choiceText, sub, note, confirm,
-          tag: fate === c.choiceId ? '운이 고름' : undefined,
+          key: c.choiceId, choice: c, title: m ? m[1] : c.choiceText, sub, note, confirm,
+          tag: fate === c.choiceId ? '자동 선택' : undefined,
           disabled: !!(k && !k.ok) || (!!fate && fate !== c.choiceId),
           armed: armed === c.choiceId,
         };
       })}
       onPick={pick} busy={busy}
       hint={hint}
+      auto={autoId != null ? { key: autoId, sec: autoSec, onStop: () => setStopped(true), onOff: onAutoChange ? () => onAutoChange(false) : undefined } : undefined}
       footer={(
         <div className="dec-fate">
-          <button type="button" className="dec-fate-b" disabled={locked} onClick={leaveToFate}>운에 맡기기</button>
+          {askName && (
+            <label className="dec-name">
+              <span>이름</span>
+              <input type="text" maxLength={12} value={petName} placeholder="비워 두면 흔한 이름으로 지어요"
+                onChange={(e) => { setPetName(e.target.value); nameRef.current = e.target.value; }} />
+            </label>
+          )}
+          {autoId == null && <button type="button" className="dec-fate-b" disabled={locked} onClick={leaveToFate}>자동으로 선택하기</button>}
           {onAutoChange && (
             <label className="dec-fate-auto">
               <input type="checkbox" checked={auto} onChange={(e) => onAutoChange(e.target.checked)} />
-              앞으로 나오는 선택도 맡기기
+              앞으로 나오는 선택도 자동으로
             </label>
           )}
         </div>

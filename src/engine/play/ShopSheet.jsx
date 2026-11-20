@@ -7,7 +7,7 @@
 // 사용법: {shopOpen && <ShopSheet life={life} age={화면 나이} guestToken={…} waitIdle={async () => …}
 //            onDone={(dto) => 돈·능력치 반영 + 기록} onClose={() => …} />}
 //   열 때마다 새로 만들어서(조건부 렌더링) 목록을 처음부터 불러와요
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import client from '../../api/api';
 import { won } from './lifeText';
 import '../../common/ui/ui.css'; // 창 바탕(.dec-back)·머리(.dec-hd)·등장 움직임
@@ -23,20 +23,16 @@ function ShopSheet({ open = true, life, age, guestToken, waitIdle, onDone, onClo
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const load = useCallback(async () => {
-    try {
-      const res = await client.get('/api/engine/shop', { params: { lifeId: life.lifeId, guestToken } });
-      setData(res.data);
-      setMsg('');
-    } catch (err) {
-      setMsg(errText(err));
-    }
-  }, [life?.lifeId, guestToken]);
-
-  // 열리면 목록 불러오기 (load 는 서버 응답을 기다린 뒤에 상태를 바꿈)
+  // 열리면 목록 불러오기 (상태는 서버 응답이 온 뒤에만 바꿈)
+  const lifeId = life?.lifeId;
   useEffect(() => {
-    if (open) load();
-  }, [open, load]);
+    if (!open) return undefined;
+    let alive = true;
+    client.get('/api/engine/shop', { params: { lifeId, guestToken } })
+      .then((res) => { if (alive) { setData(res.data); setMsg(''); } })
+      .catch((err) => { if (alive) setMsg(errText(err)); });
+    return () => { alive = false; };
+  }, [open, lifeId, guestToken]);
 
   // Esc 로 닫기
   useEffect(() => {
