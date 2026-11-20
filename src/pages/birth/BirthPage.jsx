@@ -4,6 +4,7 @@ import client from '../../api/api';
 import ToonEarth from './ToonEarth';
 import { COUNTRIES } from '../../engine/village/villageData'; // 국기용 2자리 코드 (C02-4)
 import { useTheme } from '../../common/theme';
+import Spoon from '../../common/ui/Spoon.jsx';
 import styles from './BirthPage.module.css';
 
 // ───────────────────────────────────────────────
@@ -272,7 +273,7 @@ function BirthPage() {
           <ul className={styles.facts}>
             <li>
               <span>가정형편</span>
-              <strong>소득 {life.wealthClass}분위</strong>
+              <strong><Spoon level={life.wealthClass} /> <small>소득 {life.wealthClass}분위</small></strong>
             </li>
             <li>
               <span>사는 곳</span>

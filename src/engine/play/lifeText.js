@@ -78,27 +78,35 @@ export const rankStr = (p) => {
 
 // ───────── 인생 기록 색 (원작 feed 클래스) ─────────
 //   (화면 클래스는 앞에 fk- 를 붙여 씀: 메인 화면 .ms, 결정 창 .dec 와 이름이 겹쳐 줄이 화면 높이만큼 커졌었음)
-//   big 굵게 · bad 빨강 · ms 초록 이정표 · hist 회색 왼쪽 줄 ◆ · note 청록 제목 글꼴 · dec 작은 회색 · death 큰 제목 글꼴 · ledger 작은 돈 줄
+//   big 굵게 · bad 빨강 · ms 청록 이정표 · hist 회색 왼쪽 줄 + 나이 옆 ◆ · warm 따뜻한 일(나이 옆 금색 점) · loss 가까운 사람을 잃음(굵게 ✿)
+//   note 청록 제목 글꼴 · dec 작은 회색 ▸ · death 큰 제목 글꼴 · ledger 작은 돈 줄 (11/20 원작 .feed li.* 규칙과 같게)
 //   alert 큰 역사 사건(전쟁·코로나·기근·경제 위기 등): 빨간 왼쪽 줄 + 아래 '큰 사건' 경고등 (11/20 동현님 요청, 원작에는 없음)
 const BAD = /(세상을 떠|숨을 거|사망|잃었|잃은|다쳤|부상|사고|병에 걸|앓|입원|수술|실직|해고|그만두었|중퇴|빚|이혼|헤어졌|전쟁|피란|기근|굶|가뭄|홍수|지진|폭격|체포|감옥|파산|망했|사기|도둑|불이 나|아팠|열병|설사|폐렴|결핵|말라리아)/;
 const MS = /(태어났|입학|진학|졸업|결혼|첫째|둘째|셋째|아이가 생|아이를 낳|일을 시작|이 되었다|취업|승진|은퇴|이사|이민|처음으로|첫 월급|집을 샀|문을 열)/;
-const NOTE = /(같은 해 .*태어난 .*살아 있다|또래 가운데)/;
+const NOTE = /(같은 해 .*태어난 .*살아 있다|또래 가운데|^“)/; // 마지막: 잠시 멈춤에 적은 한 줄 (따옴표)
+// 원작 loss: 가까운 사람을 잃음 (굵게 + ✿)
+const LOSS = /(아버지|어머니|부모님|아빠|엄마|남편|아내|배우자|아이|아들|딸|자녀|형|누나|언니|오빠|동생|형제|할머니|할아버지|친구|손주).{0,12}(세상을 떠|돌아가|잃었|떠나보냈|숨을 거)/;
+// 원작 warm: 따뜻한 일 (나이 옆 금색 점)
+const WARM = /(기뻐|기쁨|웃었|웃음|따뜻|고마|화해|사랑|설레|위로|축하|안아|자랑스|행복했|이야기꽃|정을 나|함께 보냈|함께 웃|도와주었|나눴다)/;
 const HIST_ID = /^[A-Z]{2,3}_\d{4}/;
 // 큰 역사 사건: 사망 위험이 붙었거나 재산·건강이 크게 깎이거나, 문장이 전쟁·대유행·기근·경제 위기 같은 큰 일
-const BIG_HIST = /(전쟁|참전|전선|폭격|공습|피란|코로나|대유행|팬데믹|전염병|기근|굶주|경제 위기|금융 위기|외환 위기|IMF|대공황|학살|쿠데타|계엄|혁명|항쟁|대지진|쓰나미|원전 사고)/;
+const BIG_HIST = /(전쟁|내전|분쟁|인티파다|점령|참전|전선|폭격|공습|피란|코로나|대유행|팬데믹|전염병|기근|굶주|경제 위기|금융 위기|외환 위기|IMF|대공황|학살|쿠데타|계엄|혁명|항쟁|대지진|쓰나미|원전 사고)/;
 
 export const feedKind = (line) => {
   if (line.kind) return line.kind;
   const t = line.text || '';
   const fx = line.fx || {};
   if (fx.eventType === 'HIST' || HIST_ID.test(line.eventId || fx.eventId || '')) {
-    const big = (fx.deathAdd || 0) > 0 || (fx.effWealthRate || 0) <= -0.1 || (fx.effHealth || 0) <= -5 || BIG_HIST.test(t);
+    // 전쟁이 끝난 소식은 경고등 없이 (끝났다·멎었다)
+    const big = !/(끝났|멎었)/.test(t) && ((fx.deathAdd || 0) > 0 || (fx.effWealthRate || 0) <= -0.1 || (fx.effHealth || 0) <= -5 || BIG_HIST.test(t));
     return big ? 'alert' : 'hist';
   }
   if (NOTE.test(t)) return 'note';
+  if (LOSS.test(t)) return 'loss';
   const hurt = (fx.effHealth || 0) <= -8 || (fx.effWealthRate || 0) <= -0.2 || (fx.deathAdd || 0) > 0;
   if (hurt || BAD.test(t)) return 'bad';
   if (MS.test(t)) return 'ms';
+  if (WARM.test(t)) return 'warm';
   if (line.big) return 'big';
   return '';
 };
@@ -155,6 +163,14 @@ export const commute = (life, year) => {
 };
 
 // 조사 '(으)로': 마지막 글자 받침이 없거나 ㄹ 받침이면 '로', 그 밖의 받침이면 '으로' (한글이 아니면 '로')
+// 이/가 조사 (받침 있으면 '이')
+export const iga = (word) => {
+  const w = String(word ?? '');
+  const c = w.charCodeAt(w.length - 1);
+  if (!(c >= 0xac00 && c <= 0xd7a3)) return w + '이(가)';
+  return w + ((c - 0xac00) % 28 ? '이' : '가');
+};
+
 export const ro = (word) => {
   const w = String(word ?? '').replace(/[\s'"’)]+$/, '');
   const c = w.charCodeAt(w.length - 1);

@@ -723,5 +723,26 @@
 }
 .dec-fate-b:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
 .dec-fate-b:disabled { opacity: 0.5; cursor: default; }
+/* 잠시 멈춤 (원작 reflect): 질문 + 한 줄 쓰는 칸 */
+.dec-q { margin: 0 0 8px; font-family: var(--font-display); font-size: 17px; line-height: 1.5; color: var(--ink); }
+.dec-note-in { display: block; width: 100%; box-sizing: border-box; margin: 0 0 12px; padding: 10px 12px; resize: vertical; font: inherit; font-size: 14px; line-height: 1.5; color: var(--ink); background: var(--panel-2, rgba(255, 255, 255, 0.04)); border: 1px solid var(--line-strong); border-radius: var(--radius, 10px); }
+.dec-note-in:focus { outline: none; border-color: var(--primary); }
+/* 자동 결정 (원작): 미리 고른 칸 · 진행 막대 · 안내 */
+.dec-opt.auto { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.dec-autobar { height: 3px; margin: 14px 0 0; border-radius: 3px; background: var(--line); overflow: hidden; }
+.dec-autobar i { display: block; height: 100%; background: var(--primary); transform-origin: left center; animation: dec-auto linear forwards; }
+@keyframes dec-auto { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.dec-autonote { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; margin-top: 8px; font-size: var(--fs-xs); color: var(--ink-sub); text-align: center; }
+.dec-fate-b.sm { padding: 4px 10px; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { .dec-autobar i { animation: none; transform: none; } }
 .dec-fate-auto { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-sub); cursor: pointer; }
 .dec-fate-auto input { accent-color: var(--primary); }
+
+/* 출신 가정 수저 (Spoon.jsx) */
+.spoon { display: inline-flex; align-items: center; gap: 4px; vertical-align: -3px; }
+.spoon svg { flex: none; }
+.spoon-n { font-weight: 600; }
+
+/* 반려동물 이름 칸 (EventChoiceModal, 원작 petNameAsk) */
+.dec-name { display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px; font-size: 13px; }
+.dec-name input { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line, #c9d1dc); background: var(--panel, #fff); color: inherit; font: inherit; }

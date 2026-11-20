@@ -20,15 +20,17 @@ import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
 import EventChoiceModal from '../../common/ui/EventChoiceModal';
+import { autoWaitSec, autoPickOf } from '../../common/ui/autoPick';
 import DecisionModal from '../../common/ui/DecisionModal';
 import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
+import Spoon from '../../common/ui/Spoon.jsx';
 import Village from '../village/Village';
 import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
-import { won, ppp, PPP_TIP, rankStr, splitMoney, feedKind, belongings, commute, traitLine, ro, ownNames } from './lifeText';
+import { won, ppp, PPP_TIP, rankStr, splitMoney, feedKind, belongings, commute, traitLine, ro, iga, ownNames } from './lifeText';
 import { TRAIT_VIEW } from '../../utils/traits';
 import './play.css';
 
@@ -44,7 +46,6 @@ const fetchAtOf = (ys) => Math.min(0.3, Math.max(0, 1 - 4 / ys));
 // '1년 ≈ n초' 표시 (10초 미만은 소수 한 자리)
 const secText = (v) => (v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
 const RESULT_DELAY = 3500;                   // 죽은 뒤 결과 화면까지
-const AUTO_MS = 1600;                        // '자동 결정'일 때 직업·이민 창을 보여 주는 시간
 const MAX_FEED = 400;                        // 화면에 남겨 둘 기록 줄 수
 
 // 집중 코드 → 화면 문구 (EngineService.applyFocus·knowEff 기준)
@@ -173,16 +174,43 @@ const jobText = (life) => {
   return life.currentAge < 15 ? '—' : '일 없음';
 };
 
+// 나라 국기 (마을과 같은 flagcdn 그림, 코드가 없으면 안 그림)
+function Flag({ cc }) {
+  const code = COUNTRIES[cc]?.[0];
+  return code ? <img className="pp-flag" src={`https://flagcdn.com/w40/${code}.png`} alt="" width="18" height="12" /> : null;
+}
+
 // 엔진 응답 events → 기록 줄 [{ age, text, big, fx, eventId }] (색은 feedKind)
 const toLines = (age, events) => (events || [])
   .filter((e) => e && e.logText)
-  .map((e) => ({ age, text: e.logText, big: !!e.eventId, fx: e, eventId: e.eventId }));
+  .map((e) => ({ age, text: e.logText, big: !!e.eventId, fx: e, eventId: e.eventId, ...(e.eventType === 'INHERIT' ? { kind: 'ledger' } : {}) }));
+// 세상을 떠난 해의 상속 줄(INHERIT)은 사망 줄 뒤에 (원작 순서)
+const isInherit = (l) => l.fx?.eventType === 'INHERIT';
+
+const PET_WORD = { d: '강아지', c: '고양이', h: '햄스터', r: '토끼', b: '앵무새', f: '물고기' };
+
+// 결정 줄 (원작 '결정: …' ▸): 고른 것의 이름을 결정 요청 전에 지금 상태에서 찾아 둠
+//   선택지 끝의 괄호 설명은 뺌 (예: '고양이를 들인다 (12~18년 함께 …)' → '고양이를 들인다')
+const decLabel = (l, url, body) => {
+  if (!l) return null;
+  if (url.endsWith('/job')) {
+    const j = (l.jobOffers || []).find((x) => x.jobId === body.jobId);
+    return j ? `${j.jobName} 일을 한다` : null;
+  }
+  if (url.endsWith('/destination')) {
+    const d = (l.destinations || []).find((x) => x.countryCode === body.countryCode);
+    return `${ro(d?.nameKo || body.countryCode)} 떠난다`;
+  }
+  const c = (l.pendingEvent?.choices || []).find((x) => x.choiceId === body.choiceId);
+  return c?.choiceText ? c.choiceText.replace(/\s*\([^)]*\)\s*$/, '') : null;
+};
 
 // 한 해를 마칠 때 덧붙이는 줄: 돈 줄(ledger)·죽음(death)
 const yearEndLines = (d, age) => {
   const out = [];
   if (age >= 18 && d.moneyDelta) {
-    out.push({ age, kind: 'ledger', text: `지난 1년 순자산 ${won(d.moneyDelta, d.krwPerUsd, true)} (한국 체감)` });
+    // 누르면 그해 돈 내역 (원작 ledger 펼치기)
+    out.push({ age, kind: 'ledger', text: `지난 1년 순자산 ${won(d.moneyDelta, d.krwPerUsd, true)} (한국 체감)`, flow: d.moneyFlow || [], krw: d.krwPerUsd });
   }
   if (d.status === 'ENDED') {
     out.push({ age, kind: 'death', text: `${d.deathAge ?? age}세, ${d.deathCause ? ro(d.deathCause) + ' ' : ''}세상을 떠났다.` });
@@ -203,8 +231,12 @@ function PlayPage() {
   const [paused, setPaused] = useState(false);
   const [speed, setSpeed] = useState(() => Number(localStorage.getItem('playSpeed')) || 1);
   const [ff, setFf] = useState(false);                // 다음 결정까지 빨리 감기
+  const [openLedger, setOpenLedger] = useState(null);  // 펼친 '지난 1년 순자산' 줄 (돈 내역)
   const [busy, setBusy] = useState(false);            // 결정 요청 중
   const [skipJobAge, setSkipJobAge] = useState(null); // 이 나이엔 직업 제안 건너뜀
+  // 잠시 멈춤 (원작 reflect): 5·15·30·50·70세에 한 번, 이미 본 나이는 이 브라우저에 기억 ('인생번호:나이')
+  const [reflectOff, setReflectOff] = useState(() => { try { return localStorage.getItem('reflectOff') === 'Y'; } catch { return false; } });
+  const [reflectDone, setReflectDone] = useState(() => { try { return JSON.parse(localStorage.getItem('reflectDone') || '[]'); } catch { return []; } });
   const [destPick, setDestPick] = useState(null);     // 이민 목적지: 한 번 누르면 표시, 한 번 더 누르면 결정
   const [hidden, setHidden] = useState(typeof document !== 'undefined' && document.hidden);
   const [years, setYears] = useState({});             // 인생 지도: 나이 → { h 행복, hl 건강, nw 순자산, flow 그해 돈 내역 }
@@ -316,9 +348,13 @@ function PlayPage() {
     busyRef.current = true;
     setBusy(true);
     try {
+      const label = decLabel(l, url, body);
       const res = await client.post(url, { lifeId: l.lifeId, guestToken, ...body });
       setLife(res.data);
-      pushLines(toLines(res.data.currentAge - 1, res.data.events));
+      // 원작처럼 '결정: 고른 것' 줄 바로 뒤에 그 결과(효과 칩 포함)를 이어 보여 줌
+      const lines = toLines(res.data.currentAge - 1, res.data.events);
+      if (label) lines.unshift({ age: res.data.currentAge - 1, kind: 'dec', text: `결정: ${label}` });
+      pushLines(lines);
     } catch (err) {
       setNotice(errText(err));
       // 409(먼저 할 일이 있음)·400(그 결정이 이미 없음)이면 서버 상태로 다시 맞춤
@@ -330,6 +366,28 @@ function PlayPage() {
       setBusy(false);
     }
   }, [guestToken, pushLines, reload]);
+
+  // 잠시 멈춤 닫기: 적은 글이 있으면 인생 기록에 남기고(POST /api/engine/note), 이 나이는 다시 묻지 않음
+  const closeReflect = useCallback(async (text, off) => {
+    const l = lifeRef.current;
+    if (!l) return;
+    const key = `${l.lifeId}:${l.currentAge}`;
+    const next = [...reflectDone.filter((k) => k !== key), key].slice(-200);
+    setReflectDone(next);
+    try { localStorage.setItem('reflectDone', JSON.stringify(next)); } catch { /* 무시 */ }
+    if (off) {
+      setReflectOff(true);
+      try { localStorage.setItem('reflectOff', 'Y'); } catch { /* 무시 */ }
+    }
+    const t = (text || '').trim();
+    if (!t) return;
+    try {
+      const res = await client.post('/api/engine/note', { lifeId: l.lifeId, guestToken, text: t, atAge: l.currentAge });
+      pushLines([{ age: l.currentAge, kind: 'note', text: res.data }]);
+    } catch (err) {
+      setNotice(errText(err));
+    }
+  }, [reflectDone, guestToken, pushLines]);
 
   // 올해의 초점 (진행을 멈추지 않음)
   //   그해를 아직 서버에 요청하기 전이면 올해 계산에 바로 들어가고, 이미 요청했으면 다음 해부터 적용돼요
@@ -359,7 +417,10 @@ function PlayPage() {
   const showDest = !!(life?.needDestination && life.destinations?.length);
   const showChoice = !showDest && !!(life?.needChoice && life.pendingEvent);
   const showJob = !showDest && !showChoice && !!(life?.needJob && life.jobOffers?.length) && skipJobAge !== life.currentAge;
-  const waiting = showDest || showChoice || showJob;
+  const reflectKey = life ? `${life.lifeId}:${life.currentAge}` : '';
+  const showReflect = !!life && life.status === 'PLAYING' && !reflectOff && REFLECT_AGES.includes(life.currentAge)
+    && !reflectDone.includes(reflectKey) && !showDest && !showChoice && !showJob;
+  const waiting = showDest || showChoice || showJob || showReflect;
   const yearSec = ff ? FF_SEC : yearSecOf(life?.lifeExpectancy) / speed;
 
   // 결정 창이 뜨면 빨리 감기 끝 (waiting 이 바뀐 렌더에서 바로 끔 - React 권장 방식, effect 로 한 번 더 그리지 않음)
@@ -370,7 +431,8 @@ function PlayPage() {
   }
 
   // 결정 운에 맡기기: 직업 제안·이민 목적지 (선택 이벤트는 EventChoiceModal 이 직접 처리)
-  //   '자동 결정'이 켜져 있으면 창을 잠깐(AUTO_MS) 보여 준 뒤 무작위로 골라요
+  //   '자동 결정'이 켜져 있으면 원작처럼 고를 것을 먼저 표시하고 글 길이만큼(5~14초) 기다린 뒤 넘어감
+  //   창(버튼 밖)을 누르면 그 창은 자동 결정을 멈춤 (autoStopAt: 멈춘 창의 나이·종류)
   const fateJob = useCallback(() => {
     const offers = lifeRef.current?.jobOffers || [];
     if (offers.length) decide('/api/engine/job', { jobId: offers[Math.floor(Math.random() * offers.length)].jobId });
@@ -379,11 +441,25 @@ function PlayPage() {
     const ds = lifeRef.current?.destinations || [];
     if (ds.length) decide('/api/engine/destination', { countryCode: ds[Math.floor(Math.random() * ds.length)].countryCode });
   }, [decide]);
+  const [autoStopAt, setAutoStopAt] = useState(null);
+  const decKind = showDest ? 'dest' : showJob ? 'job' : null;
+  const decStopKey = decKind ? `${decKind}|${life?.lifeId}|${life?.currentAge}` : null;
+  const decAutoOn = !!(autoChoice && decKind && autoStopAt !== decStopKey);
+  const decAutoKey = !decAutoOn ? null : decKind === 'dest'
+    ? autoPickOf(life.destinations, decStopKey)?.countryCode
+    : autoPickOf(life.jobOffers, decStopKey)?.jobId;
+  const decAutoSec = !decAutoOn ? 0 : autoWaitSec(decKind === 'dest'
+    ? ['이민 갈 나라를 골라요', ...(life.destinations || []).map((d) => d.nameKo || d.countryCode)]
+    : ['일자리 제안이 들어왔어요', ...(life.jobOffers || []).map((j) => j.jobName)], speed);
   useEffect(() => {
-    if (!autoChoice || busy || !(showDest || showJob)) return undefined;
-    const t = setTimeout(() => (showDest ? fateDest() : fateJob()), AUTO_MS);
+    if (!decAutoOn || busy || decAutoKey == null) return undefined;
+    const t = setTimeout(() => (decKind === 'dest'
+      ? decide('/api/engine/destination', { countryCode: decAutoKey })
+      : decide('/api/engine/job', { jobId: decAutoKey })), decAutoSec * 1000);
     return () => clearTimeout(t);
-  }, [autoChoice, busy, showDest, showJob, fateDest, fateJob, life?.currentAge]);
+  }, [decAutoOn, busy, decAutoKey, decAutoSec, decKind, decide]);
+  const decAuto = decAutoKey == null ? undefined
+    : { key: decAutoKey, sec: decAutoSec, onStop: () => setAutoStopAt(decStopKey), onOff: () => setAutoChoice(false) };
 
   // ② 한 해 흐르기: 막대가 차는 동안 미리 받은 그해 일을 하나씩 보여 주고, 다 차면 나이 +1
   //    매 프레임 막대는 DOM 으로 바로 칠하고(React 다시 그리기 없음), 해가 바뀔 때만 화면을 새로 그려서 버벅임 없음
@@ -434,7 +510,8 @@ function PlayPage() {
       if (y.data) {
         const d = y.data;
         const age = d.status === 'ENDED' ? d.currentAge : d.currentAge - 1;
-        const lines = toLines(age, d.events);
+        const all = toLines(age, d.events);
+        const lines = all.filter((l) => !isInherit(l));
         // 그해 일을 남은 막대 위에 고르게 나눠서 하나씩
         const part = y.t0 >= 1 ? 1 : (y.t - y.t0) / (1 - y.t0);
         const due = Math.min(lines.length, Math.floor(part * (lines.length + 1)));
@@ -443,7 +520,7 @@ function PlayPage() {
           y.shown = due;
         }
         if (y.t >= 1) {
-          push([...lines.slice(y.shown), ...yearEndLines(d, age)]);
+          push([...lines.slice(y.shown), ...yearEndLines(d, age), ...all.filter(isInherit)]);
           const focus = y.focus;
           mem(d, age);
           y.data = null;
@@ -672,12 +749,10 @@ function PlayPage() {
                 <div className="pp-id-nm">{life.name}</div>
                 <dl className="pp-id-dl">
                   <dt>성별</dt><dd>{life.gender === 'M' ? '남성' : '여성'}</dd>
-                  <dt>출생</dt><dd>{countryText} · {life.birthYear}년</dd>
-                  <dt>거주</dt><dd>{town}, {countryName}</dd>
+                  <dt>출생</dt><dd><Flag cc={life.birthCountry} />{countryText} · {life.birthYear}년</dd>
+                  <dt>거주</dt><dd><Flag cc={life.currentCountry} />{countryName} · {town}</dd>
                   <dt>출신 가정</dt>
-                  <dd aria-label={`소득 ${life.wealthClass}분위`}>
-                    {[1, 2, 3, 4, 5].map((n) => <i key={n} className={'pp-dot' + (n <= life.wealthClass ? ' on' : '')} />)}
-                  </dd>
+                  <dd><Spoon level={life.wealthClass} /></dd>
                   <dt>학력</dt><dd>{schoolText(life)}</dd>
                   <dt>직업</dt><dd>{jobText(life)}</dd>
                 </dl>
@@ -719,8 +794,8 @@ function PlayPage() {
               <h3 className="pp-h"><span>내 퀘스트</span><span className="pp-lbl">{life.quests.length}개</span></h3>
               <ul>
                 {life.quests.map((q) => (
-                  <li key={q.questId} className={q.achieved === 'Y' ? 'done' : ''}>
-                    <b>{q.questName}</b>
+                  <li key={q.questId} className={q.achieved === 'Y' || q.live === 'Y' ? 'done' : ''}>
+                    <b>{q.questName}{(q.achieved === 'Y' || q.live === 'Y') && <em className="pp-qdone"> 달성</em>}</b>
                     {q.description && <small>{q.description}</small>}
                   </li>
                 ))}
@@ -745,7 +820,7 @@ function PlayPage() {
           <section className="pp-panel pp-scene">
             <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
               place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)} />
-            <p className="pp-scenecap">{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
+            <p className="pp-scenecap"><Flag cc={life.currentCountry} />{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
 
           {ended ? (
@@ -794,7 +869,20 @@ function PlayPage() {
                     <li key={e.id ?? `k${i}`} className={[kind ? 'fk-' + kind : '', e.struck ? 'fk-struck' : ''].join(' ').trim() || undefined}>
                       <span className="a">{e.age}세</span>
                       <span className="x">
-                        {splitMoney(e.text).map((p, j) => (p.k ? <span key={j} className={'fm-' + p.k}>{p.t}</span> : p.t))}
+                        {e.flow?.length ? (
+                          <button type="button" className="pp-ledger-b" aria-expanded={openLedger === e.id}
+                            onClick={() => setOpenLedger((o) => (o === e.id ? null : e.id))}>
+                            {splitMoney(e.text).map((p, j) => (p.k ? <span key={j} className={'fm-' + p.k}>{p.t}</span> : p.t))}
+                            <i aria-hidden="true">{openLedger === e.id ? '▴' : '▾'}</i>
+                          </button>
+                        ) : splitMoney(e.text).map((p, j) => (p.k ? <span key={j} className={'fm-' + p.k}>{p.t}</span> : p.t))}
+                        {e.flow?.length > 0 && openLedger === e.id && (
+                          <ul className="pp-ledger-d">
+                            {e.flow.map((m) => (
+                              <li key={m.label}><span>{m.label}</span><span className={m.amount < 0 ? 'neg' : 'pos'}>{won(m.amount, e.krw, true)}</span></li>
+                            ))}
+                          </ul>
+                        )}
                         {e.fx && <EffectChips effect={e.fx} />}
                         {/* 큰 역사 사건 경고등: 줄이 처음 생길 때 세 번 깜빡이고 켜진 채로 남음 */}
                         {kind === 'alert' && <span className="pp-alert" role="status"><i aria-hidden="true" />큰 사건</span>}
@@ -821,8 +909,9 @@ function PlayPage() {
                 {life.peers.map((p, i) => (
                   <li key={i} className={p.alive ? '' : 'gone'}>
                     <b>{p.name}</b>
-                    <small>{p.countryName || p.countryCode} · {p.gender === 'M' ? '남' : '여'}</small>
-                    <span>{life.currentAge}세 · {p.status}</span>
+                    <small><Flag cc={p.countryCode} />{p.countryName || p.countryCode} · {p.gender === 'M' ? '남' : '여'}</small>
+                    {/* 세상을 떠난 또래는 내 나이를 붙이지 않음 (나이가 계속 오르던 것) */}
+                    <span>{p.alive ? `${life.currentAge}세 · ${p.status}` : p.status}</span>
                   </li>
                 ))}
               </ul>
@@ -916,8 +1005,9 @@ function PlayPage() {
         }))}
         busy={busy}
         onPick={(o) => (destPick === o.code ? decide('/api/engine/destination', { countryCode: o.code }) : setDestPick(o.code))}
-        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 자동으로 골라요.' : undefined}
-        footer={<FateFooter onFate={fateDest} busy={busy} auto={autoChoice} onAuto={setAutoChoice} />} />
+        auto={decKind === 'dest' ? decAuto : undefined}
+        hint={autoChoice && !decAuto ? '이번 창은 자동 결정을 멈췄어요. 직접 골라 주세요.' : undefined}
+        footer={<FateFooter onFate={fateDest} busy={busy} auto={autoChoice} onAuto={setAutoChoice} hideFate={!!decAuto} />} />
 
       {/* C06-3 돈 쓰기 · 투자 */}
       {shopOpen && (
@@ -925,12 +1015,18 @@ function PlayPage() {
           waitIdle={waitIdle} onDone={onShopDone} onClose={closeShop} />
       )}
 
+      {/* 잠시 멈춤 (원작 reflect) */}
+      {showReflect && (
+        <ReflectModal key={reflectKey} life={life} aliveNow={aliveNow} countryName={countryName}
+          auto={autoChoice} speed={ff ? 16 : speed} onClose={closeReflect} />
+      )}
+
       {/* C09 선택 이벤트 */}
       <EventChoiceModal key={life.pendingEvent?.eventId || 'none'}
         open={showChoice} event={life.pendingEvent} busy={busy} costs={life.choiceCosts} krw={life.krwPerUsd}
         age={life.currentAge - 1} year={year - 1}
-        auto={autoChoice} onAutoChange={setAutoChoice}
-        onChoose={(choiceId) => decide('/api/engine/choice', { choiceId })} />
+        auto={autoChoice} onAutoChange={setAutoChoice} speed={ff ? 16 : speed}
+        onChoose={(choiceId, name) => decide('/api/engine/choice', name ? { choiceId, text: name } : { choiceId })} />
 
       {/* C06 직업 제안 */}
       <DecisionModal open={showJob} label="일자리" meta={`${life.currentAge}세 · ${year}년`}
@@ -945,9 +1041,10 @@ function PlayPage() {
         }))}
         busy={busy}
         onPick={(o) => decide('/api/engine/job', { jobId: o.jobId })}
-        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 자동으로 골라요.' : undefined}
+        auto={decKind === 'job' ? decAuto : undefined}
+        hint={autoChoice && !decAuto ? '이번 창은 자동 결정을 멈췄어요. 직접 골라 주세요.' : undefined}
         footer={(
-          <FateFooter onFate={fateJob} busy={busy} auto={autoChoice} onAuto={setAutoChoice}>
+          <FateFooter onFate={fateJob} busy={busy} auto={autoChoice} onAuto={setAutoChoice} hideFate={!!decAuto}>
             <Button type="ghost" size="sm" disabled={busy} onClick={() => setSkipJobAge(life.currentAge)}>올해는 넘기기</Button>
           </FateFooter>
         )} />
@@ -955,12 +1052,83 @@ function PlayPage() {
   );
 }
 
+// ───────── 잠시 멈춤 (원작 reflect) ─────────
+//   5·15·30·50·70세에 진행을 멈추고 질문 하나 + 한 줄 쓰는 칸
+//   [적어 두고 계속 살기] 적은 글은 인생 기록에 따옴표로 남음 / [마음속에 담고 계속 살기]
+//   자동 결정이 켜져 있으면 9초 뒤 계속 (글 칸을 누르면 다 적을 때까지 기다림, 원작과 같음)
+//   [다음부터 이 창 띄우지 않기] → 이 브라우저에서 끔 (localStorage reflectOff)
+const REFLECT_AGES = [5, 15, 30, 50, 70];
+const REFLECT_Q = {
+  5: [[() => '당신의 다섯 살은 어땠나요? 그때 당연하게 누렸던 것 하나를 떠올려 보세요.', (poor) => (poor ? '아플 때 데려가 주던 병원' : '매일 저녁 차려지던 밥상')],
+    [(n) => `다섯 살 ${n}에게 지금 가장 필요한 것은 무엇일까요?`, (poor) => (poor ? '배불리 먹는 저녁' : '잠들기 전 읽어 주는 그림책')]],
+  15: [[() => '열다섯 살의 당신에게 학교는 어떤 곳이었나요?', () => '친구들을 만나러 가던 곳'],
+    [(n) => `${iga(n)} 꿈꿀 수 있는 미래와, 열다섯의 당신이 꿈꾸던 미래는 얼마나 달랐을까요?`, () => '꿈꾸는 마음은 비슷했을 것 같다']],
+  30: [[(n) => `${n}의 삶과 당신의 삶은 무엇이 같고, 무엇이 다른가요?`, () => '일에 지친 건 같고, 사는 곳은 다르다'],
+    [(n) => `${iga(n)} 오늘 가장 고마워할 일은 무엇일까요?`, () => '가족이 건강하다는 것']],
+  50: [[(n) => `${iga(n)} 당신의 이웃이었다면, 어떤 이야기를 나누고 싶나요?`, () => '자식 키우는 이야기'],
+    [() => '살면서 당신을 붙잡아 준 사람은 누구였나요?', () => '힘들 때 전화해 준 친구']],
+  70: [[(n) => `한 번뿐인 삶에서, ${iga(n)} 가장 소중히 여긴 것은 무엇이었을까요?`, () => '가족과 함께한 저녁'],
+    [() => '당신은 어떤 사람으로 기억되고 싶나요?', () => '곁에 있으면 편했던 사람']],
+};
+
+function ReflectModal({ life, aliveNow, countryName, auto, speed, onClose }) {
+  const age = life.currentAge;
+  const [text, setText] = useState('');
+  const [hold, setHold] = useState(false); // 글 칸을 누르면 자동으로 넘어가지 않음
+  const qs = REFLECT_Q[age] || REFLECT_Q[30];
+  const [q, ex] = qs[life.lifeId % qs.length];
+  const poor = life.wealthClass <= 2;
+  // 거울 문장: 그 나이의 처지를 통계로 한두 줄
+  const mirror = [];
+  if (aliveNow != null) mirror.push(`같은 해 ${countryName}에서 태어난 사람 중 약 ${Math.round(aliveNow * 100)}%가 지금 살아 있어요.`);
+  if (age === 15) mirror.push(life.schoolStatus === 'ENROLLED' ? '지금 학교에 다니고 있어요.' : '지금은 학교에 다니지 않아요.');
+  if (age === 30) mirror.push(life.income > 0 ? `소득은 ${countryName} 사람들 가운데 ${rankStr(life.incomeRankCountry)}에 들어요.` : '지금은 소득이 없어요.');
+  const sec = speed >= 16 ? 4.5 : 9;
+  useEffect(() => {
+    if (!auto || hold) return undefined;
+    const t = setTimeout(() => onClose(''), sec * 1000);
+    return () => clearTimeout(t);
+  }, [auto, hold, sec, onClose]);
+  return (
+    <div className="dec-back">
+      <div className="dec" role="dialog" aria-modal="true" aria-labelledby="refT">
+        <div className="dec-hd"><span>잠시 멈춤</span><span>{age}세 · {life.birthYear + age}년</span></div>
+        <div className="dec-bd">
+          <h2 id="refT" className="dec-title">{life.name}, {age}세</h2>
+          {mirror.length > 0 && <p className="dec-text">{mirror.join(' ')}</p>}
+          <p className="dec-q">{q(life.name)}</p>
+          <textarea className="dec-note-in" maxLength={200} rows={3} value={text}
+            placeholder={`예: ${ex(poor)} (적지 않아도 괜찮아요)`}
+            onFocus={() => setHold(true)} onChange={(e) => { setText(e.target.value); setHold(true); }} />
+          <div className="dec-ch">
+            <button type="button" className="dec-opt" onClick={() => onClose(text)}>
+              <span className="dec-k">1</span><b>적어 두고 계속 살기</b><small>적은 글은 이 삶의 기록에 남아요</small>
+            </button>
+            <button type="button" className="dec-opt" onClick={() => onClose('')}>
+              <span className="dec-k">2</span><b>마음속에 담고 계속 살기</b>
+            </button>
+          </div>
+          {auto && !hold && (
+            <>
+              <div className="dec-autobar" aria-hidden="true"><i style={{ animationDuration: `${sec}s` }} /></div>
+              <p className="dec-hint">잠시 후 계속 살아갑니다. 글 칸을 누르면 다 적을 때까지 기다려요.</p>
+            </>
+          )}
+          <div className="dec-foot">
+            <button type="button" className="dec-fate-b sm" onClick={() => onClose(text, true)}>다음부터 이 창 띄우지 않기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 결정 창 아래 '자동으로 선택하기' 단추 + '앞으로 나오는 결정도 자동으로' (직업·이민 창, 선택 이벤트 창과 같은 모양)
-function FateFooter({ onFate, busy, auto, onAuto, children }) {
+function FateFooter({ onFate, busy, auto, onAuto, hideFate, children }) {
   return (
     <div className="dec-fate">
       {children}
-      <button type="button" className="dec-fate-b" disabled={busy} onClick={onFate}>자동으로 선택하기</button>
+      {!hideFate && <button type="button" className="dec-fate-b" disabled={busy} onClick={onFate}>자동으로 선택하기</button>}
       <label className="dec-fate-auto">
         <input type="checkbox" checked={auto} onChange={(e) => onAuto(e.target.checked)} />
         앞으로 나오는 결정도 자동으로
@@ -1058,7 +1226,7 @@ function MoneyPanel({ life, year, countryName }) {
       </div>
       {life.income > 0 && (
         <div className="pp-mrow">
-          <small>{life.jobStatus === 'RETIRED' ? '연금' : '내 소득'} <em>한국 체감</em></small>
+          <small>{life.jobStatus === 'RETIRED' ? '연금 (한 해)' : '내 소득 (연봉)'} <em>한국 체감</em></small>
           <b>{won(life.income, k)}</b>
           <small title={PPP_TIP}>국제 비교 {ppp(life.income, k)} · 월 {won(life.income / 12, k)}</small>
         </div>
@@ -1071,7 +1239,7 @@ function MoneyPanel({ life, year, countryName }) {
         </div>
       )}
       {cRank && (
-        <p className="pp-rank" title="순자산이 아니라 내 소득을 그 나라 사람들과 견준 위치예요">소득 위치(순자산 아님): {countryName} <b>{cRank}</b>{aRank && <> · 아시아 <b>{aRank}</b></>}</p>
+        <p className="pp-rank" title="내 소득(연봉)을 그 나라 사람들과 견준 위치예요">소득 위치: {countryName} <b>{cRank}</b>{aRank && <> · 아시아 <b>{aRank}</b></>}</p>
       )}
       {!kid && life.moneyDelta != null && (
         <div className="pp-flow">
@@ -1093,9 +1261,27 @@ function MoneyPanel({ life, year, countryName }) {
 
 // 가족과 삶 (원작 famRows: 역할 | 이름 · 나이 · 덧붙임 <small>· 사이</small> <small>직업</small>)
 //   어머니·아버지·형제자매·배우자·아들·딸·친구·손주 + 가진 것 · 사는 곳 · 지금 시기
+// 취미 이름 (EngineChoice.HOBBIES 와 같은 코드) · 병역 종류
+const HOBBY_NAME = {
+  sport: '운동', music: '노래·악기 연주', dance: '춤', screen: '텔레비전·영화 보기', sns: '스마트폰·SNS', games: '비디오 게임',
+  reading: '독서', fishing: '낚시', cooking: '요리', garden: '텃밭 가꾸기', hiking: '등산·산책', travel: '여행',
+  art: '그림 그리기', karaoke: '노래방', calli: '서예', gym: '헬스',
+};
+const SVC_KIND = { A: '육군', N: '해군', F: '공군', S: '보충역' };
+
 function FamilyRows({ life, countryName, stageText }) {
   const fam = life.family;
   const owned = life.currentAge >= 6 ? ownNames(life) : [];
+  // 반려동물 (엔진 OWNS 의 PET-종류-이름-들인나이-수명)
+  const petTok = (life.owns || '').split(',').map((x) => x.trim().split('-')).find((p) => p.length === 5 && p[0] === 'PET');
+  const pet = petTok ? { kind: petTok[1], name: petTok[2], at: Number(petTok[3]) } : null;
+  // 취미 (HOB-코드) · 병역 (SVC-ON-전역나이-종류-개월 / SVC-DONE / SVC-EX)
+  const toks = (life.owns || '').split(',').map((x) => x.trim());
+  const hob = HOBBY_NAME[(toks.find((x) => x.startsWith('HOB-')) || '').slice(4)];
+  const svc = toks.find((x) => x.startsWith('SVC-'));
+  const svcP = svc ? svc.split('-') : null;
+  const svcText = !svcP ? null : svcP[1] === 'ON'
+    ? `복무 중 (${SVC_KIND[svcP[3]] || '현역'} · ${svcP[4]}개월)` : svcP[1] === 'DONE' ? '마침' : '면제';
   return (
     <div className="pp-fam">
       {fam?.length ? fam.map((m, i) => {
@@ -1117,6 +1303,11 @@ function FamilyRows({ life, countryName, stageText }) {
           <div className="row"><span>자녀</span><span>{life.childCount > 0 ? life.childCount + '명' : '없음'}</span></div>
         </>
       )}
+      {pet && (
+        <div className="row"><span>반려동물</span><span>{pet.name} · {PET_WORD[pet.kind] || '반려동물'} · 함께한 지 {Math.max(0, life.currentAge - pet.at)}년</span></div>
+      )}
+      {hob && <div className="row"><span>취미</span><span>{hob}</span></div>}
+      {svcText && <div className="row"><span>병역</span><span>{svcText}</span></div>}
       {owned.length > 0 && <div className="row"><span>가진 것</span><span>{owned.join(', ')}</span></div>}
       <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
