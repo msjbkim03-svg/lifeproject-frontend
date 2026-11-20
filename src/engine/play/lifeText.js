@@ -53,6 +53,22 @@ export const traitLine = (t) => {
   }
 };
 
+// 기록 줄 안의 돈 표시를 색으로 나누기: 들어온 돈(+) 초록 · 나간 돈(−)·대출·이자 빨강
+//   [{ t: '글자', k: 'pos' | 'neg' | '' }] 로 돌려줌 (PlayPage 가 span 으로 그림)
+const MONEY = /([+−-]\s?\d[\d.,]*(?:억|만)?\s?원)|((?:대출|이자 약)\s\d[\d.,]*(?:억|만)?\s?원)/g;
+export const splitMoney = (text) => {
+  const s = String(text ?? '');
+  const out = [];
+  let last = 0;
+  for (const m of s.matchAll(MONEY)) {
+    if (m.index > last) out.push({ t: s.slice(last, m.index), k: '' });
+    out.push({ t: m[0], k: m[1] ? (m[1][0] === '+' ? 'pos' : 'neg') : 'neg' });
+    last = m.index + m[0].length;
+  }
+  if (last < s.length) out.push({ t: s.slice(last), k: '' });
+  return out;
+};
+
 // 원작 rankStr: 0.5 이상 "상위 N%", 아래면 "하위 N%"
 export const rankStr = (p) => {
   if (p == null) return null;
@@ -63,16 +79,22 @@ export const rankStr = (p) => {
 // ───────── 인생 기록 색 (원작 feed 클래스) ─────────
 //   (화면 클래스는 앞에 fk- 를 붙여 씀: 메인 화면 .ms, 결정 창 .dec 와 이름이 겹쳐 줄이 화면 높이만큼 커졌었음)
 //   big 굵게 · bad 빨강 · ms 초록 이정표 · hist 회색 왼쪽 줄 ◆ · note 청록 제목 글꼴 · dec 작은 회색 · death 큰 제목 글꼴 · ledger 작은 돈 줄
+//   alert 큰 역사 사건(전쟁·코로나·기근·경제 위기 등): 빨간 왼쪽 줄 + 아래 '큰 사건' 경고등 (11/20 동현님 요청, 원작에는 없음)
 const BAD = /(세상을 떠|숨을 거|사망|잃었|잃은|다쳤|부상|사고|병에 걸|앓|입원|수술|실직|해고|그만두었|중퇴|빚|이혼|헤어졌|전쟁|피란|기근|굶|가뭄|홍수|지진|폭격|체포|감옥|파산|망했|사기|도둑|불이 나|아팠|열병|설사|폐렴|결핵|말라리아)/;
 const MS = /(태어났|입학|진학|졸업|결혼|첫째|둘째|셋째|아이가 생|아이를 낳|일을 시작|이 되었다|취업|승진|은퇴|이사|이민|처음으로|첫 월급|집을 샀|문을 열)/;
 const NOTE = /(같은 해 .*태어난 .*살아 있다|또래 가운데)/;
 const HIST_ID = /^[A-Z]{2,3}_\d{4}/;
+// 큰 역사 사건: 사망 위험이 붙었거나 재산·건강이 크게 깎이거나, 문장이 전쟁·대유행·기근·경제 위기 같은 큰 일
+const BIG_HIST = /(전쟁|참전|전선|폭격|공습|피란|코로나|대유행|팬데믹|전염병|기근|굶주|경제 위기|금융 위기|외환 위기|IMF|대공황|학살|쿠데타|계엄|혁명|항쟁|대지진|쓰나미|원전 사고)/;
 
 export const feedKind = (line) => {
   if (line.kind) return line.kind;
   const t = line.text || '';
   const fx = line.fx || {};
-  if (fx.eventType === 'HIST' || HIST_ID.test(line.eventId || fx.eventId || '')) return 'hist';
+  if (fx.eventType === 'HIST' || HIST_ID.test(line.eventId || fx.eventId || '')) {
+    const big = (fx.deathAdd || 0) > 0 || (fx.effWealthRate || 0) <= -0.1 || (fx.effHealth || 0) <= -5 || BIG_HIST.test(t);
+    return big ? 'alert' : 'hist';
+  }
   if (NOTE.test(t)) return 'note';
   const hurt = (fx.effHealth || 0) <= -8 || (fx.effWealthRate || 0) <= -0.2 || (fx.deathAdd || 0) > 0;
   if (hurt || BAD.test(t)) return 'bad';

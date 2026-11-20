@@ -15,7 +15,8 @@ import Panel from '../common/ui/Panel';
 import FeedList from '../common/ui/FeedList';
 import BigStat from '../common/ui/BigStat';
 import StarIcon from '../common/ui/StarIcon';
-import OrbitGlobe, { DECADES } from '../common/ui/OrbitGlobe';
+import OrbitGlobe from '../common/ui/OrbitGlobe';
+import { DECADES } from '../common/ui/decades';
 import { useAsiaCounter, useLiveFeed } from './useLiveStats';
 import './main.css';
 

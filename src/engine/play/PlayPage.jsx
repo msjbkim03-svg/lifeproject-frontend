@@ -13,9 +13,9 @@
 // - 나라 패널은 그해와 가장 가까운 연대의 나라·권역 통계 (원작 나라 패널, GET /api/engine/country)
 // - 출생 화면에서 state.life 로 들어오거나, 새로고침·이어하기면 GET /api/engine/current 로 불러옴
 // - 큰 결정(선택 이벤트 C09, 이민 목적지 C10, 직업 제안 C06)만 창으로 띄우고 진행을 멈춤
-//   선택 이벤트는 '운에 맡기기'로 무작위 결정, '앞으로도 맡기기'를 켜면 알아서 골라요 (localStorage autoChoice)
+//   선택 이벤트는 '자동으로 선택하기'로 무작위 결정, '앞으로도 맡기기'를 켜면 알아서 골라요 (localStorage autoChoice)
 // - 죽으면(status ENDED) 잠깐 보여 주고 /result/:lifeId 로 이동 (C18)
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import client from '../../api/api';
@@ -28,7 +28,7 @@ import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
-import { won, ppp, PPP_TIP, rankStr, feedKind, belongings, commute, traitLine, ro, ownNames } from './lifeText';
+import { won, ppp, PPP_TIP, rankStr, splitMoney, feedKind, belongings, commute, traitLine, ro, ownNames } from './lifeText';
 import { TRAIT_VIEW } from '../../utils/traits';
 import './play.css';
 
@@ -75,14 +75,12 @@ const focusList = (life) => {
   const age = life.currentAge;
   const love = age >= 18 && age < 40 && life.marriedYn !== 'Y' ? ['LOVE'] : [];
   switch (life.stageCode) {
-    case 'STUDENT': return age < 15 ? ['STUDY', 'PLAY', 'HOUSE', 'SPORT', 'HOBBY'] : ['STUDY', 'PLAY', 'SPORT', 'HOBBY', 'JOB_PREP'];
+    case 'STUDENT': return ['STUDY', 'PLAY', 'HOUSE', 'SPORT', 'HOBBY', ...(age >= 15 ? ['JOB_PREP'] : [])];
     case 'YOUTH': return ['HOUSE', 'PLAY', 'SPORT', 'HOBBY'];
     case 'UNIV': return ['STUDY', 'PLAY', 'PARTTIME', 'JOB_PREP', 'SPORT', 'HOBBY', ...love];
     case 'WORKER': return ['WORK', 'BALANCE', 'FAMILY', 'HEALTH', 'SELF_DEV', 'HOBBY', ...love];
     case 'JOBLESS': return ['FAMILY', 'HEALTH', 'SELF_DEV', 'HOBBY', 'REST', ...(age < 40 ? ['JOB_PREP'] : []), ...love];
-    case 'SENIOR': return life.jobStatus === 'EMPLOYED'
-      ? ['WORK', 'FAMILY', 'HEALTH', 'BRAIN', 'HOBBY', 'FAITH']
-      : ['FAMILY', 'HEALTH', 'BRAIN', 'HOBBY', 'FAITH', 'REST'];
+    case 'SENIOR': return [...(life.jobStatus === 'EMPLOYED' ? ['WORK'] : []), 'FAMILY', 'HEALTH', 'BRAIN', 'HOBBY', 'REST', 'FAITH'];
     default: return [];
   }
 };
@@ -284,20 +282,21 @@ function PlayPage() {
   }, [guestToken]);
 
   // ① 진행 중인 인생 불러오기 (새로고침, 이어하기, 409 뒤)
-  const reload = useCallback(async () => {
+  //    상태는 서버 응답이 온 뒤(then/catch 콜백)에서만 바꿔요 - 첫 화면 effect 에서 불러도 렌더가 겹치지 않게
+  const reload = useCallback(() => {
     yr.current = { data: null, fetching: false, t: 0, t0: 0, shown: 0, focus: null, focusing: false };
     setProg(0);
-    try {
-      const res = await client.get('/api/engine/current', { params: { guestToken } });
-      setLife(res.data);
-      loadLogs(res.data);
-      setError('');
-    } catch (err) {
-      if (err.response?.status === 404) setError('진행 중인 인생이 없어요. 메인에서 새로 태어나 주세요.');
-      else setError(errText(err));
-    } finally {
-      setLoading(false);
-    }
+    return client.get('/api/engine/current', { params: { guestToken } })
+      .then((res) => {
+        setLife(res.data);
+        loadLogs(res.data);
+        setError('');
+      })
+      .catch((err) => {
+        if (err.response?.status === 404) setError('진행 중인 인생이 없어요. 메인에서 새로 태어나 주세요.');
+        else setError(errText(err));
+      })
+      .finally(() => setLoading(false));
   }, [guestToken, loadLogs]);
 
   useEffect(() => {
@@ -322,7 +321,10 @@ function PlayPage() {
       pushLines(toLines(res.data.currentAge - 1, res.data.events));
     } catch (err) {
       setNotice(errText(err));
-      if (err.response?.status === 409) await reload();
+      // 409(먼저 할 일이 있음)·400(그 결정이 이미 없음)이면 서버 상태로 다시 맞춤
+      //   예: 작은 선택 창이 떠 있는 동안 서버를 재시작하면 서버의 선택은 사라져서 400 → 예전 창이 계속 남던 것
+      const st = err.response?.status;
+      if (st === 409 || st === 400) await reload();
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -360,8 +362,12 @@ function PlayPage() {
   const waiting = showDest || showChoice || showJob;
   const yearSec = ff ? FF_SEC : yearSecOf(life?.lifeExpectancy) / speed;
 
-  // 결정 창이 뜨면 빨리 감기 끝
-  useEffect(() => { if (waiting) setFf(false); }, [waiting]);
+  // 결정 창이 뜨면 빨리 감기 끝 (waiting 이 바뀐 렌더에서 바로 끔 - React 권장 방식, effect 로 한 번 더 그리지 않음)
+  const [prevWaiting, setPrevWaiting] = useState(waiting);
+  if (prevWaiting !== waiting) {
+    setPrevWaiting(waiting);
+    if (waiting) setFf(false);
+  }
 
   // 결정 운에 맡기기: 직업 제안·이민 목적지 (선택 이벤트는 EventChoiceModal 이 직접 처리)
   //   '자동 결정'이 켜져 있으면 창을 잠깐(AUTO_MS) 보여 준 뒤 무작위로 골라요
@@ -383,8 +389,10 @@ function PlayPage() {
   //    매 프레임 막대는 DOM 으로 바로 칠하고(React 다시 그리기 없음), 해가 바뀔 때만 화면을 새로 그려서 버벅임 없음
   //    다음 해는 막대가 끝나기 조금 전에 미리 요청해 두어 해 사이에 멈춤이 없게 함
   const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen;
-  const loopRef = useRef({});
-  loopRef.current = { yearSec, guestToken, pushLines, remember, reload };
+  // 화면을 다시 그린 뒤 진행 막대를 지금 위치로 맞춤 (막대가 새로 만들어져도 0으로 보이지 않게)
+  useLayoutEffect(() => { if (!ended) setProg(yr.current.t); });
+  const loopRef = useRef({ yearSec, guestToken, pushLines, remember, reload });
+  useEffect(() => { loopRef.current = { yearSec, guestToken, pushLines, remember, reload }; });
   useEffect(() => {
     if (!running) return undefined;
     let frame;
@@ -462,7 +470,7 @@ function PlayPage() {
       alive = false;
       cancelAnimationFrame(frame);
     };
-  }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [running]);
 
   // 돈 쓰기 · 투자 (C06-3): 그해 요청 중이면 끝날 때까지 기다렸다가 보냄, 사고 나면 돈·능력치만 바꾸고 기록 한 줄
   //   이미 받아 둔 그해 응답(y.data)이 있으면 거기에도 반영 (해가 끝날 때 예전 돈으로 되돌아가지 않게)
@@ -495,16 +503,18 @@ function PlayPage() {
   }, [ended, life, navigate]);
 
   // ④ 나라 패널: 사는 나라(또는 태어난 나라)·연대가 바뀔 때만 다시 불러옴
-  const ctyCode = life ? (ctyView === 'born' ? life.birthCountry : life.currentCountry) : null;
+  //    이민 전(또는 태어난 나라로 돌아옴)이면 태어난 나라 보기 단추가 없으니 늘 사는 나라
+  const ctyMode = life && life.birthCountry !== life.currentCountry ? ctyView : 'cur';
+  const ctyCode = life ? (ctyMode === 'born' ? life.birthCountry : life.currentCountry) : null;
   const ctyDecade = life ? Math.floor((life.birthYear + life.currentAge) / 10) * 10 : null;
   useEffect(() => {
     if (!life?.lifeId || !ctyCode) return undefined;
     let alive = true;
-    client.get('/api/engine/country', { params: { lifeId: life.lifeId, guestToken, view: ctyView } })
+    client.get('/api/engine/country', { params: { lifeId: life.lifeId, guestToken, view: ctyMode } })
       .then((res) => { if (alive) setCty(res.data); })
       .catch((err) => console.log('나라 통계 불러오기 실패', err.response?.data));
     return () => { alive = false; };
-  }, [life?.lifeId, ctyCode, ctyDecade, ctyView, guestToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [life?.lifeId, ctyCode, ctyDecade, ctyMode, guestToken]);
 
   // ⑤ 특성 칸 (C13): 인생마다 한 번 + 어릴 때 기질을 고른 뒤(5세까지 선택 창이 닫힐 때) 다시
   const traitKey = life ? (life.currentAge <= 5 ? `${life.currentAge}-${life.needChoice ? 1 : 0}` : 'grown') : null;
@@ -515,9 +525,7 @@ function PlayPage() {
       .then((res) => { if (alive) setTraits(res.data); })
       .catch((err) => console.log('특성 불러오기 실패', err.response?.data));
     return () => { alive = false; };
-  }, [life?.lifeId, traitKey, guestToken]); // eslint-disable-line react-hooks/exhaustive-deps
-  // 이민 전이면 태어난 나라 보기 단추가 없으니 사는 나라로
-  useEffect(() => { if (life && life.birthCountry === life.currentCountry) setCtyView('cur'); }, [life?.currentCountry]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [life?.lifeId, traitKey, guestToken]);
 
   // 인생 지도 말풍선은 화면을 굴리면 닫힘 (원작과 같음)
   useEffect(() => {
@@ -534,7 +542,13 @@ function PlayPage() {
     return () => clearTimeout(t);
   }, [notice]);
 
-  useEffect(() => { setDestPick(null); }, [life?.needDestination]);
+  // 이민 목적지 창이 새로 뜨거나 닫히면 한 번 누른 표시를 지움 (바뀐 렌더에서 바로)
+  const needDest = life?.needDestination;
+  const [prevNeedDest, setPrevNeedDest] = useState(needDest);
+  if (prevNeedDest !== needDest) {
+    setPrevNeedDest(needDest);
+    setDestPick(null);
+  }
 
   // 스페이스바: 멈춤/계속 (입력칸·버튼에서는 무시)
   useEffect(() => {
@@ -581,7 +595,9 @@ function PlayPage() {
   const year = life.birthYear + life.currentAge;
   const countryName = life.countryName || life.currentCountry;
   const countryText = life.histName && life.histName !== countryName ? `${countryName} (당시 ${life.histName})` : countryName;
-  const stageText = STAGE[life.stageCode] || (life.currentAge < 6 ? '아기 시절' : '');
+  // 학교·일 없는 6~17세(YOUTH)는 13세부터 '청소년 시절'
+  const stageText = (life.stageCode === 'YOUTH' && life.currentAge >= 13 ? '청소년 시절' : STAGE[life.stageCode])
+    || (life.currentAge < 6 ? '아기 시절' : '');
   const town = life.isUrban === 'Y' ? '도시' : '시골';
   const focusOpts = focusList(life);
   const deathAge = life.deathAge ?? life.currentAge;
@@ -602,7 +618,7 @@ function PlayPage() {
             <div className="pp-yr">
               <span className="pp-yr-t">{year}년 · {life.name} · {ff ? '다음 결정까지 빨리 감는 중' : `1년 ≈ ${secText(yearSec)}초`}</span>
               <div className="pp-prog" aria-hidden="true">
-                <i ref={progRef} style={{ transform: `scaleX(${ended ? 1 : yr.current.t})` }} />
+                <i ref={progRef} style={{ transform: `scaleX(${ended ? 1 : 0})` }} />
               </div>
             </div>
           </div>
@@ -623,7 +639,7 @@ function PlayPage() {
               다음 결정까지 »
             </button>
             <button type="button" className="pp-b" aria-pressed={autoChoice} disabled={ended}
-              title="결정 창(선택 이벤트·일자리·이민)이 뜨면 잠깐 보여 준 뒤 운에 맡겨 알아서 골라요"
+              title="결정 창(선택 이벤트·일자리·이민)이 뜨면 잠깐 보여 준 뒤 자동으로 골라요"
               onClick={() => setAutoChoice(!autoChoice)}>
               자동 결정 {autoChoice ? '켬' : '끔'}
             </button>
@@ -696,6 +712,32 @@ function PlayPage() {
               </button>
             )}
           </section>
+
+          {/* 내 퀘스트: 시작할 때 고른 것을 계속 보이게 (퀘스트를 안 고른 인생·비회원은 칸을 안 그림) */}
+          {life.quests?.length > 0 && (
+            <section className="pp-panel pp-quests">
+              <h3 className="pp-h"><span>내 퀘스트</span><span className="pp-lbl">{life.quests.length}개</span></h3>
+              <ul>
+                {life.quests.map((q) => (
+                  <li key={q.questId} className={q.achieved === 'Y' ? 'done' : ''}>
+                    <b>{q.questName}</b>
+                    {q.description && <small>{q.description}</small>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* 비회원 안내 (C03-8): 이어하기는 이 브라우저의 임시 토큰으로만 됨 */}
+          {guestToken && (
+            <section className="pp-panel pp-guest" role="note">
+              <p>브라우저 기록을 지우면 이어하기가 사라져요. 회원가입하면 계속 보관돼요.</p>
+              <div className="pp-guest-b">
+                <button type="button" className="pp-b" onClick={() => navigate('/join')}>회원가입</button>
+                <button type="button" className="pp-b" onClick={() => navigate('/login')}>로그인</button>
+              </div>
+            </section>
+          )}
         </div>
 
         {/* ───── 가운데: 마을 · 올해의 초점 · 인생 기록 ───── */}
@@ -746,15 +788,20 @@ function PlayPage() {
               <p className="pp-sub">한 해가 지나면 여기에 기록이 쌓여요.</p>
             ) : (
               <ul className="pp-feed">
-                {feed.map((e, i) => (
-                  <li key={e.id ?? `k${i}`} className={[feedKind(e) ? 'fk-' + feedKind(e) : '', e.struck ? 'fk-struck' : ''].join(' ').trim() || undefined}>
-                    <span className="a">{e.age}세</span>
-                    <span className="x">
-                      {e.text}
-                      {e.fx && <EffectChips effect={e.fx} />}
-                    </span>
-                  </li>
-                ))}
+                {feed.map((e, i) => {
+                  const kind = feedKind(e);
+                  return (
+                    <li key={e.id ?? `k${i}`} className={[kind ? 'fk-' + kind : '', e.struck ? 'fk-struck' : ''].join(' ').trim() || undefined}>
+                      <span className="a">{e.age}세</span>
+                      <span className="x">
+                        {splitMoney(e.text).map((p, j) => (p.k ? <span key={j} className={'fm-' + p.k}>{p.t}</span> : p.t))}
+                        {e.fx && <EffectChips effect={e.fx} />}
+                        {/* 큰 역사 사건 경고등: 줄이 처음 생길 때 세 번 깜빡이고 켜진 채로 남음 */}
+                        {kind === 'alert' && <span className="pp-alert" role="status"><i aria-hidden="true" />큰 사건</span>}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>
@@ -838,15 +885,15 @@ function PlayPage() {
             <h3 className="pp-h">
               <span>{cty?.nameKo || countryName}{cty?.decade ? ` · ${cty.decade}년대` : ''}</span>
               {migrated && (
-                <button type="button" className="pp-ctysw" onClick={() => setCtyView(ctyView === 'born' ? 'cur' : 'born')}>
-                  {ctyView === 'born' ? '사는 나라 보기' : '태어난 나라 보기'}
+                <button type="button" className="pp-ctysw" onClick={() => setCtyView(ctyMode === 'born' ? 'cur' : 'born')}>
+                  {ctyMode === 'born' ? '사는 나라 보기' : '태어난 나라 보기'}
                 </button>
               )}
             </h3>
             <dl>
-              {ctyView === 'cur' && life.histName && life.histName !== countryName && (<><dt>당시 국가명</dt><dd>{life.histName}</dd></>)}
+              {ctyMode === 'cur' && life.histName && life.histName !== countryName && (<><dt>당시 국가명</dt><dd>{life.histName}</dd></>)}
               {countryRows(cty).map(([k, v]) => (<Fragment key={k}><dt>{k}</dt><dd>{v}</dd></Fragment>))}
-              {ctyView === 'cur' && (<><dt>사는 곳</dt><dd>{town}</dd></>)}
+              {ctyMode === 'cur' && (<><dt>사는 곳</dt><dd>{town}</dd></>)}
             </dl>
             {cty && (
               <p className="pp-src">
@@ -869,7 +916,7 @@ function PlayPage() {
         }))}
         busy={busy}
         onPick={(o) => (destPick === o.code ? decide('/api/engine/destination', { countryCode: o.code }) : setDestPick(o.code))}
-        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 운이 골라요.' : undefined}
+        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 자동으로 골라요.' : undefined}
         footer={<FateFooter onFate={fateDest} busy={busy} auto={autoChoice} onAuto={setAutoChoice} />} />
 
       {/* C06-3 돈 쓰기 · 투자 */}
@@ -898,7 +945,7 @@ function PlayPage() {
         }))}
         busy={busy}
         onPick={(o) => decide('/api/engine/job', { jobId: o.jobId })}
-        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 운이 골라요.' : undefined}
+        hint={autoChoice ? '자동 결정이 켜져 있어요. 잠시 뒤 자동으로 골라요.' : undefined}
         footer={(
           <FateFooter onFate={fateJob} busy={busy} auto={autoChoice} onAuto={setAutoChoice}>
             <Button type="ghost" size="sm" disabled={busy} onClick={() => setSkipJobAge(life.currentAge)}>올해는 넘기기</Button>
@@ -908,15 +955,15 @@ function PlayPage() {
   );
 }
 
-// 결정 창 아래 '운에 맡기기' 단추 + '앞으로 나오는 결정도 맡기기' (직업·이민 창, 선택 이벤트 창과 같은 모양)
+// 결정 창 아래 '자동으로 선택하기' 단추 + '앞으로 나오는 결정도 자동으로' (직업·이민 창, 선택 이벤트 창과 같은 모양)
 function FateFooter({ onFate, busy, auto, onAuto, children }) {
   return (
     <div className="dec-fate">
       {children}
-      <button type="button" className="dec-fate-b" disabled={busy} onClick={onFate}>운에 맡기기</button>
+      <button type="button" className="dec-fate-b" disabled={busy} onClick={onFate}>자동으로 선택하기</button>
       <label className="dec-fate-auto">
         <input type="checkbox" checked={auto} onChange={(e) => onAuto(e.target.checked)} />
-        앞으로 나오는 결정도 맡기기
+        앞으로 나오는 결정도 자동으로
       </label>
     </div>
   );
@@ -1024,7 +1071,7 @@ function MoneyPanel({ life, year, countryName }) {
         </div>
       )}
       {cRank && (
-        <p className="pp-rank">소득 위치: {countryName} <b>{cRank}</b>{aRank && <> · 아시아 <b>{aRank}</b></>}</p>
+        <p className="pp-rank" title="순자산이 아니라 내 소득을 그 나라 사람들과 견준 위치예요">소득 위치(순자산 아님): {countryName} <b>{cRank}</b>{aRank && <> · 아시아 <b>{aRank}</b></>}</p>
       )}
       {!kid && life.moneyDelta != null && (
         <div className="pp-flow">
