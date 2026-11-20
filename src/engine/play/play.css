@@ -224,7 +224,9 @@
 .pp-fam .row { display: flex; flex-wrap: nowrap; align-items: baseline; justify-content: space-between; gap: 10px; }
 .pp-fam .row span:first-child { color: var(--ink-sub); }
 .pp-fam .row span:last-child { text-align: right; font-weight: 500; }
-.pp-fam .pwork { font-weight: 400; font-size: 11.5px; color: var(--ink-light); }
+.pp-fam .row span:first-child { flex-shrink: 0; }
+.pp-fam .pwork { display: block; font-weight: 400; font-size: 11.5px; color: var(--ink-light); }
+.pp-fam .bond { font-weight: 400; font-size: 12px; color: var(--ink-sub); }
 .pp-fam .row.gone span:last-child { color: var(--ink-light); font-weight: 400; }
 
 /* ───── 같은 1초에 태어난 사람들 (원작 companions) ───── */

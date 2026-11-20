@@ -131,3 +131,12 @@ export const commute = (life, year) => {
   if (life.jobStatus === 'RETIRED' || age >= 65) return '동네 산책';
   return urban ? '동네와 시장' : '마을 안';
 };
+
+// 조사 '(으)로': 마지막 글자 받침이 없거나 ㄹ 받침이면 '로', 그 밖의 받침이면 '으로' (한글이 아니면 '로')
+export const ro = (word) => {
+  const w = String(word ?? '').replace(/[\s'"’)]+$/, '');
+  const c = w.charCodeAt(w.length - 1);
+  if (!(c >= 0xac00 && c <= 0xd7a3)) return word + '로';
+  const jong = (c - 0xac00) % 28;
+  return word + (jong === 0 || jong === 8 ? '로' : '으로');
+};
