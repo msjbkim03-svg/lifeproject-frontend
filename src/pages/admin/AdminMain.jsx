@@ -8,6 +8,7 @@ import BigStat from '../../common/ui/BigStat';
 import BarRow from '../../common/ui/BarRow';
 import Badge from '../../common/ui/Badge';
 import styles from './AdminMain.module.css';
+import AdminNav from './AdminNav';
 
 const TYPE_NAME = { MEMBER: '회원', GUEST: '비회원' };
 
@@ -33,6 +34,7 @@ function AdminMain() {
 
   return (
     <div className={'page col ' + styles.admin}>
+      <AdminNav />
       <h1>관리자 메인</h1>
 
       {/* 1. 플레이 수 */}

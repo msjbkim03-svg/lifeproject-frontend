@@ -17,6 +17,8 @@ import TraitsPage from './pages/mypage/TraitsPage';
 import FindPage from './pages/find/FindPage';
 import QuestPage from './pages/quest/QuestPage';
 import AdminMain from './pages/admin/AdminMain';
+import AdminEvents from './pages/admin/AdminEvents';
+import AdminHistReview from './pages/admin/AdminHistReview';
 import MemorialListPage from './pages/memorial/MemorialListPage';
 import MemorialRoomPage from './pages/memorial/MemorialRoomPage';
 import MemorialRoomTab from './pages/memorial/MemorialRoomTab';
@@ -63,7 +65,10 @@ function App() {
           <Route path="last" element={<MemorialLastTab />} />
         </Route>
         {/* A04 관리자 메인 */}
-        <Route path="/admin" element={<AdminMain />} />
+         <Route path="/admin" element={<AdminMain />} />
+        {/* A03 이벤트 관리 · C10 역사 문장 검수 (관리자만, 서버가 권한 확인) */}
+        <Route path="/admin/events" element={<AdminEvents />} />
+        <Route path="/admin/hist-review" element={<AdminHistReview />} />
         {/* 디자인 가이드 (공통) */}
         <Route path="/design-guide" element={<DesignGuide />} />
         {/* C08 마을 이동 테스트 (엔진) */}
