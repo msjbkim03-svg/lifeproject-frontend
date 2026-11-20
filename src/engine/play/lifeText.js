@@ -1,4 +1,4 @@
-// C03 진행 화면 글자 도우미 - 원작(1in8b)과 같은 돈 표시·기록 색 나누기·가진 것·다니는 길
+// C03 진행 화면 글자 도우미 - 원작(1in8b)과 같은 돈 표시·기록 색 나누기·내 물건·주로 다니는 곳
 // 돈: 엔진은 달러로 계산하고 응답에 krwPerUsd(달러 → 한국 체감 원)를 같이 줘요
 //   한국 체감 원 = 구매력(PPP) 달러 × 850원 (원작 KRW)
 
@@ -80,27 +80,28 @@ export const rankStr = (p) => {
 //   (화면 클래스는 앞에 fk- 를 붙여 씀: 메인 화면 .ms, 결정 창 .dec 와 이름이 겹쳐 줄이 화면 높이만큼 커졌었음)
 //   big 굵게 · bad 빨강 · ms 청록 이정표 · hist 회색 왼쪽 줄 + 나이 옆 ◆ · warm 따뜻한 일(나이 옆 금색 점) · loss 가까운 사람을 잃음(굵게 ✿)
 //   note 청록 제목 글꼴 · dec 작은 회색 ▸ · death 큰 제목 글꼴 · ledger 작은 돈 줄 (11/20 원작 .feed li.* 규칙과 같게)
-//   alert 큰 역사 사건(전쟁·코로나·기근·경제 위기 등): 빨간 왼쪽 줄 + 아래 '큰 사건' 경고등 (11/20 동현님 요청, 원작에는 없음)
-const BAD = /(세상을 떠|숨을 거|사망|잃었|잃은|다쳤|부상|사고|병에 걸|앓|입원|수술|실직|해고|그만두었|중퇴|빚|이혼|헤어졌|전쟁|피란|기근|굶|가뭄|홍수|지진|폭격|체포|감옥|파산|망했|사기|도둑|불이 나|아팠|열병|설사|폐렴|결핵|말라리아)/;
+//   alert 큰 역사 사건: 빨간 왼쪽 줄 + 아래 '큰 사건' 경고등 (11/20 동현님 요청, 원작에는 없음)
+//     기준은 서버 한 곳 (EngineService.bigHist): 역사 사건 중 강도 2 이상 또는 전쟁·재난 유형, 끝난 소식은 빼고
+//     진행 중엔 응답 alerts, 새로고침 땐 /api/engine/logs 의 alert='Y' 로 받아서 line.alert
+const BAD = /(세상을 떠|숨을 거|사망|잃었|잃은|다쳤|부상|사고|병에 걸|앓|입원|수술|실직|해고|그만두었|중퇴|빚|이혼|헤어졌|전쟁|피란|기근|굶|가뭄|홍수|지진|폭격|체포|감옥|파산|망했|형편이 어려워졌|사업이 기울어|살림이 빠듯해졌|살림이 어려워졌|사기|도둑|불이 나|아팠|열병|설사|폐렴|결핵|말라리아)/;
 const MS = /(태어났|입학|진학|졸업|결혼|첫째|둘째|셋째|아이가 생|아이를 낳|일을 시작|이 되었다|취업|승진|은퇴|이사|이민|처음으로|첫 월급|집을 샀|문을 열)/;
 const NOTE = /(같은 해 .*태어난 .*살아 있다|또래 가운데|^“)/; // 마지막: 잠시 멈춤에 적은 한 줄 (따옴표)
 // 원작 loss: 가까운 사람을 잃음 (굵게 + ✿)
 const LOSS = /(아버지|어머니|부모님|아빠|엄마|남편|아내|배우자|아이|아들|딸|자녀|형|누나|언니|오빠|동생|형제|할머니|할아버지|친구|손주).{0,12}(세상을 떠|돌아가|잃었|떠나보냈|숨을 거)/;
 // 원작 warm: 따뜻한 일 (나이 옆 금색 점)
-const WARM = /(기뻐|기쁨|웃었|웃음|따뜻|고마|화해|사랑|설레|위로|축하|안아|자랑스|행복했|이야기꽃|정을 나|함께 보냈|함께 웃|도와주었|나눴다)/;
-const HIST_ID = /^[A-Z]{2,3}_\d{4}/;
-// 큰 역사 사건: 사망 위험이 붙었거나 재산·건강이 크게 깎이거나, 문장이 전쟁·대유행·기근·경제 위기 같은 큰 일
-const BIG_HIST = /(전쟁|내전|분쟁|인티파다|점령|참전|전선|폭격|공습|피란|코로나|대유행|팬데믹|전염병|기근|굶주|경제 위기|금융 위기|외환 위기|IMF|대공황|학살|쿠데타|계엄|혁명|항쟁|대지진|쓰나미|원전 사고)/;
+const WARM = /(살림이 한결 펴졌|살림이 펴졌|형편이 넉넉해졌|기뻐|기쁨|웃었|웃음|따뜻|고마|화해|사랑|설레|위로|축하|안아|자랑스|행복했|이야기꽃|정을 나|함께 보냈|함께 웃|도와주었|나눴다)/;
+// 엔진 전쟁 소식(eventId 없음)은 새로고침하면 서버 표시가 없어서 문장 모양으로 찾음 (warYear 의 시작·이어짐 문장)
+const WAR_NEWS = /(전쟁|내전|전쟁터).*(시작되|일어났다|이어지고 있었|전쟁터가 되었|번졌)/;
+const WAR_END = /(전쟁|내전|총성).*(끝났|멎었)/;
 
 export const feedKind = (line) => {
   if (line.kind) return line.kind;
   const t = line.text || '';
   const fx = line.fx || {};
-  if (fx.eventType === 'HIST' || HIST_ID.test(line.eventId || fx.eventId || '')) {
-    // 전쟁이 끝난 소식은 경고등 없이 (끝났다·멎었다)
-    const big = !/(끝났|멎었)/.test(t) && ((fx.deathAdd || 0) > 0 || (fx.effWealthRate || 0) <= -0.1 || (fx.effHealth || 0) <= -5 || BIG_HIST.test(t));
-    return big ? 'alert' : 'hist';
-  }
+  if (line.alert) return 'alert';
+  if (!line.fx && !line.eventId && WAR_END.test(t)) return 'hist';
+  if (!line.fx && !line.eventId && WAR_NEWS.test(t)) return 'alert';
+  if (line.hist || fx.eventType === 'HIST') return 'hist';
   if (NOTE.test(t)) return 'note';
   if (LOSS.test(t)) return 'loss';
   const hurt = (fx.effHealth || 0) <= -8 || (fx.effWealthRate || 0) <= -0.2 || (fx.deathAdd || 0) > 0;
@@ -111,19 +112,21 @@ export const feedKind = (line) => {
   return '';
 };
 
-// ───────── 가진 것 · 다니는 길 (원작 살림 패널 아랫줄, 시대·형편으로 짐작) ─────────
+// ───────── 내 물건 · 주로 다니는 곳 (원작 살림 패널 아랫줄) ─────────
 // 산 물건 (C06-3 LIFE.OWNS 코드 → 이름)
 const OWN_NAME = { PHONE: '스마트폰', CELL: '휴대전화', BIKE: '자전거', MOTO: '오토바이', CAR: '자동차', TV: '텔레비전·냉장고', PC: '컴퓨터·노트북', HOUSE: '내 집' };
 export const ownNames = (life) => (life.owns || '').split(',').map((x) => OWN_NAME[x.trim()]).filter(Boolean);
+const hasOwn = (life, code) => (life.owns || '').split(',').some((x) => x.trim() === code);
 
-// 가진 것: 돈 쓰기로 산 물건 (C06-3, 원작처럼 산 것만)
+// 내 물건: 돈 쓰기로 산 물건 (C06-3, 원작처럼 산 것만)
 //   서버가 owns 를 주지 않는 예전 응답일 때만 형편으로 짐작한 살림
 export const belongings = (life, year) => {
-  if (life.currentAge < 6) return '부모님 집의 살림';
+  if (life.currentAge < 6) return '아직 없어요 (부모님 집에서 지내요)';
   if (!('owns' in life)) return guessBelongings(life, year);
   const owned = ownNames(life);
   if ((life.assets || 0) < 0 && life.currentAge >= 18) owned.push('빚');
-  return owned.length ? owned.join(' · ') : '아직 산 물건이 없어요';
+  if (owned.length) return owned.join(' · ');
+  return life.currentAge < 18 ? '아직 내 물건은 없어요' : '아직 산 물건이 없어요';
 };
 
 const guessBelongings = (life, year) => {
@@ -132,7 +135,6 @@ const guessBelongings = (life, year) => {
   const urban = life.isUrban === 'Y';
   const rich = rank >= 0.6;
   const out = [];
-  if (age < 6) return '부모님 집의 살림';
   if (year >= 2012 && age >= 12) out.push('스마트폰');
   else if (year >= 1998 && age >= 15 && (urban || rich)) out.push('휴대폰');
   if (year >= 1975 && (urban || rich)) out.push(year >= 1990 ? '냉장고' : '텔레비전');
@@ -144,22 +146,28 @@ const guessBelongings = (life, year) => {
   return out.length ? out.join(' · ') : '몸 하나';
 };
 
+// 주로 다니는 곳: '어디 · 어떻게' (산 탈것이 있으면 그걸로)
 export const commute = (life, year) => {
   const age = life.currentAge;
   const urban = life.isUrban === 'Y';
   const rank = life.incomeRankCountry ?? (life.wealthClass - 0.5) / 5;
-  if (age < 6) return '집 근처';
+  const ride = hasOwn(life, 'CAR') ? '자가용으로' : hasOwn(life, 'MOTO') ? '오토바이로' : null;
+  if (age < 6) return '집과 동네 · 부모님 손을 잡고';
   if (life.schoolStatus === 'ENROLLED') {
-    if (!urban) return '걸어서 학교까지';
-    return year >= 1970 ? '버스로 학교까지' : '걸어서 학교까지';
+    if (age >= 18 && ride) return `학교 · ${ride}`;
+    if (hasOwn(life, 'BIKE')) return '학교 · 자전거로';
+    if (!urban || year < 1970) return '학교 · 걸어서';
+    return '학교 · 버스로';
   }
   if (life.jobStatus === 'EMPLOYED') {
-    if (rank >= 0.6 && year >= 1975) return '자가용으로 출근';
-    if (urban) return year >= 1980 ? '버스·지하철로 출근' : '버스로 출근';
-    return '걸어서 일터까지';
+    if (ride) return `일터 · ${ride}`;
+    if (!('owns' in life) && rank >= 0.6 && year >= 1975) return '일터 · 자가용으로';
+    if (urban) return year >= 1980 ? '일터 · 버스·지하철로' : '일터 · 버스로';
+    return hasOwn(life, 'BIKE') ? '일터 · 자전거로' : '일터 · 걸어서';
   }
-  if (life.jobStatus === 'RETIRED' || age >= 65) return '동네 산책';
-  return urban ? '동네와 시장' : '마을 안';
+  if (life.jobStatus === 'RETIRED' || age >= 65) return '동네 · 산책 삼아 걸어서';
+  if (life.jobStatus === 'UNEMPLOYED') return urban ? '일자리 찾으러 시내로' : '마을 안 · 걸어서';
+  return urban ? '동네와 시장 · 걸어서' : '마을 안 · 걸어서';
 };
 
 // 조사 '(으)로': 마지막 글자 받침이 없거나 ㄹ 받침이면 '로', 그 밖의 받침이면 '으로' (한글이 아니면 '로')

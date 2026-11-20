@@ -90,6 +90,9 @@ function ShopSheet({ open = true, life, age, guestToken, waitIdle, onDone, onClo
           <h2 id="shopTitle" className="shop-title">
             {data ? (data.assets < 0 ? `빚 ${won(-data.assets, k)}` : `모은 돈 ${won(data.cash, k)}`) : '불러오는 중…'}
           </h2>
+          {data?.houseValue > 0 && (
+            <p className="shop-sub">내 집 시세 <b>{won(data.houseValue, k)}</b> · 주식처럼 해마다 그 나라 집값 흐름만큼 오르내려요 (평균 +2%, 한 해 ±6% 안팎, 위기 땐 크게 떨어져요)</p>
+          )}
           <p className="shop-sub">한국 물가로 환산한 금액이에요. 쓰는 만큼 행복·관계·건강·지식이 바뀌어요. 고르는 동안 시간은 멈춰 있어요.</p>
           {msg && <p className="shop-msg" role="status">{msg}</p>}
 
