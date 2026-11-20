@@ -10,7 +10,7 @@ const CANDLE_COUNT = 7;
 // 예: <MemorialSide room={room} onCandle={lightCandle} onOpen={openRoom} />
 function MemorialSide({ room, onCandle, onOpen }) {
   const [message, setMessage] = useState('');
-  const moved = room.birthCountry !== room.deathCountry;
+  const moved = room.birthCountryName !== room.deathCountryName;
   const lit = Math.min(room.tributeCount, CANDLE_COUNT);
   const maxHappy = Math.max(1, ...room.happiness);
 
@@ -20,13 +20,13 @@ function MemorialSide({ room, onCandle, onOpen }) {
 
       <h2 className={s.name}>{room.name}</h2>
       <p className={s.mono}>{room.birthYear} – {room.deathYear} · {room.deathAge}세</p>
-      <p className={s.country}>{moved ? `${room.birthCountry} → ${room.deathCountry}` : room.birthCountry}</p>
+      <p className={s.country}>{moved ? `${room.birthCountryName} → ${room.deathCountryName}` : room.birthCountryName}</p>
 
       {room.summary && <p className={s.summary}>{room.summary}</p>}
       <p className={s.born}>
         {moved
-          ? `${room.birthCountry}에서 태어나 ${room.deathCountry}에서 잠들었어요.`
-          : `${room.birthCountry}에서 태어나 그곳에서 잠들었어요.`}
+          ? `${room.birthCountryName}에서 태어나 ${room.deathCountryName}에서 잠들었어요.`
+          : `${room.birthCountryName}에서 태어나 그곳에서 잠들었어요.`}
       </p>
 
       {room.happiness.length > 0 && (

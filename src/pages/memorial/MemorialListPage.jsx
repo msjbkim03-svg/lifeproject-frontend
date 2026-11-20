@@ -51,7 +51,7 @@ function MemorialListPage() {
               <MemorialSlot label="초상" className={s.cardSlot} />
               <b className={s.cardName}>{c.name}</b>
               <span className={s.mono}>{c.birthYear} – {c.deathYear} · {c.deathAge}세</span>
-              <span className={s.cardCountry}>{c.birthCountry}</span>
+              <span className={s.cardCountry}>{c.birthCountryName}</span>
               {c.message && <span className={s.cardMsg}>“{c.message}”</span>}
               <Badge color="gold">🕯 {c.tributeCount}</Badge>
             </button>

@@ -65,7 +65,7 @@ function LivesPage() {
             <div className={common.character}>캐릭터</div>
             <div className={common.lifeText}>
               <b>{my.lifeName}</b>
-              <span>{my.countryName} · {my.currentAge}살</span>
+              <span>{my.currentCountryName} · {my.currentAge}살</span>
             </div>
             <Button type="primary" onClick={() => navigate('/play', { state: { lifeId: my.lifeId } })}>이어서 살기</Button>
           </div>
@@ -105,12 +105,12 @@ function LivesPage() {
               {data.lives.map((l) => (
                 <tr key={l.lifeId}>
                   <td>{l.lifeNo}</td>
-                  <td>{l.countryName}</td>
+                  <td>{l.birthCountryName}</td>
                   <td>{l.birthYear}</td>
                   <td>{l.deathAge != null ? `${l.deathAge}세` : '-'}</td>
                   <td className={styles.cause}>{l.deathCause || '-'}</td>
                   <td>{l.questTotal > 0 ? `${l.questDone} / ${l.questTotal}` : '-'}</td>
-                  <td>{l.point}P</td>
+                  <td>{l.earnedPoint}P</td>
                   <td>
                     <div className="row" style={{ gap: 'var(--sp-1)', flexWrap: 'nowrap' }}>
                       <Button size="sm" onClick={() => navigate(`/result/${l.lifeId}`)}>결과 보기</Button>

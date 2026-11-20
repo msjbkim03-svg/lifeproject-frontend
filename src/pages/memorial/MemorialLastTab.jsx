@@ -18,7 +18,7 @@ function MemorialLastTab() {
       <div className={s.plaque}>
         <h2>{room.name}</h2>
         <p className={s.plaqueYears}>{room.birthYear} – {room.deathYear}</p>
-        <p>{room.birthCountry}에서 태어나 {room.deathCountry}에서 잠들었어요.</p>
+        <p>{room.birthCountryName}에서 태어나 {room.deathCountryName}에서 잠들었어요.</p>
         <p>{room.deathAge}년, 날로 치면 약 {days.toLocaleString()}일을 살았어요.</p>
         {(room.last.lines ?? []).map((l, i) => <p key={i}>{l}</p>)}
         {room.message && <p className={s.plaqueMsg}>“{room.message}”</p>}

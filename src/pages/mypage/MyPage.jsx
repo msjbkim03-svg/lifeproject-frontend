@@ -48,7 +48,7 @@ function MyPage() {
               <div className={styles.character}>캐릭터</div>
               <div className={styles.lifeText}>
                 <b>{my.lifeName}</b>
-                <span>{my.countryName} · {my.currentAge}살</span>
+                <span>{my.currentCountryName} · {my.currentAge}살</span>
               </div>
               <Button type="primary" onClick={() => navigate('/play', { state: { lifeId: my.lifeId } })}>
                 이어서 살기
