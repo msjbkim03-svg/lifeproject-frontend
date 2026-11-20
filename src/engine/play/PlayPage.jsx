@@ -24,7 +24,7 @@ import { autoWaitSec, autoPickOf } from '../../common/ui/autoPick';
 import DecisionModal from '../../common/ui/DecisionModal';
 import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
-import Spoon from '../../common/ui/Spoon';
+import Spoon from '../../common/ui/Spoon.jsx';
 import Village from '../village/Village';
 import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';

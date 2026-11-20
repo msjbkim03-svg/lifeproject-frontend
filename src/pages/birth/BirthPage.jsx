@@ -4,7 +4,7 @@ import client from '../../api/api';
 import ToonEarth from './ToonEarth';
 import { COUNTRIES } from '../../engine/village/villageData'; // 국기용 2자리 코드 (C02-4)
 import { useTheme } from '../../common/theme';
-import Spoon from '../../common/ui/Spoon';
+import Spoon from '../../common/ui/Spoon.jsx';
 import styles from './BirthPage.module.css';
 
 // ───────────────────────────────────────────────
