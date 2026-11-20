@@ -3,7 +3,6 @@ import Header from './common/ui/Header';
 import ThemeToggle from './common/ui/ThemeToggle';
 import Main from './main/Main';
 import LoginPage from './pages/login/LoginPage';
-import KakaoCallback from './pages/login/KakaoCallback';
 import JoinPage from './pages/join/JoinPage';
 import BirthPage from './pages/birth/BirthPage';
 import PlayPage from './engine/play/PlayPage';
@@ -18,6 +17,13 @@ import TraitsPage from './pages/mypage/TraitsPage';
 import FindPage from './pages/find/FindPage';
 import QuestPage from './pages/quest/QuestPage';
 import AdminMain from './pages/admin/AdminMain';
+import MemorialListPage from './pages/memorial/MemorialListPage';
+import MemorialRoomPage from './pages/memorial/MemorialRoomPage';
+import MemorialRoomTab from './pages/memorial/MemorialRoomTab';
+import MemorialVideoTab from './pages/memorial/MemorialVideoTab';
+import MemorialAlbumTab from './pages/memorial/MemorialAlbumTab';
+import MemorialGuestTab from './pages/memorial/MemorialGuestTab';
+import MemorialLastTab from './pages/memorial/MemorialLastTab';
 
 function App() {
   return (
@@ -28,8 +34,6 @@ function App() {
         {/* H01 메인 */}
         <Route path="/" element={<Main />} />
         <Route path="/login" element={<LoginPage />} />
-        {/* M02 카카오 로그인 - 카카오가 code 를 붙여 돌려보내는 주소 */}
-        <Route path="/oauth/kakao" element={<KakaoCallback />} />
         <Route path="/join" element={<JoinPage />} />
         <Route path="/find" element={<FindPage />} />
 
@@ -48,6 +52,16 @@ function App() {
         <Route path="/play" element={<PlayPage />} />
         {/* C18 인생 결과 */}
         <Route path="/result/:lifeId" element={<ResultPage />} />
+        {/* B01 추모관 목록 (헤더·메인 [추모관]) → 방 */}
+        <Route path="/memorial" element={<MemorialListPage />} />
+        <Route path="/memorial/:lifeId" element={<MemorialRoomPage />}>
+          <Route index element={<MemorialRoomTab />} />
+          <Route path="video" element={<MemorialVideoTab kind="last" />} />
+          <Route path="cookie" element={<MemorialVideoTab kind="cookie" />} />
+          <Route path="album" element={<MemorialAlbumTab />} />
+          <Route path="guest" element={<MemorialGuestTab />} />
+          <Route path="last" element={<MemorialLastTab />} />
+        </Route>
         {/* A04 관리자 메인 */}
         <Route path="/admin" element={<AdminMain />} />
         {/* 디자인 가이드 (공통) */}
