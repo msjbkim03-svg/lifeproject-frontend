@@ -1,3 +1,5 @@
+// 회원가입 로봇 확인 체크박스 (Google reCAPTCHA v2)
+// 예: <RecaptchaBox onChange={setCaptchaToken} />
 //   체크하면 onChange(토큰), 시간이 지나 풀리면 onChange('')
 // 따로 설치할 패키지 없이 구글 스크립트를 직접 불러와서 그림
 import { useEffect, useRef } from 'react';
