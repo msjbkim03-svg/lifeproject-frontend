@@ -1,4 +1,4 @@
-// 메인 화면 H01 (주소: /) - M01 시안
+// 메인 화면 H01 (주소: /) - M01 시안, 첫 화면은 시안 6번 '질문 헤드라인' (스타일은 main.css)
 //   - 시대 고르기: OrbitGlobe (value / onChange)
 //   - 태어나기 버튼: 회원은 퀘스트 설정(/quest, C01) → 비회원은 바로 출생(/birth, C02)  (민승 MainPage 로직 그대로)
 //   - 이어서 살기 (H01, 김민승): GET /api/engine/current 로 진행 중인 인생이 있으면 버튼 켜기 → /play
@@ -9,7 +9,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/api';
-import Badge from '../common/ui/Badge';
 import Button from '../common/ui/Button';
 import Modal from '../common/ui/Modal';
 import Panel from '../common/ui/Panel';
@@ -95,18 +94,12 @@ function Main() {
     <div className="ms sky">
       <main className="ms-in">
         <section className="ms-hero">
-          <Badge live>지금 아시아 48개국 실시간</Badge>
-          <h1 className="ms-title">환승인생</h1>
+          <div className="ms-brand"><StarIcon size={18} />환승인생</div>
+          <h1 className="ms-q">다음 생은<br /><em>어디서</em><br />태어날까?</h1>
           <p className="ms-lead">시대를 고르면 나라, 성별, 집안 형편이 무작위로 정해집니다. 매년 선택하며 한 사람의 일생을 끝까지 살아 보세요.</p>
 
-          <div className={'ms-pick' + (luck ? ' luck' : '') + (spinning ? ' spinning' : '')} aria-live="polite">
-            <span className="ms-pick-dot" />
-            <div>{luck ? '운명이 고른 시대' : spinning ? '시대를 고르는 중' : '태어날 시대'}<b>{decade}년대</b></div>
-            <span className="ms-pick-hint">{range}<br />{luck ? '이 시대로 태어납니다' : '오른쪽 궤도에서 바꿀 수 있어요'}</span>
-          </div>
-
           <div className="ms-acts">
-            <Button type="primary" size="lg" className="ms-cta" disabled={spinning} onClick={() => goBirth(decade)}>
+            <Button type="primary" size="lg" className={'ms-cta' + (luck ? ' luck' : '')} title={range} disabled={spinning} onClick={() => goBirth(decade)}>
               <StarIcon size={14} color="var(--on-primary)" />{decade}년대에 태어나기
             </Button>
             {/* 이어서 살기 (H01): 진행 중인 인생이 있을 때만 켜짐 → 게임 화면이 GET /api/engine/current 로 다시 불러옴 */}

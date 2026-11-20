@@ -28,7 +28,7 @@ import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
-import { won, ppp, PPP_TIP, rankStr, feedKind, belongings, commute, traitLine } from './lifeText';
+import { won, ppp, PPP_TIP, rankStr, feedKind, belongings, commute, traitLine, ro, ownNames } from './lifeText';
 import { TRAIT_VIEW } from '../../utils/traits';
 import './play.css';
 
@@ -136,9 +136,9 @@ const homeFamily = (life) => {
     if (!m.alive) return;
     if (m.role === '어머니') out.push({ id: 'mom', label: '엄마', gender: 'F', age: m.age });
     else if (m.role === '아버지') out.push({ id: 'dad', label: '아빠', gender: 'M', age: m.age });
-    else if (m.role === '형제자매' && age < 20 && m.job) {
+    else if (m.role === '형제자매' && age < 20 && (m.info || m.job)) {
       let k = 0;
-      for (const [, w, n] of m.job.matchAll(SIB_RE)) {
+      for (const [, w, n] of (m.info || m.job).matchAll(SIB_RE)) {
         const sa = Number(n);
         if (sa < 25) out.push({ id: 'sib' + k, label: SIB_LABEL[w][0], gender: SIB_LABEL[w][1], age: sa });
         k += 1;
@@ -187,7 +187,7 @@ const yearEndLines = (d, age) => {
     out.push({ age, kind: 'ledger', text: `지난 1년 순자산 ${won(d.moneyDelta, d.krwPerUsd, true)} (한국 체감)` });
   }
   if (d.status === 'ENDED') {
-    out.push({ age, kind: 'death', text: `${d.deathAge ?? age}세, ${d.deathCause ? d.deathCause + '(으)로 ' : ''}세상을 떠났다.` });
+    out.push({ age, kind: 'death', text: `${d.deathAge ?? age}세, ${d.deathCause ? ro(d.deathCause) + ' ' : ''}세상을 떠났다.` });
   }
   return out;
 };
@@ -343,7 +343,7 @@ function PlayPage() {
     // 같은 해에 다시 고르면 앞서 고른 초점 기록은 줄을 그어 지움 (올해 몫·다음 해 몫 따로)
     const focusKey = `${l.currentAge}-${late ? 'next' : 'now'}`;
     setFeed((f) => f.map((x) => (x.focusKey === focusKey && !x.struck ? { ...x, struck: true } : x)));
-    pushLines([{ age: l.currentAge, kind: 'dec', focusKey, text: `${late ? '다음 해' : '올해'}의 초점을 '${focusLabel(focus, l)}'(으)로 정했다.` }]);
+    pushLines([{ age: l.currentAge, kind: 'dec', focusKey, text: `${late ? '다음 해' : '올해'}의 초점을 ${ro(`'${focusLabel(focus, l)}'`)} 정했다.` }]);
     try {
       await client.post('/api/engine/focus', { lifeId: l.lifeId, guestToken, focus });
     } catch (err) {
@@ -890,8 +890,11 @@ function PlayPage() {
         title="일자리 제안이 들어왔어요"
         text={`할 수 있는 일 ${life.jobOffers?.length || 0}가지예요. 고르면 바로 그 일을 시작해요.`}
         options={(life.jobOffers || []).map((j) => ({
-          key: j.jobId, jobId: j.jobId, title: j.jobName, tag: `소득 ×${j.incomeRate}`,
-          sub: `${INDUSTRY[j.industry] || j.industry} · ${EDU_REQ[j.requiredEdu] || j.requiredEdu}`,
+          // 소득: 한국 체감 월급 + 국제 비교 연 $ (예전 '소득 ×0.6' 대신, 서버 yearIncome = 그해 1인당 GDP × 배율)
+          key: j.jobId, jobId: j.jobId, title: j.jobName,
+          tag: j.yearIncome != null ? `월 ${won(j.yearIncome / 12, life.krwPerUsd)}` : `소득 ×${j.incomeRate}`,
+          sub: `${INDUSTRY[j.industry] || j.industry} · ${EDU_REQ[j.requiredEdu] || j.requiredEdu}`
+            + (j.yearIncome != null ? ` · 연 ${ppp(j.yearIncome, life.krwPerUsd)} (국제 비교)` : ''),
         }))}
         busy={busy}
         onPick={(o) => decide('/api/engine/job', { jobId: o.jobId })}
@@ -1041,27 +1044,33 @@ function MoneyPanel({ life, year, countryName }) {
   );
 }
 
-// 가족과 삶 (원작: 어머니 | 이름 · 나이 <small>직업</small>)
+// 가족과 삶 (원작 famRows: 역할 | 이름 · 나이 · 덧붙임 <small>· 사이</small> <small>직업</small>)
+//   어머니·아버지·형제자매·배우자·아들·딸·친구·손주 + 가진 것 · 사는 곳 · 지금 시기
 function FamilyRows({ life, countryName, stageText }) {
   const fam = life.family;
+  const owned = life.currentAge >= 6 ? ownNames(life) : [];
   return (
     <div className="pp-fam">
-      {fam?.length ? fam.map((m, i) => (
-        <div key={m.role + i} className={'row' + (m.alive ? '' : ' gone')}>
-          <span>{m.role}</span>
-          <span>
-            {m.name && <>{m.name}{m.alive && m.age != null ? ` · ${m.age}세` : ''} </>}
-            {!m.name && m.age != null && m.alive ? `${m.age}세 ` : ''}
-            <small className="pwork">{m.job}</small>
-          </span>
-        </div>
-      )) : (
+      {fam?.length ? fam.map((m, i) => {
+        const head = [m.name, m.alive && m.age != null ? `${m.age}세` : null, m.info].filter(Boolean).join(' · ');
+        return (
+          <div key={m.role + i} className={'row' + (m.alive ? '' : ' gone')}>
+            <span>{m.role}</span>
+            <span>
+              {head}
+              {m.alive && m.bond && <small className="bond"> · {m.bond}</small>}
+              {m.job && <small className="pwork">{m.job}</small>}
+            </span>
+          </div>
+        );
+      }) : (
         <>
           <div className="row"><span>부모님</span><span>{life.parentAlive === 'N' ? '세상을 떠나심' : '살아 계심'}</span></div>
           <div className="row"><span>배우자</span><span>{life.marriedYn === 'Y' ? '있음' : '없음'}</span></div>
           <div className="row"><span>자녀</span><span>{life.childCount > 0 ? life.childCount + '명' : '없음'}</span></div>
         </>
       )}
+      {owned.length > 0 && <div className="row"><span>가진 것</span><span>{owned.join(', ')}</span></div>}
       <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
     </div>
