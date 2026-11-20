@@ -16,7 +16,7 @@ import { ASIA as ASIA_DOTS, OTHER as OTHER_DOTS } from './globeDots';
 import { getTheme } from '../theme';
 import './ui.css';
 
-export const DECADES = [1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020];
+import { DECADES } from './decades'; // 시대 목록은 따로 (컴포넌트 파일은 컴포넌트만 export - Fast refresh 규칙)
 
 // 예시 위치 (서버 데이터 오기 전)
 const SAMPLE_BIRTHS = [
@@ -354,6 +354,7 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
       const { births: b, deaths: d, decades: decs } = dataRef.current;
 
       if (s.anim) {
+        if (s.anim.start == null) s.anim.start = now; // 누를 때 만든 움직임은 첫 프레임 시각부터 셈
         const k = Math.min(1, (now - s.anim.start) / s.anim.dur);
         s.cur = s.anim.from + (s.anim.to - s.anim.from) * easeInOut(k);
         if (k >= 1) s.anim = null;
@@ -391,7 +392,7 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
     const { onChange: cb, decades: decs } = dataRef.current;
     const idx = Math.max(0, Math.min(decs.length - 1, i));
     const s = st.current;
-    s.anim = { from: s.cur, to: idx, start: performance.now(), dur: animTime(Math.abs(idx - s.cur)) };
+    s.anim = { from: s.cur, to: idx, start: null, dur: animTime(Math.abs(idx - s.cur)) };
     if (idx === s.target) return;
     s.target = idx;
     s.lastSent = idx;
