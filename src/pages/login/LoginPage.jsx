@@ -8,13 +8,12 @@ import styles from "./LoginPage.module.css";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const notice = useLocation().state?.message; // 회원가입·비밀번호 변경 뒤 넘어온 안내 문구
+  const notice = useLocation().state?.message; 
 
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // 로그인 버튼
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -29,19 +28,16 @@ function LoginPage() {
 
       const resp = await client.post("/api/members/login", { loginId, password, guestToken });
 
-      // 서버가 준 JWT 저장 → 이후 요청에 자동으로 붙음 (api/api.js)
       localStorage.setItem("token", resp.data.token);
       // 헤더에 보여줄 닉네임, 관리자 메뉴용 권한도 저장
       localStorage.setItem("nickname", resp.data.nickname);
       localStorage.setItem("memberRole", resp.data.memberRole);
-      // 비회원 인생이 회원 인생으로 전환됐으면 임시 토큰은 이제 필요 없음
       if (resp.data.guestConverted) {
         localStorage.removeItem("guestToken");
       }
 
-      navigate("/"); // 메인으로
+      navigate("/");
     } catch (err) {
-      // 어느 쪽이 틀렸는지는 알려주지 않음 (M02 규칙)
       setError(err.response?.data?.message || "아이디 또는 비밀번호가 맞지 않아요.");
     }
   };

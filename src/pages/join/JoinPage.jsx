@@ -235,7 +235,6 @@ function JoinPage() {
         <div className={styles.cardFooter}>
           <p className={styles.error}>{error}</p>
           <div className={styles.footerBtns}>
-            {/* 엔터로 가입되게 하는 숨은 버튼 (공통 Button 은 type="button") */}
             <button type="submit" hidden />
             <Button onClick={() => navigate("/")}>취소</Button>
             <Button type="primary" onClick={handleSubmit}>가입하기</Button>

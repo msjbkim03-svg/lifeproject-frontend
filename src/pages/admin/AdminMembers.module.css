@@ -1,0 +1,68 @@
+/* A01 관리자 회원 관리 */
+.admin { max-width: 1100px; }
+
+/* 검색 줄 */
+.search {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.search input { flex: 1; }
+
+.select {
+  height: 40px;
+  padding: 0 var(--sp-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  background: var(--bg-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.message {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--green);
+}
+
+/* 회원 표 */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.table th {
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink-sub);
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+.table td {
+  padding: 10px 8px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.table tbody tr:hover { background: var(--panel-2); }
+
+/* 탈퇴한 회원 줄은 흐리게 */
+.out td { color: var(--ink-sub); }
+
+/* 페이지 번호 */
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-3);
+}
+
+/* 확인 창 버튼 */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
