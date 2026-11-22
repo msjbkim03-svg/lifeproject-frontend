@@ -1,6 +1,6 @@
-import { useOutletContext } from 'react-router-dom';
-import MemorialSlot from './MemorialSlot';
-import s from './MemorialRoom.module.css';
+import { useOutletContext } from "react-router-dom";
+import MemorialSlot from "./MemorialSlot";
+import s from "./MemorialRoom.module.css";
 
 // 마지막 순간 탭  주소: /memorial/:lifeId/last
 // 픽셀 장면(빈 칸) + 장례 설명 + 묘비판 + 마지막 문장

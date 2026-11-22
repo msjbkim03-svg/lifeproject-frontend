@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
-import client from '../../api/api';
-import Button from '../../common/ui/Button';
-import Panel from '../../common/ui/Panel';
-import MemorialSide from './MemorialSide';
-import { TABS, toRoom } from './memorialData';
-import s from './MemorialRoom.module.css';
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
+import client from "../../api/api";
+import Button from "../../common/ui/Button";
+import Panel from "../../common/ui/Panel";
+import MemorialSide from "./MemorialSide";
+import { TABS, toRoom } from "./memorialData";
+import s from "./MemorialRoom.module.css";
 
 // 추모관 방 틀 (B01)  주소가 /memorial/:lifeId 로 시작하면 항상 이 화면이 먼저 그려짐
 //   왼쪽: MemorialSide (사람 카드 + 촛불)
@@ -15,22 +15,22 @@ import s from './MemorialRoom.module.css';
 function MemorialRoomPage() {
   const { lifeId } = useParams();
   const navigate = useNavigate();
-  const isLogin = !!localStorage.getItem('token');
+  const isLogin = !!localStorage.getItem("token");
 
   const [room, setRoom] = useState(null);
   const [loadError, setLoadError] = useState(false);
-  const [notice, setNotice] = useState(''); // 화면 안 안내 문구
+  const [notice, setNotice] = useState(""); // 화면 안 안내 문구
 
   // 1. 방 불러오기
   const load = () => {
     client.get(`/api/memorials/${lifeId}`)
-      .then((res) => { setRoom(toRoom(res.data)); setLoadError(false); })
+      .then((resp) => { setRoom(toRoom(resp.data)); setLoadError(false); })
       .catch(() => setLoadError(true));
   };
   useEffect(load, [lifeId]);
 
   // 401 이면 로그인 화면으로
-  const goLogin = () => navigate('/login', { state: { message: '로그인하고 다시 해 주세요.' } });
+  const goLogin = () => navigate("/login", { state: { message: "로그인하고 다시 해 주세요." } });
 
   // 추모관 열기 (내 끝난 인생, 마지막 한마디)
   const openRoom = async (message) => {
@@ -39,7 +39,7 @@ function MemorialRoomPage() {
       load();
     } catch (e) {
       if (e.response?.status === 401) return goLogin();
-      setNotice(e.response?.data?.message ?? '추모관을 열지 못했어요.');
+      setNotice(e.response?.data?.message ?? "추모관을 열지 못했어요.");
     }
   };
 
@@ -47,12 +47,12 @@ function MemorialRoomPage() {
   const lightCandle = async () => {
     if (!isLogin) return goLogin();
     try {
-      const res = await client.post(`/api/memorials/${lifeId}/candle`);
-      setRoom({ ...room, myCandle: true, tributeCount: res.data.tributeCount ?? room.tributeCount + 1 });
+      const resp = await client.post(`/api/memorials/${lifeId}/candle`);
+      setRoom({ ...room, myCandle: true, tributeCount: resp.data.tributeCount ?? room.tributeCount + 1 });
     } catch (e) {
       if (e.response?.status === 401) return goLogin();
       if (e.response?.status === 400) setRoom({ ...room, myCandle: true }); // 이미 켬
-      else setNotice('촛불을 켜지 못했어요. 잠시 뒤 다시 해 주세요.');
+      else setNotice("촛불을 켜지 못했어요. 잠시 뒤 다시 해 주세요.");
     }
   };
 
@@ -65,7 +65,7 @@ function MemorialRoomPage() {
       return true;
     } catch (e) {
       if (e.response?.status === 401) goLogin();
-      else setNotice(e.response?.data?.message ?? '방명록을 남기지 못했어요.');
+      else setNotice(e.response?.data?.message ?? "방명록을 남기지 못했어요.");
       return false;
     }
   };
@@ -77,15 +77,15 @@ function MemorialRoomPage() {
       load();
     } catch (e) {
       if (e.response?.status === 401) return goLogin();
-      setNotice('방명록을 지우지 못했어요.');
+      setNotice("방명록을 지우지 못했어요.");
     }
   };
 
   // 5. 링크 복사
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href)
-      .then(() => setNotice('링크를 복사했어요.'))
-      .catch(() => setNotice('링크를 복사하지 못했어요.'));
+      .then(() => setNotice("링크를 복사했어요."))
+      .catch(() => setNotice("링크를 복사하지 못했어요."));
   };
 
   if (loadError) return <main className="page"><p className={s.empty}>추모관을 불러오지 못했어요.</p></main>;
@@ -130,10 +130,10 @@ function MemorialRoomPage() {
       {/* 아래 */}
       <Panel className={s.bottom}>
         <p>당신은 80억 명 가운데 어디에서, 누구로 태어날까요?</p>
-        <div className="row" style={{ justifyContent: 'center' }}>
-          <Button type="primary" onClick={() => navigate('/')}>나도 태어나 보기</Button>
+        <div className="row" style={{ justifyContent: "center" }}>
+          <Button type="primary" onClick={() => navigate("/")}>나도 태어나 보기</Button>
           <Button onClick={copyLink}>링크 복사</Button>
-          <Button onClick={() => navigate('/memorial')}>다른 추모관 둘러보기</Button>
+          <Button onClick={() => navigate("/memorial")}>다른 추모관 둘러보기</Button>
         </div>
       </Panel>
     </main>

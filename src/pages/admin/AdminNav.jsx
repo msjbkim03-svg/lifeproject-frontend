@@ -5,6 +5,7 @@ import '../../common/ui/ui.css';
 
 const MENUS = [
   { path: '/admin', label: '대시보드', end: true }, // end: /admin/events 에서는 꺼지게 (정확히 /admin 일 때만)
+  { path: '/admin/members', label: '회원 관리' },
   { path: '/admin/events', label: '이벤트 관리' },
   { path: '/admin/hist-review', label: '역사 문장 검수' },
 ];

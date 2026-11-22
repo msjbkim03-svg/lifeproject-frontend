@@ -1,8 +1,8 @@
-import { Link, useOutletContext } from 'react-router-dom';
-import LogItem from '../../common/ui/LogItem';
-import MemorialSlot from './MemorialSlot';
-import MemorialCommentList from './MemorialCommentList';
-import s from './MemorialRoom.module.css';
+import { Link, useOutletContext } from "react-router-dom";
+import LogItem from "../../common/ui/LogItem";
+import MemorialSlot from "./MemorialSlot";
+import MemorialCommentList from "./MemorialCommentList";
+import s from "./MemorialRoom.module.css";
 
 // 방 탭  주소: /memorial/:lifeId
 // 픽셀 방(빈 칸) + 삶이 남긴 것 + 이 삶이 만난 세상(큰 사건 3개) + 사진첩·방명록 미리보기
@@ -13,7 +13,7 @@ function MemorialRoomTab() {
     <>
       <MemorialSlot label="방 (픽셀 캐릭터가 움직이는 자리)" className={s.roomSlot} />
       {room.leftThings.length > 0 && (
-        <p className={s.muted}>삶이 남긴 것: {room.leftThings.join(', ')}</p>
+        <p className={s.muted}>삶이 남긴 것: {room.leftThings.join(", ")}</p>
       )}
 
       <section className={s.section}>

@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import client from '../../api/api';
-import Button from '../../common/ui/Button';
-import Chips from '../../common/ui/Chips';
-import InfoBox from '../../common/ui/InfoBox';
-import common from '../login/LoginPage.module.css'; // 로그인 화면과 같은 카드 모양
-import styles from './FindPage.module.css';           // 탭·결과 칸만 따로
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import client from "../../api/api";
+import Button from "../../common/ui/Button";
+import Chips from "../../common/ui/Chips";
+import InfoBox from "../../common/ui/InfoBox";
+import common from "../login/LoginPage.module.css"; // 로그인 화면과 같은 카드 모양
+import styles from "./FindPage.module.css";           // 탭·결과 칸만 따로
 
 // 아이디·비밀번호 찾기 (M09)  주소: /find
 // 탭 2개: 아이디 찾기 / 비밀번호 찾기
@@ -16,97 +16,97 @@ import styles from './FindPage.module.css';           // 탭·결과 칸만 따�
 function FindPage() {
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState('FIND_ID'); // 'FIND_ID' 또는 'RESET_PW'
+  const [tab, setTab] = useState("FIND_ID"); // 'FIND_ID' 또는 'RESET_PW'
 
   // 입력칸
-  const [loginId, setLoginId] = useState('');
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newPasswordCheck, setNewPasswordCheck] = useState('');
+  const [loginId, setLoginId] = useState("");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordCheck, setNewPasswordCheck] = useState("");
 
   // 화면 상태
   const [sent, setSent] = useState(false);      // 인증번호를 보냈는지 (보냈으면 번호 입력칸 보이기)
   const [verified, setVerified] = useState(false); // 인증번호 확인을 통과했는지 (통과해야 다음 단계)
-  const [info, setInfo] = useState('');         // 안내 문구 (초록)
-  const [error, setError] = useState('');       // 오류 문구 (빨강)
-  const [foundId, setFoundId] = useState('');   // 찾은 아이디 (msj***)
+  const [info, setInfo] = useState("");         // 안내 문구 (초록)
+  const [error, setError] = useState("");       // 오류 문구 (빨강)
+  const [foundId, setFoundId] = useState("");   // 찾은 아이디 (msj***)
 
   // 탭 바꾸면 입력칸·문구 모두 비우기
   const changeTab = (t) => {
     setTab(t);
-    setLoginId(''); setEmail(''); setCode('');
-    setNewPassword(''); setNewPasswordCheck('');
-    setSent(false); setVerified(false); setInfo(''); setError(''); setFoundId('');
+    setLoginId(""); setEmail(""); setCode("");
+    setNewPassword(""); setNewPasswordCheck("");
+    setSent(false); setVerified(false); setInfo(""); setError(""); setFoundId("");
   };
 
   // ① 인증번호 받기
   const sendCode = async () => {
-    setInfo(''); setError('');
-    if (tab === 'RESET_PW' && !loginId) return setError('아이디를 입력해 주세요.');
-    if (!email) return setError('이메일을 입력해 주세요.');
+    setInfo(""); setError("");
+    if (tab === "RESET_PW" && !loginId) return setError("아이디를 입력해 주세요.");
+    if (!email) return setError("이메일을 입력해 주세요.");
 
     try {
-      const res = await client.post('/api/members/find/sendCode', {
+      const resp = await client.post("/api/members/find/sendCode", {
         purpose: tab,
         email,
-        loginId: tab === 'RESET_PW' ? loginId : null,
+        loginId: tab === "RESET_PW" ? loginId : null,
       });
-      setCode(''); setVerified(false); // 다시 받으면 처음부터 확인
+      setCode(""); setVerified(false); // 다시 받으면 처음부터 확인
       setSent(true);
-      setInfo(res.data.message); // "입력한 정보가 맞다면 인증번호 메일을 보내 드려요."
+      setInfo(resp.data.message); // "입력한 정보가 맞다면 인증번호 메일을 보내 드려요."
     } catch (err) {
-      setError(err.response?.data?.message || '인증번호를 보내지 못했어요.');
+      setError(err.response?.data?.message || "인증번호를 보내지 못했어요.");
     }
   };
 
   // ①-2 인증번호 확인 → 맞으면 다음 단계 (아이디 찾기: [아이디 확인] / 비밀번호 찾기: 새 비밀번호 칸)
   const checkCode = async () => {
-    setInfo(''); setError('');
-    if (!code) return setError('인증번호를 입력해 주세요.');
+    setInfo(""); setError("");
+    if (!code) return setError("인증번호를 입력해 주세요.");
 
     try {
-      const res = await client.post('/api/members/find/checkCode', {
+      const resp = await client.post("/api/members/find/checkCode", {
         purpose: tab,
         email,
         code,
-        loginId: tab === 'RESET_PW' ? loginId : null,
+        loginId: tab === "RESET_PW" ? loginId : null,
       });
       setVerified(true);
-      setInfo(res.data.message); // "인증되었어요."
+      setInfo(resp.data.message); // "인증되었어요."
     } catch (err) {
-      setError(err.response?.data?.message || '인증번호가 맞지 않거나 시간이 지났어요.');
+      setError(err.response?.data?.message || "인증번호가 맞지 않거나 시간이 지났어요.");
     }
   };
 
   // ② 아이디 찾기 → 확인
   const findId = async () => {
-    setInfo(''); setError('');
-    if (!code) return setError('인증번호를 입력해 주세요.');
+    setInfo(""); setError("");
+    if (!code) return setError("인증번호를 입력해 주세요.");
 
     try {
-      const res = await client.post('/api/members/find/id', { email, code });
-      setFoundId(res.data.loginId); // 예: msj***
+      const resp = await client.post("/api/members/find/id", { email, code });
+      setFoundId(resp.data.loginId); // 예: msj***
     } catch (err) {
-      setError(err.response?.data?.message || '인증번호가 맞지 않거나 시간이 지났어요.');
+      setError(err.response?.data?.message || "인증번호가 맞지 않거나 시간이 지났어요.");
     }
   };
 
   // ③ 비밀번호 찾기 → 새 비밀번호 저장
   const resetPw = async () => {
-    setInfo(''); setError('');
-    if (!code) return setError('인증번호를 입력해 주세요.');
-    if (!newPassword) return setError('새 비밀번호를 입력해 주세요.');
-    if (newPassword !== newPasswordCheck) return setError('새 비밀번호 확인이 맞지 않아요.');
+    setInfo(""); setError("");
+    if (!code) return setError("인증번호를 입력해 주세요.");
+    if (!newPassword) return setError("새 비밀번호를 입력해 주세요.");
+    if (newPassword !== newPasswordCheck) return setError("새 비밀번호 확인이 맞지 않아요.");
 
     try {
-      await client.post('/api/members/find/resetPw', {
+      await client.post("/api/members/find/resetPw", {
         loginId, email, code, newPassword, newPasswordCheck,
       });
       // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸)
-      navigate('/login', { state: { message: '비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요.' } });
+      navigate("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요." } });
     } catch (err) {
-      setError(err.response?.data?.message || '비밀번호를 바꾸지 못했어요.');
+      setError(err.response?.data?.message || "비밀번호를 바꾸지 못했어요.");
     }
   };
 
@@ -119,7 +119,7 @@ function FindPage() {
           {/* 탭 */}
           {/* 탭 (공통 Chips: 고른 칩이 금색) */}
           <Chips
-            items={[{ value: 'FIND_ID', label: '아이디 찾기' }, { value: 'RESET_PW', label: '비밀번호 찾기' }]}
+            items={[{ value: "FIND_ID", label: "아이디 찾기" }, { value: "RESET_PW", label: "비밀번호 찾기" }]}
             selected={tab}
             onPick={changeTab}
           />
@@ -130,17 +130,17 @@ function FindPage() {
               <div className={styles.result}>
                 <InfoBox label="가입한 아이디" value={foundId} />
               </div>
-              <Button type="primary" size="lg" block className={styles.mainBtn} onClick={() => navigate('/login')}>
+              <Button type="primary" size="lg" block className={styles.mainBtn} onClick={() => navigate("/login")}>
                 로그인하러 가기
               </Button>
-              <Button block className={styles.subBtn} onClick={() => changeTab('RESET_PW')}>
+              <Button block className={styles.subBtn} onClick={() => changeTab("RESET_PW")}>
                 비밀번호도 찾기
               </Button>
             </>
           ) : (
             <>
               {/* 비밀번호 찾기만 아이디 입력 */}
-              {tab === 'RESET_PW' && (
+              {tab === "RESET_PW" && (
                 <>
                   <label className={common.label}>아이디</label>
                   <input className={common.input} value={loginId} disabled={sent}
@@ -153,7 +153,7 @@ function FindPage() {
                 <input className={common.input} value={email} disabled={sent}
                   onChange={(e) => setEmail(e.target.value)} />
                 <Button className={styles.noWrap} onClick={sendCode}>
-                  {sent ? '다시 받기' : '인증번호 받기'}
+                  {sent ? "다시 받기" : "인증번호 받기"}
                 </Button>
               </div>
 
@@ -163,15 +163,15 @@ function FindPage() {
                   <label className={common.label}>인증번호 6자리 (5분 안에 입력)</label>
                   <div className={styles.row}>
                     <input className={common.input} value={code} maxLength={6} disabled={verified}
-                      onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))} />
+                      onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))} />
                     {/* 인증번호 확인 버튼 (두 탭 모두) */}
                     <Button className={styles.noWrap} disabled={verified} onClick={checkCode}>
-                      {verified ? '인증 완료' : '인증번호 확인'}
+                      {verified ? "인증 완료" : "인증번호 확인"}
                     </Button>
                   </div>
 
                   {/* 인증된 뒤에만 새 비밀번호 칸 */}
-                  {tab === 'RESET_PW' && verified && (
+                  {tab === "RESET_PW" && verified && (
                     <>
                       <label className={common.label}>새 비밀번호</label>
                       <input className={common.input} type="password" value={newPassword}
@@ -192,8 +192,8 @@ function FindPage() {
               {/* 인증된 뒤에만 [아이디 확인] / [비밀번호 변경] */}
               {verified && (
                 <Button type="primary" size="lg" block className={styles.mainBtn}
-                  onClick={tab === 'FIND_ID' ? findId : resetPw}>
-                  {tab === 'FIND_ID' ? '아이디 확인' : '비밀번호 변경'}
+                  onClick={tab === "FIND_ID" ? findId : resetPw}>
+                  {tab === "FIND_ID" ? "아이디 확인" : "비밀번호 변경"}
                 </Button>
               )}
             </>

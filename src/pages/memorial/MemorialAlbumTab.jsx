@@ -1,7 +1,7 @@
-import { useOutletContext } from 'react-router-dom';
-import MemorialSlot from './MemorialSlot';
-import { groupName, groupRange } from './memorialData';
-import s from './MemorialRoom.module.css';
+import { useOutletContext } from "react-router-dom";
+import MemorialSlot from "./MemorialSlot";
+import { groupName, groupRange } from "./memorialData";
+import s from "./MemorialRoom.module.css";
 
 // 사진첩 탭  주소: /memorial/:lifeId/album
 // 사진을 나이대(어린 시절·10대·20대…)로 묶어서 보여 줌. 사진은 빈 칸 → 영상 캡처를 끌어다 붙일 자리

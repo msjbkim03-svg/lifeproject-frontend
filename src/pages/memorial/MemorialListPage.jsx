@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import client from '../../api/api';
-import Button from '../../common/ui/Button';
-import Badge from '../../common/ui/Badge';
-import MemorialSlot from './MemorialSlot';
-import s from './MemorialRoom.module.css';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import client from "../../api/api";
+import Button from "../../common/ui/Button";
+import Badge from "../../common/ui/Badge";
+import MemorialSlot from "./MemorialSlot";
+import s from "./MemorialRoom.module.css";
 
 // 추모관 목록 (B01)  주소: /memorial
 // 들어오는 곳: 위 헤더 [추모관], 메인 "방금 끝난 인생" 칸의 [추모관]
@@ -18,9 +18,9 @@ function MemorialListPage() {
 
   // 페이지가 바뀔 때마다 서버에 다시 물어봄
   useEffect(() => {
-    client.get('/api/memorials', { params: { page } })
-      .then((res) => {
-        setData({ ...res.data, list: res.data.list ?? [] });
+    client.get("/api/memorials", { params: { page } })
+      .then((resp) => {
+        setData({ ...resp.data, list: resp.data.list ?? [] });
         setLoadError(false);
       })
       .catch(() => setLoadError(true));
@@ -64,7 +64,7 @@ function MemorialListPage() {
         <div className={s.pager}>
           <Button size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>‹</Button>
           {pages.map((p) => (
-            <Button key={p} size="sm" type={p === page ? 'primary' : undefined} onClick={() => setPage(p)}>{p}</Button>
+            <Button key={p} size="sm" type={p === page ? "primary" : undefined} onClick={() => setPage(p)}>{p}</Button>
           ))}
           <Button size="sm" disabled={page === lastPage} onClick={() => setPage(page + 1)}>›</Button>
         </div>

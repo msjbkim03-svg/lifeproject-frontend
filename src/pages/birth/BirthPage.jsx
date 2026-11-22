@@ -325,7 +325,7 @@ function BirthPage() {
         </section>
       )}
 
-      {/* 오류 */}
+
       {phase === 'error' && (
         <section className={styles.resultCard}>
           <h2 className={styles.resultName}>착륙하지 못했어요</h2>
