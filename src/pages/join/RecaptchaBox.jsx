@@ -2,10 +2,10 @@
 // 예: <RecaptchaBox onChange={setCaptchaToken} />
 //   체크하면 onChange(토큰), 시간이 지나 풀리면 onChange('')
 // 따로 설치할 패키지 없이 구글 스크립트를 직접 불러와서 그림
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 
-const SITE_KEY = '6Lf5hicuAAAAANdEgR7C_CSDYlS2_1cVYD63bxNc';
+const SITE_KEY = "6Lf5hicuAAAAANdEgR7C_CSDYlS2_1cVYD63bxNc";
 
 function RecaptchaBox({ onChange }) {
   const boxRef = useRef(null); // 체크박스가 그려질 자리
@@ -16,7 +16,7 @@ function RecaptchaBox({ onChange }) {
       window.grecaptcha.render(boxRef.current, {
         sitekey: SITE_KEY,
         callback: (token) => onChange(token),  // 체크 성공 → 토큰
-        'expired-callback': () => onChange(''), // 2분쯤 지나면 풀림 → 다시 체크해야 함
+        "expired-callback": () => onChange(""), // 2분쯤 지나면 풀림 → 다시 체크해야 함
       });
     };
 
@@ -28,10 +28,10 @@ function RecaptchaBox({ onChange }) {
 
     // 2) 처음이면 스크립트를 붙이고, 다 불러오면 draw 실행
     window.onRecaptchaLoad = draw;
-    if (!document.getElementById('recaptcha-script')) {
-      const script = document.createElement('script');
-      script.id = 'recaptcha-script';
-      script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit&hl=ko';
+    if (!document.getElementById("recaptcha-script")) {
+      const script = document.createElement("script");
+      script.id = "recaptcha-script";
+      script.src = "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit&hl=ko";
       script.async = true;
       document.body.appendChild(script);
     }

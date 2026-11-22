@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
-import client from '../../api/api';
-import Button from '../../common/ui/Button';
-import common from './MyPage.module.css'; // 마이페이지와 같은 틀 (main, card, stats, life …)
-import styles from './LivesPage.module.css'; // 표·페이지 번호만
+import { useEffect, useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import client from "../../api/api";
+import Button from "../../common/ui/Button";
+import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (main, card, stats, life …)
+import styles from "./LivesPage.module.css"; // 표·페이지 번호만
 
 // 전생 기록 (M07)  주소: /mypage/lives
 // 와이어프레임 17쪽: 숫자 칸 3개 + 진행 중인 인생 + 인생 목록(10개씩, 최신순/오래 산 순) + 페이지 번호
@@ -12,15 +12,15 @@ function LivesPage() {
   const { my } = useOutletContext(); // 진행 중인 인생 정보 (MyPageLayout 이 넘겨 줌)
 
   const [page, setPage] = useState(1);        // 지금 페이지
-  const [sort, setSort] = useState('recent'); // recent 최신순 / age 오래 산 순
+  const [sort, setSort] = useState("recent"); // recent 최신순 / age 오래 산 순
   const [data, setData] = useState(null);     // 서버 응답 { total, size, questDone, pointSum, lives }
   const [loadError, setLoadError] = useState(false); // 불러오기 실패 (빈 목록과 구분)
 
   // 페이지나 정렬이 바뀔 때마다 서버에 다시 물어봄
   useEffect(() => {
-    client.get('/api/members/me/lives', { params: { page, sort } })
-      .then((res) => {
-        setData(res.data);
+    client.get("/api/members/me/lives", { params: { page, sort } })
+      .then((resp) => {
+        setData(resp.data);
         setLoadError(false);
       })
       .catch(() => setLoadError(true)); // 오류를 '기록 없음'으로 보이지 않게
@@ -67,7 +67,7 @@ function LivesPage() {
               <b>{my.lifeName}</b>
               <span>{my.currentCountryName} · {my.currentAge}살</span>
             </div>
-            <Button type="primary" onClick={() => navigate('/play', { state: { lifeId: my.lifeId } })}>이어서 살기</Button>
+            <Button type="primary" onClick={() => navigate("/play", { state: { lifeId: my.lifeId } })}>이어서 살기</Button>
           </div>
         ) : (
           <div className={common.life}>
@@ -76,7 +76,7 @@ function LivesPage() {
               <b>진행 중인 인생이 없어요</b>
               <span>메인에서 새 인생을 시작해 보세요.</span>
             </div>
-            <Button onClick={() => navigate('/')}>새 인생 시작하기</Button>
+            <Button onClick={() => navigate("/")}>새 인생 시작하기</Button>
           </div>
         )}
       </section>
@@ -107,12 +107,12 @@ function LivesPage() {
                   <td>{l.lifeNo}</td>
                   <td>{l.birthCountryName}</td>
                   <td>{l.birthYear}</td>
-                  <td>{l.deathAge != null ? `${l.deathAge}세` : '-'}</td>
-                  <td className={styles.cause}>{l.deathCause || '-'}</td>
-                  <td>{l.questTotal > 0 ? `${l.questDone} / ${l.questTotal}` : '-'}</td>
+                  <td>{l.deathAge != null ? `${l.deathAge}세` : "-"}</td>
+                  <td className={styles.cause}>{l.deathCause || "-"}</td>
+                  <td>{l.questTotal > 0 ? `${l.questDone} / ${l.questTotal}` : "-"}</td>
                   <td>{l.earnedPoint}P</td>
                   <td>
-                    <div className="row" style={{ gap: 'var(--sp-1)', flexWrap: 'nowrap' }}>
+                    <div className="row" style={{ gap: "var(--sp-1)", flexWrap: "nowrap" }}>
                       <Button size="sm" onClick={() => navigate(`/result/${l.lifeId}`)}>결과 보기</Button>
                       <Button size="sm" onClick={() => navigate(`/memorial/${l.lifeId}`)}>추모관</Button>
                     </div>
@@ -128,7 +128,7 @@ function LivesPage() {
           <div className={styles.pager}>
             <Button size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>‹</Button>
             {pages.map((p) => (
-              <Button key={p} size="sm" type={p === page ? 'primary' : undefined} onClick={() => setPage(p)}>{p}</Button>
+              <Button key={p} size="sm" type={p === page ? "primary" : undefined} onClick={() => setPage(p)}>{p}</Button>
             ))}
             <Button size="sm" disabled={page === lastPage} onClick={() => setPage(page + 1)}>›</Button>
           </div>

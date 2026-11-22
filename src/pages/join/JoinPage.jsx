@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import client from '../../api/api';
-import Button from '../../common/ui/Button';
-import { formatPhone } from '../../utils/phone';
-import RecaptchaBox from './RecaptchaBox';
-import styles from './JoinPage.module.css';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import client from "../../api/api";
+import Button from "../../common/ui/Button";
+import { formatPhone } from "../../utils/phone";
+import RecaptchaBox from "./RecaptchaBox";
+import styles from "./JoinPage.module.css";
 
 // 회원가입 화면 (M01)
 function JoinPage() {
@@ -12,12 +12,12 @@ function JoinPage() {
 
   // 입력값 6개를 한 상자에
   const [form, setForm] = useState({
-    loginId: '',
-    password: '',
-    passwordCheck: '',
-    nickname: '',
-    email: '',
-    phone: '',
+    loginId: "",
+    password: "",
+    passwordCheck: "",
+    nickname: "",
+    email: "",
+    phone: "",
   });
 
   // 개인정보 수집·이용 동의 (필수)
@@ -25,29 +25,29 @@ function JoinPage() {
   const [showTerms, setShowTerms] = useState(false); // 동의 내용 펼치기
 
   // 로봇 확인 (reCAPTCHA) - 체크하면 구글이 준 토큰, 안 했거나 풀리면 ''
-  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaToken, setCaptchaToken] = useState("");
 
   // 중복 확인 통과 여부 (true 여야 가입 가능)
   const [checked, setChecked] = useState({ loginId: false, nickname: false, email: false });
 
   // 각 칸 아래에 보여 줄 안내 문구
-  const [msg, setMsg] = useState({ loginId: '', nickname: '', email: '' });
+  const [msg, setMsg] = useState({ loginId: "", nickname: "", email: "" });
 
   // 맨 아래 왼쪽에 보여 줄 오류 문구
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // 전화번호는 utils/phone.js 의 formatPhone 으로 하이픈 자동 넣기
 
   // ① 글자를 칠 때마다 실행
   const handleChange = (e) => {
     const { name } = e.target;
-    const value = name === 'phone' ? formatPhone(e.target.value) : e.target.value;
+    const value = name === "phone" ? formatPhone(e.target.value) : e.target.value;
     setForm({ ...form, [name]: value });
 
     // 중복 확인한 칸을 다시 고치면 → 다시 확인해야 함
     if (name in checked) {
       setChecked({ ...checked, [name]: false });
-      setMsg({ ...msg, [name]: '' });
+      setMsg({ ...msg, [name]: "" });
     }
   };
 
@@ -55,7 +55,7 @@ function JoinPage() {
   const checkDuplicate = async (field) => {
     const value = form[field];
     if (!value) {
-      setMsg({ ...msg, [field]: '먼저 입력해 주세요.' });
+      setMsg({ ...msg, [field]: "먼저 입력해 주세요." });
       return;
     }
 
@@ -66,45 +66,45 @@ function JoinPage() {
     };
 
     try {
-      const res = await client.get(urls[field]); // 서버에 물어보기
-      if (res.data.available) {
+      const resp = await client.get(urls[field]); // 서버에 물어보기
+      if (resp.data.available) {
         setChecked({ ...checked, [field]: true });
-        setMsg({ ...msg, [field]: '사용할 수 있어요.' });
+        setMsg({ ...msg, [field]: "사용할 수 있어요." });
       } else {
         setChecked({ ...checked, [field]: false });
-        setMsg({ ...msg, [field]: '이미 사용 중이에요.' });
+        setMsg({ ...msg, [field]: "이미 사용 중이에요." });
       }
     } catch {
-      setMsg({ ...msg, [field]: '서버에 연결할 수 없어요.' });
+      setMsg({ ...msg, [field]: "서버에 연결할 수 없어요." });
     }
   };
 
   // ③ 가입하기 버튼
   const handleSubmit = async (e) => {
     e.preventDefault(); // 새로고침 막기
-    setError('');
+    setError("");
 
     // 화면에서 먼저 검사 (서버에서도 한 번 더 검사함)
     if (!/^[a-zA-Z0-9]{4,20}$/.test(form.loginId)) {
-      return setError('아이디는 영문·숫자 4~20자로 입력해 주세요.');
+      return setError("아이디는 영문·숫자 4~20자로 입력해 주세요.");
     }
     if (!/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,20}$/.test(form.password)) {
-      return setError('비밀번호는 영문·숫자·특수문자를 포함해 8~20자로 입력해 주세요.');
+      return setError("비밀번호는 영문·숫자·특수문자를 포함해 8~20자로 입력해 주세요.");
     }
     if (form.password !== form.passwordCheck) {
-      return setError('비밀번호 확인이 맞지 않아요.');
+      return setError("비밀번호 확인이 맞지 않아요.");
     }
     if (form.nickname.length < 2 || form.nickname.length > 10) {
-      return setError('닉네임은 2~10자로 입력해 주세요.');
+      return setError("닉네임은 2~10자로 입력해 주세요.");
     }
     if (!checked.loginId || !checked.nickname || !checked.email) {
-      return setError('아이디·닉네임·이메일 중복 확인을 해 주세요.');
+      return setError("아이디·닉네임·이메일 중복 확인을 해 주세요.");
     }
-    if (!/^01[0-9]{8,9}$/.test(form.phone.replace(/-/g, ''))) {
-      return setError('전화번호를 올바르게 입력해 주세요. (예: 010-1234-5678)');
+    if (!/^01[0-9]{8,9}$/.test(form.phone.replace(/-/g, ""))) {
+      return setError("전화번호를 올바르게 입력해 주세요. (예: 010-1234-5678)");
     }
     if (!agreed) {
-      return setError('개인정보 수집·이용에 동의해 주세요.');
+      return setError("개인정보 수집·이용에 동의해 주세요.");
     }
     if (!captchaToken) {
       return setError('"로봇이 아닙니다"에 체크해 주세요.');
@@ -113,21 +113,21 @@ function JoinPage() {
     try {
       // 서버로 보내기 (동의 여부는 DB 값에 맞춰 Y / N 으로)
       // captchaToken 도 같이 보내면 서버가 구글에 진짜인지 확인함
-      await client.post('/api/members', { ...form, privacyAgreed: agreed ? 'Y' : 'N', captchaToken });
+      await client.post("/api/members", { ...form, privacyAgreed: agreed ? "Y" : "N", captchaToken });
       // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸)
-      navigate('/login', { state: { message: '회원가입을 마쳤어요. 로그인해 주세요.' } });
+      navigate("/login", { state: { message: "회원가입을 마쳤어요. 로그인해 주세요." } });
     } catch (err) {
-      setError(err.response?.data?.message || '서버에 연결할 수 없어요.');
+      setError(err.response?.data?.message || "서버에 연결할 수 없어요.");
       // 토큰은 한 번만 쓸 수 있어서, 실패하면 체크박스를 비우고 다시 체크하게 함
       window.grecaptcha?.reset();
-      setCaptchaToken('');
+      setCaptchaToken("");
     }
   };
 
   // 비밀번호 확인 칸 아래 문구
   const pwMatch = form.password === form.passwordCheck;
   const pwMatchMsg =
-    form.passwordCheck === '' ? '' : pwMatch ? '비밀번호가 같아요.' : '비밀번호가 달라요.';
+    form.passwordCheck === "" ? "" : pwMatch ? "비밀번호가 같아요." : "비밀번호가 달라요.";
 
   // 문구 색: 통과면 초록(hintOk), 아니면 빨강(hint)
   const hintClass = (ok) => (ok ? styles.hintOk : styles.hint);
@@ -145,7 +145,7 @@ function JoinPage() {
               <div className={styles.inputWithBtn}>
                 <input className={styles.input} name="loginId" value={form.loginId}
                   onChange={handleChange} placeholder="영문·숫자 4~20자" />
-                <Button className={styles.noWrap} onClick={() => checkDuplicate('loginId')}>중복 확인</Button>
+                <Button className={styles.noWrap} onClick={() => checkDuplicate("loginId")}>중복 확인</Button>
               </div>
               <p className={hintClass(checked.loginId)}>{msg.loginId}</p>
             </div>
@@ -177,7 +177,7 @@ function JoinPage() {
               <div className={styles.inputWithBtn}>
                 <input className={styles.input} name="nickname" value={form.nickname}
                   onChange={handleChange} placeholder="2~10자" />
-                <Button className={styles.noWrap} onClick={() => checkDuplicate('nickname')}>중복 확인</Button>
+                <Button className={styles.noWrap} onClick={() => checkDuplicate("nickname")}>중복 확인</Button>
               </div>
               <p className={hintClass(checked.nickname)}>{msg.nickname}</p>
             </div>
@@ -190,7 +190,7 @@ function JoinPage() {
               <div className={styles.inputWithBtn}>
                 <input className={styles.input} type="email" name="email" value={form.email}
                   onChange={handleChange} placeholder="아이디·비밀번호 찾기에 사용" />
-                <Button className={styles.noWrap} onClick={() => checkDuplicate('email')}>중복 확인</Button>
+                <Button className={styles.noWrap} onClick={() => checkDuplicate("email")}>중복 확인</Button>
               </div>
               <p className={hintClass(checked.email)}>{msg.email}</p>
             </div>
@@ -213,7 +213,7 @@ function JoinPage() {
                 <span><b>[필수]</b> 개인정보 수집·이용에 동의합니다.</span>
               </label>
               <button type="button" className={styles.agreeToggle} onClick={() => setShowTerms(!showTerms)}>
-                {showTerms ? '닫기' : '내용 보기'}
+                {showTerms ? "닫기" : "내용 보기"}
               </button>
             </div>
             {showTerms && (
@@ -237,7 +237,7 @@ function JoinPage() {
           <div className={styles.footerBtns}>
             {/* 엔터로 가입되게 하는 숨은 버튼 (공통 Button 은 type="button") */}
             <button type="submit" hidden />
-            <Button onClick={() => navigate('/')}>취소</Button>
+            <Button onClick={() => navigate("/")}>취소</Button>
             <Button type="primary" onClick={handleSubmit}>가입하기</Button>
           </div>
         </div>

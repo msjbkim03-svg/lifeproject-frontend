@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import Button from '../../common/ui/Button';
-import Panel from '../../common/ui/Panel';
-import MemorialSlot from './MemorialSlot';
-import s from './MemorialRoom.module.css';
+import { useState } from "react";
+import Button from "../../common/ui/Button";
+import Panel from "../../common/ui/Panel";
+import MemorialSlot from "./MemorialSlot";
+import s from "./MemorialRoom.module.css";
 
 const CANDLE_COUNT = 7;
 
 // 추모관 왼쪽 카드: 초상(빈 칸) · 이름 · 생몰년 · 나라 · 한 줄 요약 · 행복 막대 · 촛불 (안 열린 내 방이면 열기 칸)
 // 예: <MemorialSide room={room} onCandle={lightCandle} onOpen={openRoom} />
 function MemorialSide({ room, onCandle, onOpen }) {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const moved = room.birthCountryName !== room.deathCountryName;
   const lit = Math.min(room.tributeCount, CANDLE_COUNT);
   const maxHappy = Math.max(1, ...room.happiness);
@@ -60,16 +60,16 @@ function MemorialSide({ room, onCandle, onOpen }) {
         <div className={s.candleBox}>
           <div className={s.shelf}>
             {Array.from({ length: CANDLE_COUNT }, (_, i) => (
-              <span key={i} className={`${s.candle} ${i < lit ? s.on : ''}`} style={{ height: 22 + ((i * 7) % 4) * 6 }} />
+              <span key={i} className={`${s.candle} ${i < lit ? s.on : ""}`} style={{ height: 22 + ((i * 7) % 4) * 6 }} />
             ))}
           </div>
           <p>
             {room.tributeCount === 0
-              ? '아직 아무도 촛불을 켜지 않았어요.'
+              ? "아직 아무도 촛불을 켜지 않았어요."
               : `${room.tributeCount}명이 촛불을 켜 두었어요.`}
           </p>
           <Button type="primary" disabled={room.myCandle} onClick={onCandle}>
-            {room.myCandle ? '촛불을 켰어요' : '촛불 켜기'}
+            {room.myCandle ? "촛불을 켰어요" : "촛불 켜기"}
           </Button>
         </div>
       )}
