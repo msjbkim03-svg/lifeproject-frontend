@@ -70,7 +70,7 @@ function LoginPage() {
           <div className={styles.links}>
             <Link to="/find" state={{ background }}>아이디·비밀번호 찾기</Link>
             <span>|</span>
-            <Link to="/join" state={{ background }}>회원가입</Link>
+            <Link to="/join">회원가입</Link>
           </div>
 
           <Button block className={styles.subBtn} onClick={() => navi("/")}>

@@ -22,12 +22,14 @@ function MemorialRoomPage() {
   const [notice, setNotice] = useState(""); // 화면 안 안내 문구
 
   // 1. 방 불러오기
-  const load = () => {
-    client.get(`/api/memorials/${lifeId}`)
+  //    view: true 면 조회수 +1 (처음 들어올 때만, 방명록 쓰고 다시 불러올 때는 안 올림)
+  const load = (view = false) => {
+    client.get(`/api/memorials/${lifeId}`, { params: { view } })
       .then((resp) => { setRoom(toRoom(resp.data)); setLoadError(false); })
       .catch(() => setLoadError(true));
   };
-  useEffect(load, [lifeId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => load(true), [lifeId]);
 
   // 401 이면 로그인 화면으로
   const goLogin = () => navi("/login", { state: { message: "로그인하고 다시 해 주세요." } });
