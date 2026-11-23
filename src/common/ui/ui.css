@@ -746,3 +746,7 @@
 /* 반려동물 이름 칸 (EventChoiceModal, 원작 petNameAsk) */
 .dec-name { display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px; font-size: 13px; }
 .dec-name input { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line, #c9d1dc); background: var(--panel, #fff); color: inherit; font: inherit; }
+/* 유언장 남길 말 (EventChoiceModal ENG_WILL) */
+.dec-will { align-items: flex-start; }
+.dec-will span { padding-top: 8px; white-space: nowrap; }
+.dec-name textarea { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line, #c9d1dc); background: var(--panel, #fff); color: inherit; font: inherit; resize: vertical; }
