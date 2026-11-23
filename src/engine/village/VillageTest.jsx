@@ -19,6 +19,8 @@ function VillageTest() {
   const [hair, setHair] = useState('');
   const [top, setTop] = useState('');
   const [hat, setHat] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [urban, setUrban] = useState(true);
 
   // 같은 나라 접속자 예시 (place = 있는 장소, x = 그 화면 안 위치 %)
   const others = [
@@ -78,6 +80,16 @@ function VillageTest() {
             </select>
           </label>
         ))}
+        일터
+        <select className="input" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+          <option value="">정보 없음</option>
+          <option value="AGRI">농업</option>
+          <option value="INDUSTRY">공업</option>
+          <option value="SERVICE">서비스</option>
+        </select>
+        <label className="row">
+          <input type="checkbox" checked={urban} onChange={(e) => setUrban(e.target.checked)} /> 도시
+        </label>
       </div>
 
       <div style={{ maxWidth: 760 }}>
@@ -86,6 +98,7 @@ function VillageTest() {
             caption={code + ` · 테스트 (${age}세)`}
             myMessage={sent} others={others} house={{ tier, kind }} vehicle={vehicle || null}
             costume={{ hair: hair || null, top: top || null, hat: hat || null }}
+            industry={industry || null} urban={urban}
             family={[
               { id: 'mom', label: '엄마', gender: 'F', age: 58 },
               { id: 'dad', label: '아빠', gender: 'M', age: 62 },

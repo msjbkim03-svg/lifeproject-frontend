@@ -799,9 +799,10 @@ function PlayPage() {
         {/* ───── 가운데: 마을 · 올해의 초점 · 인생 기록 ───── */}
         <div className="pp-col">
           <section className="pp-panel pp-scene">
-                        <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
+            <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
               place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)}
-              house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume} />
+              house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume}
+              industry={life.jobIndustry} />
             <p className="pp-scenecap"><Flag cc={life.currentCountry} />{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
 
@@ -1042,15 +1043,15 @@ function PlayPage() {
 const REFLECT_AGES = [5, 15, 30, 50, 70];
 const REFLECT_Q = {
   5: [[() => '당신의 다섯 살은 어땠나요? 그때 당연하게 누렸던 것 하나를 떠올려 보세요.', (poor) => (poor ? '아플 때 데려가 주던 병원' : '매일 저녁 차려지던 밥상')],
-    [(n) => `다섯 살 ${n}에게 지금 가장 필요한 것은 무엇일까요?`, (poor) => (poor ? '배불리 먹는 저녁' : '잠들기 전 읽어 주는 그림책')]],
+  [(n) => `다섯 살 ${n}에게 지금 가장 필요한 것은 무엇일까요?`, (poor) => (poor ? '배불리 먹는 저녁' : '잠들기 전 읽어 주는 그림책')]],
   15: [[() => '열다섯 살의 당신에게 학교는 어떤 곳이었나요?', () => '친구들을 만나러 가던 곳'],
-    [(n) => `${iga(n)} 꿈꿀 수 있는 미래와, 열다섯의 당신이 꿈꾸던 미래는 얼마나 달랐을까요?`, () => '꿈꾸는 마음은 비슷했을 것 같다']],
+  [(n) => `${iga(n)} 꿈꿀 수 있는 미래와, 열다섯의 당신이 꿈꾸던 미래는 얼마나 달랐을까요?`, () => '꿈꾸는 마음은 비슷했을 것 같다']],
   30: [[(n) => `${n}의 삶과 당신의 삶은 무엇이 같고, 무엇이 다른가요?`, () => '일에 지친 건 같고, 사는 곳은 다르다'],
-    [(n) => `${iga(n)} 오늘 가장 고마워할 일은 무엇일까요?`, () => '가족이 건강하다는 것']],
+  [(n) => `${iga(n)} 오늘 가장 고마워할 일은 무엇일까요?`, () => '가족이 건강하다는 것']],
   50: [[(n) => `${iga(n)} 당신의 이웃이었다면, 어떤 이야기를 나누고 싶나요?`, () => '자식 키우는 이야기'],
-    [() => '살면서 당신을 붙잡아 준 사람은 누구였나요?', () => '힘들 때 전화해 준 친구']],
+  [() => '살면서 당신을 붙잡아 준 사람은 누구였나요?', () => '힘들 때 전화해 준 친구']],
   70: [[(n) => `한 번뿐인 삶에서, ${iga(n)} 가장 소중히 여긴 것은 무엇이었을까요?`, () => '가족과 함께한 저녁'],
-    [() => '당신은 어떤 사람으로 기억되고 싶나요?', () => '곁에 있으면 편했던 사람']],
+  [() => '당신은 어떤 사람으로 기억되고 싶나요?', () => '곁에 있으면 편했던 사람']],
 };
 
 function ReflectModal({ life, aliveNow, countryName, auto, speed, onClose }) {
@@ -1318,7 +1319,7 @@ function FamilyRows({ life, countryName, stageText }) {
       {hob && <div className="row"><span>취미</span><span>{hob}</span></div>}
       {svcText && <div className="row"><span>병역</span><span>{svcText}</span></div>}
       {owned.length > 0 && <div className="row"><span>내 물건</span><span>{owned.join(', ')}</span></div>}
-<rp></rp>      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
+      <rp></rp>      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
     </div>
   );

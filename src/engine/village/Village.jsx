@@ -13,6 +13,7 @@
 //    family={[{ id: 'mom', label: '엄마', gender: 'F', age: 58 }]}  ← 우리 집에 같이 사는 가족 (부모·형제자매·배우자·자녀)
 //    house={{ tier: 4, kind: 'own' }}  ← 우리 집 모양 (villageData.houseOf, 없으면 3단계 부모님 집)
 //    vehicle="CAR"                     ← 집 앞 탈것 CAR / MOTO / BIKE (villageData.vehicleOf, 없으면 null)
+//    industry="SERVICE"                ← 직업 산업 AGRI / INDUSTRY / SERVICE (일터 그림, 없으면 도시·시골로만)
 // 가족: '우리 집' 화면에만 있고, 집 앞을 천천히 왔다 갔다 해요 (조작은 나만). 자녀가 생기면 늘어나요
 import { useEffect, useRef, useState } from 'react';
 import { COUNTRIES, THEMES, PLACES, MIN_X, MAX_X, EDGE, DOOR_X, GROUND_Y, SPEED, SKY_STARS, HOUSE_KINDS } from './villageData';
@@ -249,8 +250,143 @@ function Vehicle({ kind, x, c }) {
   );
 }
 
+// 대학교 (C08 장소 보강): 기둥 현관·시계가 있는 본관 + 양쪽 날개 건물(권역 지붕) + 깃발·가로등, 문은 x 160
+function UnivScene({ c, roof, deco }) {
+  const r = bigRoof(roof);
+  return (
+    <g>
+      <Tree x={36} kind={deco} c={c} s={1.1} />
+      <House x={80} y={56} w={46} c={c} roof={r} win={2} door={false} />
+      <House x={194} y={56} w={46} c={c} roof={r} win={2} door={false} />
+      <rect x="122" y="40" width="76" height="52" fill={c.wall} />
+      <path d="M116 40 L160 22 L204 40 Z" fill={c.roofC} />
+      <rect x="116" y="40" width="88" height="4" fill={c.roofC} opacity="0.85" />
+      <circle cx="160" cy="33" r="4" fill="#ffffff" stroke={c.roofC} strokeWidth="1" />
+      <path d="M160 33 V30.6 M160 33 H162" stroke={c.roofC} strokeWidth="0.8" />
+      {[128, 140, 176, 188].map((px) => <rect key={px} x={px} y="44" width="4" height="45" fill={c.wall} stroke={c.roofC} strokeWidth="0.5" />)}
+      {[128, 140, 176, 188].map((px) => <rect key={'w' + px} x={px - 1} y="44" width="6" height="2" fill={c.roofC} opacity="0.5" />)}
+      <rect x="152" y="70" width="16" height="19" rx="1" fill={c.roofC} opacity="0.8" />
+      <rect x="150" y="52" width="20" height="9" rx="1" fill={c.roofC} opacity="0.3" />
+      <rect x="142" y="89" width="36" height="3" fill={c.road} />
+      <path d="M256 92 V48" stroke={c.trunk} strokeWidth="1.4" />
+      <path d="M256 49 h15 l-3 4 l3 4 h-15 Z" fill="#4a7bd0" />
+      <path d="M276 92 V66 M272 66 h8" stroke={c.trunk} strokeWidth="1.4" />
+      <circle cx="276" cy="64" r="3" fill="#ffe7a8" />
+      <Tree x={300} kind={deco} c={c} s={0.9} />
+    </g>
+  );
+}
+
+// ───────── 일터 (직업 산업별, C08 장소 보강) ─────────
+// industry: AGRI 농업 → 논밭 / INDUSTRY 공업 → 공장 / SERVICE 서비스 → 도시는 사무실, 시골은 가게
+// industry 가 없으면(서버에 아직 없음) 예전처럼 도시는 사무실+공장, 시골은 논밭
+
+// 논밭 (원래 시골 일터 그림)
+function FarmScene({ c, roof }) {
+  return (
+    <g>
+      {[0, 1, 2, 3, 4, 5].map((r) => (
+        <path key={r} d={`M20 ${80 + r * 2} Q160 ${76 + r * 2} 300 ${80 + r * 2}`} stroke={c.leaf} strokeWidth="1.6" fill="none" opacity={0.5 + r * 0.08} />
+      ))}
+      <House x={226} y={60} w={50} c={c} roof={roof} win={1} />
+      <path d="M60 92 V70 M54 74 L66 74 M56 70 Q60 64 64 70" stroke={c.trunk} strokeWidth="1.6" fill="none" />
+      <circle cx="60" cy="67" r="3.4" fill="#f2c9a0" />
+    </g>
+  );
+}
+
+// 사무실 + 공장 (원래 도시 일터 그림)
+function MixedWorkScene({ c }) {
+  return (
+    <g>
+      <rect x="70" y="40" width="70" height="52" fill={c.wall} />
+      {[0, 1, 2].map((r) => [0, 1, 2, 3].map((k) => <rect key={r + '-' + k} x={78 + k * 15} y={47 + r * 12} width="9" height="7" fill={c.roofC} opacity="0.3" />))}
+      <rect x="98" y="78" width="14" height="14" fill={c.roofC} opacity="0.75" />
+      <rect x="166" y="60" width="96" height="32" fill={c.wall} />
+      <path d="M166 60 l16 -10 v10 l16 -10 v10 l16 -10 v10 l16 -10 v10 l16 -10 v10 Z" fill={c.roofC} />
+      <rect x="246" y="30" width="8" height="30" fill={c.trunk} />
+      <circle cx="252" cy="24" r="5" fill="#ffffff" opacity="0.6" /><circle cx="259" cy="17" r="6" fill="#ffffff" opacity="0.45" />
+      <rect x="196" y="76" width="18" height="16" fill={c.roofC} opacity="0.75" />
+    </g>
+  );
+}
+
+// 공장: 톱니 지붕 + 굴뚝 2개 + 큰 하역 문(가운데 x 160) + 컨테이너
+function FactoryScene({ c, deco }) {
+  return (
+    <g>
+      <rect x="30" y="80" width="26" height="12" fill="#c9544a" opacity="0.75" />
+      <rect x="58" y="80" width="26" height="12" fill="#4a7bd0" opacity="0.75" />
+      <rect x="40" y="68" width="26" height="12" fill="#f2a23a" opacity="0.75" />
+      <rect x="226" y="24" width="8" height="40" fill={c.trunk} />
+      <rect x="240" y="32" width="7" height="32" fill={c.trunk} />
+      <circle cx="232" cy="18" r="5" fill="#ffffff" opacity="0.6" /><circle cx="239" cy="11" r="6" fill="#ffffff" opacity="0.45" />
+      <circle cx="245" cy="26" r="4" fill="#ffffff" opacity="0.5" />
+      <rect x="100" y="60" width="140" height="32" fill={c.wall} />
+      <path d="M100 60 l20 -12 v12 l20 -12 v12 l20 -12 v12 l20 -12 v12 l20 -12 v12 l20 -12 v12 l20 -12 v12 Z" fill={c.roofC} />
+      {[0, 1, 2, 3, 4, 5, 6].map((k) => <rect key={k} x={106 + k * 19} y="65" width="10" height="5" fill={c.roofC} opacity="0.3" />)}
+      <rect x="150" y="74" width="20" height="18" fill={c.roofC} opacity="0.75" />
+      <path d="M150 78 H170 M150 82 H170 M150 86 H170" stroke={c.wall} strokeWidth="0.6" opacity="0.6" />
+      <Tree x={292} kind={deco} c={c} s={0.9} />
+    </g>
+  );
+}
+
+// 사무실 (도시 서비스업): 유리 빌딩 + 낮은 빌딩 + 버스 정류장
+function OfficeScene({ c, deco }) {
+  return (
+    <g>
+      <Tree x={40} kind={deco} c={c} s={1} />
+      <path d="M78 92 V64 M72 64 h12" stroke={c.trunk} strokeWidth="1.4" />
+      <rect x="72" y="58" width="12" height="7" rx="1" fill="#4a9a7a" />
+      <rect x="128" y="24" width="64" height="68" fill={c.wall} />
+      <rect x="128" y="24" width="64" height="4" fill={c.roofC} />
+      {[0, 1, 2, 3, 4].map((r) => [0, 1, 2, 3].map((k) => (
+        <rect key={r + '-' + k} x={134 + k * 14} y={32 + r * 9} width="10" height="6" fill="#7fb0d8" opacity="0.55" />
+      )))}
+      <rect x="152" y="76" width="16" height="16" fill="#7fb0d8" opacity="0.8" />
+      <path d="M160 76 V92" stroke={c.wall} strokeWidth="0.8" />
+      <rect x="206" y="48" width="44" height="44" fill={c.wall} />
+      <rect x="206" y="48" width="44" height="3" fill={c.roofC} />
+      {[0, 1, 2].map((r) => [0, 1, 2].map((k) => (
+        <rect key={'b' + r + '-' + k} x={212 + k * 13} y={56 + r * 10} width="8" height="6" fill={c.roofC} opacity="0.3" />
+      )))}
+      <Tree x={286} kind={deco} c={c} s={0.85} />
+    </g>
+  );
+}
+
+// 가게 (시골 서비스업): 줄무늬 차양 + 간판 + 진열창
+function ShopScene({ c, roof, deco }) {
+  return (
+    <g>
+      <Tree x={50} kind={deco} c={c} s={1} />
+      <House x={116} y={56} w={88} c={c} roof={bigRoof(roof)} win={0} door={false} />
+      <rect x="132" y="60" width="56" height="10" rx="2" fill={c.roofC} />
+      <text x="160" y="67.5" textAnchor="middle" fontSize="7.5" fontWeight="700" fill="#ffffff" fontFamily="sans-serif">가게</text>
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((k) => (
+        <path key={k} d={`M${114 + k * 11.5} 72 h11.5 v5 q-5.75 3 -11.5 0 Z`} fill={k % 2 ? '#ffffff' : '#e8584c'} opacity="0.9" />
+      ))}
+      <rect x="122" y="79" width="24" height="11" fill="#7fb0d8" opacity="0.5" />
+      <rect x="174" y="79" width="24" height="11" fill="#7fb0d8" opacity="0.5" />
+      {[0, 1, 2].map((k) => <circle key={k} cx={127 + k * 7} cy="87" r="2" fill={['#f2a23a', '#7bb35a', '#e8584c'][k]} />)}
+      <rect x="153" y="77" width="14" height="15" fill={c.roofC} opacity="0.75" />
+      <rect x="214" y="84" width="10" height="8" fill={c.trunk} opacity="0.7" />
+      <rect x="228" y="86" width="8" height="6" fill={c.trunk} opacity="0.55" />
+      <Tree x={290} kind={deco} c={c} s={0.85} />
+    </g>
+  );
+}
+
+function WorkScene({ industry, urban, c, roof, deco }) {
+  if (industry === 'AGRI') return <FarmScene c={c} roof={roof} />;
+  if (industry === 'INDUSTRY') return <FactoryScene c={c} deco={deco} />;
+  if (industry === 'SERVICE') return urban ? <OfficeScene c={c} deco={deco} /> : <ShopScene c={c} roof={roof} deco={deco} />;
+  return urban ? <MixedWorkScene c={c} /> : <FarmScene c={c} roof={roof} />;
+}
+
 // 장소별 장면
-function Scene({ place, c, t, urban, house, vehicle }) {
+function Scene({ place, c, t, urban, house, vehicle, industry }) {
   const roof = t.roof;
   const deco = t.deco;
   switch (place) {
@@ -261,6 +397,8 @@ function Scene({ place, c, t, urban, house, vehicle }) {
           {vehicle && <Vehicle kind={vehicle} x={232} c={c} />}
         </g>
       );
+    case 'univ':
+      return <UnivScene c={c} roof={roof} deco={deco} />;
     case 'school':
       return (
         <g>
@@ -312,27 +450,7 @@ function Scene({ place, c, t, urban, house, vehicle }) {
         </g>
       );
     case 'work':
-      return urban ? (
-        <g>
-          <rect x="70" y="40" width="70" height="52" fill={c.wall} />
-          {[0, 1, 2].map((r) => [0, 1, 2, 3].map((k) => <rect key={r + '-' + k} x={78 + k * 15} y={47 + r * 12} width="9" height="7" fill={c.roofC} opacity="0.3" />))}
-          <rect x="98" y="78" width="14" height="14" fill={c.roofC} opacity="0.75" />
-          <rect x="166" y="60" width="96" height="32" fill={c.wall} />
-          <path d="M166 60 l16 -10 v10 l16 -10 v10 l16 -10 v10 l16 -10 v10 l16 -10 v10 Z" fill={c.roofC} />
-          <rect x="246" y="30" width="8" height="30" fill={c.trunk} />
-          <circle cx="252" cy="24" r="5" fill="#ffffff" opacity="0.6" /><circle cx="259" cy="17" r="6" fill="#ffffff" opacity="0.45" />
-          <rect x="196" y="76" width="18" height="16" fill={c.roofC} opacity="0.75" />
-        </g>
-      ) : (
-        <g>
-          {[0, 1, 2, 3, 4, 5].map((r) => (
-            <path key={r} d={`M20 ${80 + r * 2} Q160 ${76 + r * 2} 300 ${80 + r * 2}`} stroke={c.leaf} strokeWidth="1.6" fill="none" opacity={0.5 + r * 0.08} />
-          ))}
-          <House x={226} y={60} w={50} c={c} roof={roof} win={1} />
-          <path d="M60 92 V70 M54 74 L66 74 M56 70 Q60 64 64 70" stroke={c.trunk} strokeWidth="1.6" fill="none" />
-          <circle cx="60" cy="67" r="3.4" fill="#f2c9a0" />
-        </g>
-      );
+      return <WorkScene industry={industry} urban={urban} c={c} roof={roof} deco={deco} />;
     case 'clinic':
       return (
         <g>
@@ -386,7 +504,7 @@ function Land({ kind, c }) {
   return <><path d="M0 66 Q40 44 80 58 Q128 34 176 56 Q232 40 272 54 Q296 48 320 52 L320 100 L0 100 Z" fill={c.far} /><path d="M0 80 Q64 68 128 78 Q192 66 256 76 Q288 72 320 74 L320 100 L0 100 Z" fill={c.near} /></>;
 }
 
-function Village({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null }) {
+function Village({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null, industry = null }) {
   const info = COUNTRIES[countryCode] || ['', 'EAST'];
   const flagCode = info[0];
   const t = THEMES[info[1]];
@@ -527,7 +645,7 @@ function Village({ countryCode, age, gender = 'M', place = 'home', urban = true,
           <rect x="0" y="92" width="320" height="38" fill={c.ground} />
           <rect x="0" y="104" width="320" height="12" fill={c.road} />
           <path d="M0 110 H320" stroke="#ffffff" strokeOpacity={mode === 'dark' ? 0.25 : 0.6} strokeDasharray="8 7" strokeWidth="1" />
-          <Scene place={here.id} c={c} t={t} urban={urban} house={house} vehicle={vehicle} />
+          <Scene place={here.id} c={c} t={t} urban={urban} house={house} vehicle={vehicle} industry={industry} />
         </svg>
 
         {/* 우리 집 가족 (우리 집 화면에만) */}

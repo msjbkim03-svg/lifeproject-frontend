@@ -60,6 +60,7 @@ export const THEMES = {
 export const PLACES = [
   { id: 'home', name: '우리 집', desc: '식구들이 사는 집' },
   { id: 'school', name: '학교', desc: '아이들이 공부하는 곳' },
+  { id: 'univ', name: '대학교', desc: '더 깊이 공부하는 곳' },
   { id: 'hall', name: '마을회관', desc: '마을 사람들이 모이는 곳' },
   { id: 'market', name: '시장', desc: '장을 보고 물건을 사고파는 곳' },
   { id: 'work', name: '일터', desc: '어른들이 일하는 곳' },
@@ -78,7 +79,8 @@ export function placeOf(life) {
   if (!life) return 'home';
   if (life.status === 'ENDED') return 'home';
   if (life.health != null && life.health < 30) return 'clinic';
-  if (life.schoolStatus === 'ENROLLED') return 'school';
+    // 재학 중: 학력이 대학·대학원이면 대학교 (엔진 stageOf 의 대학생 UNIV 와 같은 조건)
+  if (life.schoolStatus === 'ENROLLED') return life.eduLevel === 'UNI' || life.eduLevel === 'GRAD' ? 'univ' : 'school';
   if (life.jobStatus === 'EMPLOYED') return life.currentAge >= 60 ? 'hall' : 'work';
   if (life.jobStatus === 'UNEMPLOYED') return 'market';
   if (life.jobStatus === 'RETIRED' || life.currentAge >= 60) return 'hall';
