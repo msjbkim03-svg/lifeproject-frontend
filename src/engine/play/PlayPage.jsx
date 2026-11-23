@@ -26,7 +26,7 @@ import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
 import Spoon from '../../common/ui/Spoon.jsx';
 import Village from '../village/Village';
-import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
+import { placeOf, THEMES, COUNTRIES, houseOf, vehicleOf, homeFamily } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
@@ -121,39 +121,6 @@ const koBig = (v) => {
   return Math.round(v).toLocaleString();
 };
 const fix1 = (v) => (Math.round(v * 10) / 10).toLocaleString();
-
-// 우리 집 마을 화면에 같이 사는 가족 (Village family)
-//   부모님(살아 계시면) · 형제자매(내가 20살 전까지, 25살 아래만) · 배우자 · 자녀(서버 가족 줄 '아들'·'딸', 30살 아래만)
-const SIB_RE = /(형|오빠|누나|언니|남동생|여동생) (\d+)세/g;
-const SIB_LABEL = { 형: ['형', 'M'], 오빠: ['오빠', 'M'], 누나: ['누나', 'F'], 언니: ['언니', 'F'], 남동생: ['동생', 'M'], 여동생: ['동생', 'F'] };
-const homeFamily = (life) => {
-  const out = [];
-  const age = life.currentAge;
-  const fam = life.family || [];
-  let kid = 0;
-  fam.forEach((m) => {
-    if (!m.alive) return;
-    if (m.role === '어머니') out.push({ id: 'mom', label: '엄마', gender: 'F', age: m.age });
-    else if (m.role === '아버지') out.push({ id: 'dad', label: '아빠', gender: 'M', age: m.age });
-    else if (m.role === '형제자매' && age < 20 && (m.info || m.job)) {
-      let k = 0;
-      for (const [, w, n] of (m.info || m.job).matchAll(SIB_RE)) {
-        const sa = Number(n);
-        if (sa < 25) out.push({ id: 'sib' + k, label: SIB_LABEL[w][0], gender: SIB_LABEL[w][1], age: sa });
-        k += 1;
-      }
-    } else if (m.role === '배우자' && m.name) {
-      out.push({ id: 'spouse', label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: m.age });
-    } else if (m.role === '아들' || m.role === '딸') {
-      if (m.age == null || m.age < 30) out.push({ id: 'kid' + kid, label: m.role, gender: m.role === '아들' ? 'M' : 'F', age: m.age ?? 5 });
-      kid += 1;
-    }
-  });
-  if (!fam.length && life.parentAlive !== 'N' && age < 40) {
-    out.push({ id: 'mom', label: '엄마', gender: 'F' }, { id: 'dad', label: '아빠', gender: 'M' });
-  }
-  return out.slice(0, 10);
-};
 
 // 서버 오류 문구 꺼내기
 const errText = (err) => {
@@ -827,8 +794,9 @@ function PlayPage() {
         {/* ───── 가운데: 마을 · 올해의 초점 · 인생 기록 ───── */}
         <div className="pp-col">
           <section className="pp-panel pp-scene">
-            <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
-              place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)} />
+                        <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
+              place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)}
+              house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume} />
             <p className="pp-scenecap"><Flag cc={life.currentCountry} />{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
 

@@ -86,6 +86,82 @@ export function placeOf(life) {
   return 'home';
 }
 
+// ───────── 우리 집 모양 (가정형편·내 집·독립) ─────────
+
+// 집 종류 이름 (우리 집 화면 설명에 사용)
+export const HOUSE_KINDS = { parents: '부모님 집', own: '내 집', rent: '셋집' };
+
+// 가진 물건 코드 목록 (서버 owns: 'CAR,TV,HOUSE' → ['CAR', 'TV', 'HOUSE'])
+export function ownsOf(life) {
+  return (life?.owns || '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+// 소득 위치 0~1 → 1~5단계 (없으면 null)
+function rankTier(rank) {
+  if (rank == null) return null;
+  return Math.min(5, Math.max(1, Math.floor(rank * 5) + 1));
+}
+
+// 우리 집 단계 tier 1(흙수저)~5(다이아수저) + 종류 kind
+// - 내 집이 없고, 미혼이고, 부모님이 살아 계시면 → 부모님 집 (가정형편 wealthClass 그대로)
+// - 내 집(HOUSE)이 있으면 → 내 집 (소득 위치 단계, 최소 3)
+// - 결혼했거나 부모님이 안 계신데 내 집이 없으면 → 셋집 (소득 위치 단계, 최대 3)
+// - 소득 위치(incomeRankCountry)는 15세 이상·소득 있을 때만 와서, 없으면 가정형편으로 대신
+export function houseOf(life) {
+  if (!life) return { tier: 3, kind: 'parents' };
+  const born = Math.min(5, Math.max(1, Math.round(life.wealthClass || 3)));
+  const mine = ownsOf(life).includes('HOUSE');
+  const married = life.marriedYn === 'Y';
+
+  if (!mine && !married && life.parentAlive !== 'N') return { tier: born, kind: 'parents' };
+
+  const rank = rankTier(life.incomeRankCountry) ?? born; // ?? : 앞이 null·undefined 면 뒤 값
+  if (mine) return { tier: Math.max(3, rank), kind: 'own' };
+  return { tier: Math.min(3, rank), kind: 'rent' };
+}
+
+// 집 앞에 세울 탈것: 가진 것 중 가장 좋은 것 하나 (자동차 > 오토바이 > 자전거, 없으면 null)
+const VEHICLES = ['CAR', 'MOTO', 'BIKE'];
+export function vehicleOf(life) {
+  const owns = ownsOf(life);
+  return VEHICLES.find((v) => owns.includes(v)) ?? null;
+}
+
+// 우리 집 마을 화면에 같이 사는 가족 (Village family) - PlayPage 에서 옮겨 옴
+//   부모님(부모님 집에 살 때만) · 형제자매(내가 20살 전까지, 25살 아래만) · 배우자 · 자녀(서버 가족 줄 '아들'·'딸', 30살 아래만)
+//   house: houseOf(life) 결과 (안 넘기면 여기서 계산) → 독립해서 내 집·셋집이면 부모님은 우리 집에 안 나옴
+const SIB_RE = /(형|오빠|누나|언니|남동생|여동생) (\d+)세/g;
+const SIB_LABEL = { 형: ['형', 'M'], 오빠: ['오빠', 'M'], 누나: ['누나', 'F'], 언니: ['언니', 'F'], 남동생: ['동생', 'M'], 여동생: ['동생', 'F'] };
+export function homeFamily(life, house = houseOf(life)) {
+  const out = [];
+  const age = life.currentAge;
+  const fam = life.family || [];
+  const withParents = house.kind === 'parents';
+  let kid = 0;
+  fam.forEach((m) => {
+    if (!m.alive) return;
+    if (m.role === '어머니') { if (withParents) out.push({ id: 'mom', label: '엄마', gender: 'F', age: m.age }); }
+    else if (m.role === '아버지') { if (withParents) out.push({ id: 'dad', label: '아빠', gender: 'M', age: m.age }); }
+    else if (m.role === '형제자매' && age < 20 && (m.info || m.job)) {
+      let k = 0;
+      for (const [, w, n] of (m.info || m.job).matchAll(SIB_RE)) {
+        const sa = Number(n);
+        if (sa < 25) out.push({ id: 'sib' + k, label: SIB_LABEL[w][0], gender: SIB_LABEL[w][1], age: sa });
+        k += 1;
+      }
+    } else if (m.role === '배우자' && m.name) {
+      out.push({ id: 'spouse', label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: m.age });
+    } else if (m.role === '아들' || m.role === '딸') {
+      if (m.age == null || m.age < 30) out.push({ id: 'kid' + kid, label: m.role, gender: m.role === '아들' ? 'M' : 'F', age: m.age ?? 5 });
+      kid += 1;
+    }
+  });
+  if (withParents && !fam.length && life.parentAlive !== 'N' && age < 40) {
+    out.push({ id: 'mom', label: '엄마', gender: 'F' }, { id: 'dad', label: '아빠', gender: 'M' });
+  }
+  return out.slice(0, 10);
+}
+
 // 하늘에 뿌릴 별 위치 (다크 테마, x %, y %, 크기 px) - 매번 같은 자리
 export const SKY_STARS = [
   [6, 8, 1], [14, 22, 1.5], [22, 6, 1], [31, 16, 1], [39, 4, 2], [47, 20, 1], [55, 9, 1],
