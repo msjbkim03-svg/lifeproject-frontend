@@ -25,18 +25,65 @@ const PALETTE = {
     other: 'rgba(255, 255, 255, 0.6)', otherEdge: 'rgba(255, 255, 255, 0.95)',
     asia: 'rgba(194, 77, 39, 0.6)', asiaEdge: 'rgba(194, 77, 39, 0.95)',
     rim: 'rgba(255, 255, 255, 0.7)',
-    gold: 0xc24d27, ink: 0x1a2230, sub: 0x566173, edge: 0x3a4556,
+    gold: 0xc24d27, ink: 0x1a2230, sub: 0x566173, edge: 0x3a4556, plane: 0xc24d27,
   },
   dark: {
     sea: 0x5a8ccf, seaOpacity: 0.22, atmosphere: 0x9fb8ff,
     other: 'rgba(238, 241, 247, 0.28)', otherEdge: 'rgba(238, 241, 247, 0.65)',
     asia: 'rgba(242, 198, 109, 0.65)', asiaEdge: 'rgba(242, 198, 109, 1)',
     rim: 'rgba(255, 255, 255, 0.55)',
-    gold: 0xf2c66d, ink: 0xeef1f7, sub: 0x9ea9be, edge: 0x121926,
+    gold: 0xf2c66d, ink: 0xeef1f7, sub: 0x9ea9be, edge: 0x121926, plane: 0x7d8aa3,
   },
 };
 // 지금 테마 색 (BirthPage 에서 key={theme} 으로 다시 만들 때 새로 고름)
 let C = PALETTE.dark;
+
+// 픽셀 비행기 (마을 사람 그림처럼 칸 그림, 오른쪽을 봄)
+//   O 테두리 / B 몸통 / W 창문 / G 날개·꼬리(라이트 주황 / 다크 회색) / L 프로펠러 긴 날 / S 프로펠러 가운데
+const PLANE = [
+  '..OOO...................',
+  '..OGGO..................',
+  '..OGGGO................L',
+  '..OGGGGOOOOOOOOOOOO....L',
+  '.OBBBBBBBBBBBBBBBBBOO..L',
+  'OBBBBBBBWWBWWBWWBBBBO.OS',
+  'OBBBBBBBBBBBBBBBBBBBBOOS',
+  '.OBBBBBOOOOOOOOBBBBBO.OS',
+  '..OOOOOOGGGGGGGOOOOO...L',
+  '.......OGGGGGGGGO......L',
+  '........OOOOOOOOO......L',
+];
+const PLANE_W = 24;
+const PLANE_H = PLANE.length;
+
+const hex = (n) => '#' + n.toString(16).padStart(6, '0');
+
+// 비행기 그림 한 장: flip = 왼쪽 보기, spin = 프로펠러 긴 날을 그릴지 (번갈아 그려서 도는 것처럼)
+function createPlaneTexture(flip, spin) {
+  const S = 8;
+  const c = document.createElement('canvas');
+  c.width = PLANE_W * S;
+  c.height = PLANE_H * S;
+  const ctx = c.getContext('2d');
+  if (flip) {
+    ctx.translate(c.width, 0);
+    ctx.scale(-1, 1);
+  }
+  const color = { O: '#2e2a33', B: '#f4f1ea', W: '#5b86c9', G: hex(C.plane), L: hex(C.sub), S: hex(C.sub) };
+  PLANE.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (!color[ch] || (ch === 'L' && !spin)) return;
+      ctx.fillStyle = color[ch];
+      ctx.fillRect(x * S, y * S, S, S);
+    });
+  });
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  return tex;
+}
 
 // 위도·경도 → 지구 표면 좌표
 function latLngToVector(lat, lng, radius) {
@@ -252,17 +299,16 @@ function ToonEarth({ phase, target, onParked }) {
     pivot.rotation.x = -Math.PI / 8;
     scene.add(pivot);
 
+    // 비행기 = 늘 화면을 보는 픽셀 그림(Sprite) 한 장. 그림 4장 = [오른쪽·왼쪽][프로펠러 두 모양]
+    const planeTex = [
+      [createPlaneTexture(false, true), createPlaneTexture(false, false)],
+      [createPlaneTexture(true, true), createPlaneTexture(true, false)],
+    ];
+    const planeMat = new THREE.SpriteMaterial({ map: planeTex[0][0], transparent: true, alphaTest: 0.5 });
+    const planeSprite = new THREE.Sprite(planeMat);
+    planeSprite.scale.set(3.0, (3.0 * PLANE_H) / PLANE_W, 1);
     const airplane = new THREE.Group();
-    airplane.add(createToonObject(new THREE.BoxGeometry(1.2, 0.6, 0.6), C.ink, new THREE.Vector3(1.05, 1.1, 1.1)));
-    const wings = createToonObject(new THREE.BoxGeometry(0.5, 0.1, 2.4), C.gold, new THREE.Vector3(1.1, 1.6, 1.05));
-    wings.position.set(0.1, 0.1, 0);
-    airplane.add(wings);
-    const tail = createToonObject(new THREE.BoxGeometry(0.3, 0.5, 0.1), C.gold, new THREE.Vector3(1.1, 1.1, 1.5));
-    tail.position.set(-0.45, 0.4, 0);
-    airplane.add(tail);
-    const propeller = createToonObject(new THREE.BoxGeometry(0.1, 0.8, 0.1), C.sub, new THREE.Vector3(1.5, 1.1, 1.5));
-    propeller.position.set(0.65, 0, 0);
-    airplane.add(propeller);
+    airplane.add(planeSprite);
 
     airplane.scale.setScalar(0.7);
     airplane.position.set(ORBIT_RADIUS, 0, 0);
@@ -312,6 +358,9 @@ function ToonEarth({ phase, target, onParked }) {
       .add(new THREE.Vector3(0, 3.2, 0)); // 지구 정면 위쪽 하늘
     const parkQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.15, 0, 0));
     const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const planeWorld = new THREE.Vector3();
+    let lastPlaneX = null; // 지난 장면의 비행기 화면 x (가는 방향 알기)
+    let planeDir = 0; // 0 오른쪽 보기 / 1 왼쪽 보기
 
     // 3D 좌표 → 화면 좌표
     const toScreen = (v) => {
@@ -326,8 +375,6 @@ function ToonEarth({ phase, target, onParked }) {
       const time = clock.getElapsedTime();
       const phaseNow = phaseRef.current;
       const elapsed = (performance.now() - phaseStartRef.current) / 1000;
-
-      propeller.rotation.x += 15 * delta;
 
       if (phaseNow === 'flying' || phaseNow === 'error') {
         // 지구 자전 + 비행기 빙글빙글
@@ -400,6 +447,15 @@ function ToonEarth({ phase, target, onParked }) {
         }
       }
 
+      // 픽셀 비행기: 화면에서 가는 쪽을 보게 그림 고르기 (멈춘 뒤엔 오른쪽으로 떠나니까 오른쪽)
+      airplane.getWorldPosition(planeWorld);
+      const planeX = planeWorld.project(camera).x;
+      if (parked) planeDir = 0;
+      else if (lastPlaneX != null && Math.abs(planeX - lastPlaneX) > 0.0005) planeDir = planeX < lastPlaneX ? 1 : 0;
+      lastPlaneX = planeX;
+      planeMat.map = planeTex[planeDir][Math.floor(time * 16) % 2];
+      planeMat.rotation = Math.cos(time * 4) * 0.08 * (planeDir ? -1 : 1);
+
       renderer.render(scene, camera);
     };
     animate();
@@ -421,6 +477,7 @@ function ToonEarth({ phase, target, onParked }) {
       renderer.dispose();
       landTexture.dispose();
       glassTexture.dispose();
+      planeTex.flat().forEach((t) => t.dispose());
       mount.removeChild(renderer.domElement);
     };
   }, []);

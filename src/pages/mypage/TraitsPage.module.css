@@ -134,3 +134,11 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* 포인트 부족 안내 창 단추 */
+.modalBtns {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: 16px;
+}

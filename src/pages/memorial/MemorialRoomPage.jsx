@@ -14,7 +14,7 @@ import s from "./MemorialRoom.module.css";
 // 방 정보(GET /api/memorials/{lifeId})는 여기서 한 번만 받아서 context 로 탭들에 넘겨 줌
 function MemorialRoomPage() {
   const { lifeId } = useParams();
-  const navigate = useNavigate();
+  const navi = useNavigate();
   const isLogin = !!localStorage.getItem("token");
 
   const [room, setRoom] = useState(null);
@@ -30,7 +30,7 @@ function MemorialRoomPage() {
   useEffect(load, [lifeId]);
 
   // 401 이면 로그인 화면으로
-  const goLogin = () => navigate("/login", { state: { message: "로그인하고 다시 해 주세요." } });
+  const goLogin = () => navi("/login", { state: { message: "로그인하고 다시 해 주세요." } });
 
   // 추모관 열기 (내 끝난 인생, 마지막 한마디)
   const openRoom = async (message) => {
@@ -131,9 +131,9 @@ function MemorialRoomPage() {
       <Panel className={s.bottom}>
         <p>당신은 80억 명 가운데 어디에서, 누구로 태어날까요?</p>
         <div className="row" style={{ justifyContent: "center" }}>
-          <Button type="primary" onClick={() => navigate("/")}>나도 태어나 보기</Button>
+          <Button type="primary" onClick={() => navi("/")}>나도 태어나 보기</Button>
           <Button onClick={copyLink}>링크 복사</Button>
-          <Button onClick={() => navigate("/memorial")}>다른 추모관 둘러보기</Button>
+          <Button onClick={() => navi("/memorial")}>다른 추모관 둘러보기</Button>
         </div>
       </Panel>
     </main>

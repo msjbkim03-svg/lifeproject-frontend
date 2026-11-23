@@ -7,8 +7,10 @@ import styles from "./LoginPage.module.css";
 // 로그인 화면 (M02)
 
 function LoginPage() {
-  const navigate = useNavigate();
-  const notice = useLocation().state?.message; 
+  const navi = useNavigate();
+  const location = useLocation();
+  const notice = location.state?.message;
+  const background = location.state?.background;
 
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +38,7 @@ function LoginPage() {
         localStorage.removeItem("guestToken");
       }
 
-      navigate("/");
+      navi("/");
     } catch (err) {
       setError(err.response?.data?.message || "아이디 또는 비밀번호가 맞지 않아요.");
     }
@@ -66,12 +68,12 @@ function LoginPage() {
           <Button type="primary" size="lg" block className={styles.mainBtn} onClick={handleSubmit}>로그인</Button>
 
           <div className={styles.links}>
-            <Link to="/find">아이디·비밀번호 찾기</Link>
+            <Link to="/find" state={{ background }}>아이디·비밀번호 찾기</Link>
             <span>|</span>
-            <Link to="/join">회원가입</Link>
+            <Link to="/join" state={{ background }}>회원가입</Link>
           </div>
 
-          <Button block className={styles.subBtn} onClick={() => navigate("/")}>
+          <Button block className={styles.subBtn} onClick={() => navi("/")}>
             로그인 없이 태어나기
           </Button>
           <p className={styles.hint}>비회원은 퀘스트·포인트 없이 진행돼요.</p>

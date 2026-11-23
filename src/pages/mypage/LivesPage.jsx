@@ -8,7 +8,7 @@ import styles from "./LivesPage.module.css"; // 표·페이지 번호만
 // 전생 기록 (M07)  주소: /mypage/lives
 // 와이어프레임 17쪽: 숫자 칸 3개 + 진행 중인 인생 + 인생 목록(10개씩, 최신순/오래 산 순) + 페이지 번호
 function LivesPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
   const { my } = useOutletContext(); // 진행 중인 인생 정보 (MyPageLayout 이 넘겨 줌)
 
   const [page, setPage] = useState(1);        // 지금 페이지
@@ -67,7 +67,7 @@ function LivesPage() {
               <b>{my.lifeName}</b>
               <span>{my.currentCountryName} · {my.currentAge}살</span>
             </div>
-            <Button type="primary" onClick={() => navigate("/play", { state: { lifeId: my.lifeId } })}>이어서 살기</Button>
+            <Button type="primary" onClick={() => navi("/play", { state: { lifeId: my.lifeId } })}>이어서 살기</Button>
           </div>
         ) : (
           <div className={common.life}>
@@ -76,7 +76,7 @@ function LivesPage() {
               <b>진행 중인 인생이 없어요</b>
               <span>메인에서 새 인생을 시작해 보세요.</span>
             </div>
-            <Button onClick={() => navigate("/")}>새 인생 시작하기</Button>
+            <Button onClick={() => navi("/")}>새 인생 시작하기</Button>
           </div>
         )}
       </section>
@@ -113,8 +113,8 @@ function LivesPage() {
                   <td>{l.earnedPoint}P</td>
                   <td>
                     <div className="row" style={{ gap: "var(--sp-1)", flexWrap: "nowrap" }}>
-                      <Button size="sm" onClick={() => navigate(`/result/${l.lifeId}`)}>결과 보기</Button>
-                      <Button size="sm" onClick={() => navigate(`/memorial/${l.lifeId}`)}>추모관</Button>
+                      <Button size="sm" onClick={() => navi(`/result/${l.lifeId}`)}>결과 보기</Button>
+                      <Button size="sm" onClick={() => navi(`/memorial/${l.lifeId}`)}>추모관</Button>
                     </div>
                   </td>
                 </tr>

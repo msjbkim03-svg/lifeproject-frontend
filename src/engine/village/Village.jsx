@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import { COUNTRIES, THEMES, PLACES, MIN_X, MAX_X, EDGE, DOOR_X, GROUND_Y, SPEED, SKY_STARS, HOUSE_KINDS } from './villageData';
 import { useTheme } from '../../common/theme';
 import Figure from './Figure';
+import Pet from './Pet';
 import { lookOf, ageGroup } from './costumeData';
 import './village.css';
 
@@ -495,6 +496,19 @@ function FamilyPerson({ m, i }) {
   );
 }
 
+// 반려동물 (우리 집 화면에만): 마당을 천천히 오가고, 가는 방향을 바라봄 (CSS v-wander · v-pet-face)
+const PET_X = 40;
+function PetWalker({ pet }) {
+  return (
+    <div className="v-person pet" style={{ left: PET_X + '%', top: GROUND_Y + '%' }}>
+      <div className="v-pet-walk">
+        <Pet kind={pet.kind} name={pet.name} />
+        <div className="v-name">{pet.name}</div>
+      </div>
+    </div>
+  );
+}
+
 // 먼 풍경 (권역)
 function Land({ kind, c }) {
   if (kind === 'paddy') return <><path d="M0 70 L50 46 L110 58 L180 40 L250 56 L320 44 L320 100 L0 100 Z" fill={c.far} /><path d="M0 82 Q80 74 160 80 T320 78 L320 100 L0 100 Z" fill={c.near} /></>;
@@ -504,7 +518,7 @@ function Land({ kind, c }) {
   return <><path d="M0 66 Q40 44 80 58 Q128 34 176 56 Q232 40 272 54 Q296 48 320 52 L320 100 L0 100 Z" fill={c.far} /><path d="M0 80 Q64 68 128 78 Q192 66 256 76 Q288 72 320 74 L320 100 L0 100 Z" fill={c.near} /></>;
 }
 
-function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null, industry = null }) {
+function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null, industry = null, pet = null }) {
   const info = COUNTRIES[countryCode] || ['', 'EAST'];
   const flagCode = info[0];
   const t = THEMES[info[1]];
@@ -638,7 +652,10 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
         </svg>
 
         {/* 우리 집 가족 (우리 집 화면에만) */}
-        {here.id === 'home' && family.map((m, i) => <FamilyPerson key={m.id} m={m} i={i} />)}
+                {here.id === 'home' && family.map((m, i) => <FamilyPerson key={m.id} m={m} i={i} />)}
+
+        {/* 반려동물 (우리 집 화면에만, 강아지·고양이) */}
+        {here.id === 'home' && pet && <PetWalker pet={pet} />}
 
         {/* 같은 나라 접속자 (흐린 실루엣, C15) - 같은 장소에 있는 사람만 */}
         {others.filter((o) => (o.place || 'home') === here.id).map((o) => (

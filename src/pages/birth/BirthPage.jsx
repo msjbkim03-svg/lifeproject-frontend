@@ -5,6 +5,8 @@ import ToonEarth from './ToonEarth';
 import { COUNTRIES } from '../../engine/village/villageData'; // 국기용 2자리 코드 (C02-4)
 import { useTheme } from '../../common/theme';
 import Spoon from '../../common/ui/Spoon.jsx';
+import Figure from '../../engine/village/Figure';
+import { lookOf } from '../../engine/village/costumeData';
 import styles from './BirthPage.module.css';
 
 // ───────────────────────────────────────────────
@@ -238,7 +240,7 @@ function BirthPage() {
           style={{ left: jump.x, top: jump.y, '--fall': `${jump.ty - jump.y}px` }}
           aria-hidden="true"
         >
-          <Parachute />
+          <Parachute gender={life?.gender} />
         </div>
       )}
 
@@ -350,19 +352,46 @@ function BirthPage() {
 }
 
 // 낙하산 + 아기 바구니 (테마 색: 라이트 노을 / 다크 밤하늘)
-function Parachute() {
-  const line = { stroke: 'var(--outline)' };
+// 낙하산 (마을 사람 그림처럼 칸 그림): O 테두리 / P 줄무늬(라이트 주황 / 다크 회색) / W 흰 천
+const CHUTE = [
+  ".......OOOOOOOOOO.......",
+  "....OOOPPPWWWWPPPOOO....",
+  "..OOWWPPPPWWWWPPPPWWOO..",
+  ".OWWWWPPPPWWWWPPPPWWWWO.",
+  ".OWWWWPPPPWWWWPPPPWWWWO.",
+  "OWWWWWPPPPWWWWPPPPWWWWWO",
+  "OWWWWWPPPPWWWWPPPPWWWWWO",
+  "OOOOOOOOOOOOOOOOOOOOOOOO",
+];
+const CHUTE_COLOR = { O: "#2e2a33", P: "var(--chute)", W: "#f4f1ea" };
+
+// 낙하산 줄: 천 아래(y 8)에서 아기 손(y 32)까지 한 줄에 한 칸씩
+const ROPES = [[1, 5], [6, 5], [22, 18], [17, 18]];
+
+// 낙하산 타고 떨어지는 아기 = 마을 사람 그림(Figure) 0살
+function Parachute({ gender }) {
+  const look = lookOf({ gender, age: 0 });
+  const cells = [];
+  CHUTE.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (CHUTE_COLOR[ch]) cells.push(<rect key={x + "_" + y} x={x} y={y} width="1" height="1" style={{ fill: CHUTE_COLOR[ch] }} />);
+    });
+  });
+  const ropes = [];
+  ROPES.forEach(([from, to], i) => {
+    for (let y = 8; y < 32; y++) {
+      const x = Math.round(from + ((to - from) * (y - 8)) / 24);
+      ropes.push(<rect key={i + "_" + y} x={x} y={y} width="1" height="1" style={{ fill: "var(--ink-sub)" }} />);
+    }
+  });
   return (
-    <svg width="84" height="105" viewBox="0 0 64 80" aria-hidden="true">
-      <g className={styles.canopy}>
-        <path d="M4 26 Q32 -8 60 26 Z" style={{ ...line, fill: 'var(--primary)' }} strokeWidth="1.5" />
-        <path d="M18 26 Q32 -4 46 26 Z" style={{ ...line, fill: 'var(--paper-mid)' }} strokeWidth="1.2" />
-        <path d="M28 26 Q32 4 36 26 Z" style={{ ...line, fill: 'var(--primary)' }} strokeWidth="1.2" />
-      </g>
-      <path d="M6 27 L28 58 M58 27 L36 58 M22 28 L30 58 M42 28 L34 58" style={{ stroke: 'var(--ink-sub)' }} strokeWidth="1" />
-      <circle cx="32" cy="60" r="5" fill="#f2c9a0" style={line} strokeWidth="1.2" />
-      <path d="M24 64 h16 l-2 10 h-12 Z" style={{ ...line, fill: 'var(--blue)' }} strokeWidth="1.2" />
-    </svg>
+    <div className={styles.jumperBox}>
+      <svg width="72" height="120" viewBox="0 0 24 40" shapeRendering="crispEdges" aria-hidden="true">
+        {ropes}
+        <g className={styles.canopy}>{cells}</g>
+      </svg>
+      <Figure look={look} />
+    </div>
   );
 }
 
