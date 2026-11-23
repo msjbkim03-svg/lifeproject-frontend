@@ -61,11 +61,9 @@ export const PLACES = [
   { id: 'home', name: '우리 집', desc: '식구들이 사는 집' },
   { id: 'school', name: '학교', desc: '아이들이 공부하는 곳' },
   { id: 'univ', name: '대학교', desc: '더 깊이 공부하는 곳' },
-  { id: 'hall', name: '마을회관', desc: '마을 사람들이 모이는 곳' },
-  { id: 'market', name: '시장', desc: '장을 보고 물건을 사고파는 곳' },
   { id: 'work', name: '일터', desc: '어른들이 일하는 곳' },
   { id: 'clinic', name: '보건소', desc: '아프면 찾아가는 곳' },
-  { id: 'park', name: '공원', desc: '쉬어 가는 곳' },
+  { id: 'park', name: '공원', desc: '분수 광장, 아이와 어르신이 쉬어 가는 곳' },
 ];
 export const MIN_X = 5;     // 한 화면에서 걸어 다닐 수 있는 범위 (%)
 export const MAX_X = 95;
@@ -74,16 +72,36 @@ export const DOOR_X = 50;   // 장소 앞 (건물 문 앞)
 export const GROUND_Y = 86; // 사람이 서는 높이 (화면 높이 %)
 export const SPEED = 30;    // 걷는 속도 (화면 %/초)
 
+// 일하는 곳: 직업 이름으로 대학교·학교·보건소를 일터로 씀 (엔진 전공·직업 짝과 같은 말), 나머지는 일터
+const JOB_PLACE = [
+  [/교수/, 'univ'],
+  [/교사|강사|보육/, 'school'],
+  [/의사|간호|약사|보건|치료|의료/, 'clinic'],
+];
+export function workPlaceOf(life) {
+  const name = life.jobName || '';
+  const hit = JOB_PLACE.find(([re]) => re.test(name)); // find: 직업 이름에 맞는 첫 번째 짝
+  return hit ? hit[1] : 'work';
+}
+
+// 행복에 따른 하늘 (원작 mood): 35 미만 흐림·비 / 70 넘으면 맑음 / 그 사이·모름은 보통
+export function moodOf(happiness) {
+  if (happiness == null) return 'mid';
+  if (happiness < 35) return 'low';
+  return happiness > 70 ? 'high' : 'mid';
+}
+
 // 인생 상황 → 올해 주로 있는 장소 (PlayPage 에서 place 로 넘김)
 export function placeOf(life) {
   if (!life) return 'home';
   if (life.status === 'ENDED') return 'home';
+  const kind = houseOf(life).kind;
+  if (kind === 'prison' || kind === 'barracks') return 'home'; // 교도소·군 부대는 '우리 집' 자리에 그려짐
   if (life.health != null && life.health < 30) return 'clinic';
-    // 재학 중: 학력이 대학·대학원이면 대학교 (엔진 stageOf 의 대학생 UNIV 와 같은 조건)
+  // 재학 중: 학력이 대학·대학원이면 대학교 (엔진 stageOf 의 대학생 UNIV 와 같은 조건)
   if (life.schoolStatus === 'ENROLLED') return life.eduLevel === 'UNI' || life.eduLevel === 'GRAD' ? 'univ' : 'school';
-  if (life.jobStatus === 'EMPLOYED') return life.currentAge >= 60 ? 'hall' : 'work';
-  if (life.jobStatus === 'UNEMPLOYED') return 'market';
-  if (life.jobStatus === 'RETIRED' || life.currentAge >= 60) return 'hall';
+  if (life.jobStatus === 'EMPLOYED') return workPlaceOf(life); // 교사 → 학교, 의사·간호사 → 보건소 …
+  if (life.jobStatus === 'RETIRED' || life.currentAge >= 60) return 'park'; // 은퇴·어르신: 공원 (예전 마을회관)
   if (life.currentAge < 6) return 'park';
   return 'home';
 }
@@ -91,7 +109,7 @@ export function placeOf(life) {
 // ───────── 우리 집 모양 (가정형편·내 집·독립) ─────────
 
 // 집 종류 이름 (우리 집 화면 설명에 사용)
-export const HOUSE_KINDS = { parents: '부모님 집', own: '내 집', rent: '셋집' };
+export const HOUSE_KINDS = { parents: '부모님 집', own: '내 집', rent: '셋집', apt: '셋집 (아파트)', prison: '교도소', barracks: '군 부대' };
 
 // 가진 물건 코드 목록 (서버 owns: 'CAR,TV,HOUSE' → ['CAR', 'TV', 'HOUSE'])
 export function ownsOf(life) {
@@ -111,6 +129,8 @@ function rankTier(rank) {
 // - 소득 위치(incomeRankCountry)는 15세 이상·소득 있을 때만 와서, 없으면 가정형편으로 대신
 export function houseOf(life) {
   if (!life) return { tier: 3, kind: 'parents' };
+  if (life.jobStatus === 'PRISON') return { tier: 1, kind: 'prison' }; // 수감 중 (위험한 제안 실패)
+  if (inBarracks(life)) return { tier: 3, kind: 'barracks' };          // 현역 복무 중
   const born = Math.min(5, Math.max(1, Math.round(life.wealthClass || 3)));
   const mine = ownsOf(life).includes('HOUSE');
   const married = life.marriedYn === 'Y';
@@ -119,7 +139,14 @@ export function houseOf(life) {
 
   const rank = rankTier(life.incomeRankCountry) ?? born; // ?? : 앞이 null·undefined 면 뒤 값
   if (mine) return { tier: Math.max(3, rank), kind: 'own' };
-  return { tier: Math.min(3, rank), kind: 'rent' };
+  return { tier: Math.min(3, rank), kind: life.isUrban === 'Y' ? 'apt' : 'rent' }; // 도시 셋집은 아파트
+}
+
+// 현역 복무 중: owns 의 'SVC-ON-전역나이-종류-개월' (엔진 병역), 종류 S(보충역)는 집에서 출퇴근이라 제외
+//   find: 'SVC-ON-' 으로 시작하는 첫 번째 것 / split('-')[3]: 종류 A 육군 · N 해군 · F 공군 · S 보충역
+function inBarracks(life) {
+  const tok = ownsOf(life).find((s) => s.startsWith('SVC-ON-'));
+  return !!tok && tok.split('-')[3] !== 'S';
 }
 
 // 반려동물: owns 의 'PET-종류-이름-들인나이-수명' (엔진 C06) → { kind: 'd' 강아지 | 'c' 고양이, name }
@@ -147,6 +174,7 @@ export function homeFamily(life, house = houseOf(life)) {
   const out = [];
   const age = life.currentAge;
   const fam = life.family || [];
+  if (house.kind === 'prison' || house.kind === 'barracks') return []; // 교도소·군 부대엔 가족 없음
   const withParents = house.kind === 'parents';
   let kid = 0;
   fam.forEach((m) => {

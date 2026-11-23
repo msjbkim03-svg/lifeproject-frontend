@@ -173,11 +173,11 @@ function Figure({ look }) {
       {/* 긴 머리 뒷부분 (얼굴·몸 뒤로 양옆만 보임) */}
       {long && <><P x={1} y={6} w={16} h={8} c={OUT} /><P x={2} y={7} w={14} h={6} c={look.hair.color} /></>}
       {/* 다리 (fb: 왼다리 / fa: 오른다리) - 바지 + 신발 */}
-      <g className="fb"><P x={5} y={20} w={4} h={5} c={OUT} /><P x={6} y={21} w={2} h={2} c={PANTS} /><P x={6} y={23} w={2} c={SHOE} /></g>
-      <g className="fa"><P x={9} y={20} w={4} h={5} c={OUT} /><P x={10} y={21} w={2} h={2} c={PANTS} /><P x={10} y={23} w={2} c={SHOE} /></g>
+      <g className="fb leg"><P x={5} y={20} w={4} h={5} c={OUT} /><P x={6} y={21} w={2} h={2} c={PANTS} /><P x={6} y={23} w={2} c={SHOE} /></g>
+      <g className="fa leg"><P x={9} y={20} w={4} h={5} c={OUT} /><P x={10} y={21} w={2} h={2} c={PANTS} /><P x={10} y={23} w={2} c={SHOE} /></g>
       {/* 팔 (fa: 왼팔 / fb: 오른팔) - 소매는 옷 색, 끝은 손 */}
-      <g className="fa"><P x={2} y={13} w={2} h={7} c={OUT} /><P x={1} y={14} w={4} h={5} c={OUT} /><P x={2} y={14} w={2} h={3} c={top} /><P x={2} y={17} w={2} h={2} c={SKIN} /></g>
-      <g className="fb"><P x={14} y={13} w={2} h={7} c={OUT} /><P x={13} y={14} w={4} h={5} c={OUT} /><P x={14} y={14} w={2} h={3} c={top} /><P x={14} y={17} w={2} h={2} c={SKIN} /></g>
+      <g className="fa arm"><P x={2} y={13} w={2} h={7} c={OUT} /><P x={1} y={14} w={4} h={5} c={OUT} /><P x={2} y={14} w={2} h={3} c={top} /><P x={2} y={17} w={2} h={2} c={SKIN} /></g>
+      <g className="fb arm"><P x={14} y={13} w={2} h={7} c={OUT} /><P x={13} y={14} w={4} h={5} c={OUT} /><P x={14} y={14} w={2} h={3} c={top} /><P x={14} y={17} w={2} h={2} c={SKIN} /></g>
       <Top {...look.top} />
       {/* 얼굴 */}
       <S rows={HEAD_OUT} c={OUT} />
@@ -191,4 +191,4 @@ function Figure({ look }) {
   );
 }
 
-export default Figure;
+export default Figure;

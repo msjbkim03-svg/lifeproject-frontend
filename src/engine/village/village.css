@@ -29,6 +29,35 @@
 }
 @keyframes v-twinkle { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.25; } }
 
+/* 하늘 날씨 (행복에 따라, Village MoodSky): 구름 · 흐린 막 · 비 */
+.v-clouds { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; animation: v-drift 40s ease-in-out infinite alternate; }
+@keyframes v-drift { from { translate: -12px 0; } to { translate: 12px 0; } }
+.village.mood-low::before { content: ''; position: absolute; inset: 0; background: rgba(80, 90, 105, 0.32); pointer-events: none; }
+.village.dark.mood-low::before { background: rgba(5, 8, 15, 0.35); }
+.village.mood-low .v-scene { filter: saturate(0.75) brightness(0.95); }
+.village.mood-low .v-sun { opacity: 0.2; }
+.village.mood-low .v-star { opacity: 0.15; animation: none; }
+.village.mood-high .v-sun { transform: scale(1.25); filter: brightness(1.1); }
+.v-rain {
+  position: absolute; inset: 0; pointer-events: none; z-index: 7;
+  background-image: repeating-linear-gradient(100deg, rgba(225, 236, 245, 0.4) 0 1px, transparent 1px 17px);
+  background-size: 26px 34px;
+  animation: v-rain 0.45s linear infinite;
+}
+@keyframes v-rain { to { background-position: -6px 34px; } }
+.village.dark .v-rain { opacity: 0.6; }
+/* 밤 마을 + 행복 높음: 별이 또렷하게 반짝이고 가끔 별똥별 */
+.village.dark.mood-high .v-star { opacity: 1; box-shadow: 0 0 4px #ffffff; }
+.village.dark.mood-high .v-scene { filter: brightness(1.15); } /* 달빛에 마을이 조금 밝아짐 */
+.v-shoot {
+  position: absolute; left: 18%; top: 10%; width: 44px; height: 2px; pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #ffffff);
+  opacity: 0; rotate: 18deg;
+  animation: v-shoot 7s linear infinite;
+}
+@keyframes v-shoot { 0%, 86% { opacity: 0; translate: 0 0; } 88% { opacity: 1; } 100% { opacity: 0; translate: 130px 42px; } }
+@media (prefers-reduced-motion: reduce) { .v-clouds, .v-rain, .v-shoot { animation: none; } }
+
 /* 장소 화면 (바뀔 때 옆에서 밀려 들어옴) */
 .v-scene { position: absolute; inset: 0; }
 .v-scene.from-right { animation: v-in-right 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
@@ -102,12 +131,17 @@
 .v-person .v-fig { display: block; transform: translateY(-41px) scale(var(--s)); transform-origin: 50% 100%; }
 .v-person.me.left .v-fig { transform: translateY(-41px) scale(calc(var(--s) * -1), var(--s)); }
 .v-person.me .v-fig { filter: drop-shadow(0 0 2px var(--primary-light)); }
-.v-person.me.walking .v-fig { animation: v-step 0.32s steps(2) infinite; }
-@keyframes v-step { 50% { translate: 0 -2px; } }
-/* 걸을 때 팔다리: fa(왼팔+오른다리)와 fb(오른팔+왼다리)가 번갈아 1칸씩 올라감 */
-.v-person.me.walking .v-fig .fa { animation: v-limb 0.32s steps(1) infinite; }
-.v-person.me.walking .v-fig .fb { animation: v-limb 0.32s steps(1) -0.16s infinite; }
-@keyframes v-limb { 0% { translate: 0 0; } 50% { translate: 0 -1px; } }
+/* 걷기 (4장면, 발은 늘 땅에, SVG 안이라 1px = 그림 1칸)
+   다리: 앞뒤로 1칸씩 엇갈리고 넘어가는 다리는 1칸 들림
+   팔: 제자리에서 안쪽으로만 1칸 (바깥으로 퍼지지 않게), 반대쪽 다리가 앞으로 갈 때 */
+.v-person.me.walking .v-fig .fa.leg { animation: v-stride-a 0.56s steps(1) infinite; }
+.v-person.me.walking .v-fig .fb.leg { animation: v-stride-b 0.56s steps(1) infinite; }
+.v-person.me.walking .v-fig .fa.arm { animation: v-arm-a 0.56s steps(1) infinite; }
+.v-person.me.walking .v-fig .fb.arm { animation: v-arm-b 0.56s steps(1) infinite; }
+@keyframes v-stride-a { 0% { translate: 1px 0; } 25% { translate: 0 0; } 50% { translate: -1px 0; } 75% { translate: 0 -1px; } }
+@keyframes v-stride-b { 0% { translate: -1px 0; } 25% { translate: 0 -1px; } 50% { translate: 1px 0; } 75% { translate: 0 0; } }
+@keyframes v-arm-a { 0% { translate: 1px 0; } 25% { translate: 0 0; } }
+@keyframes v-arm-b { 0% { translate: 0 0; } 50% { translate: -1px 0; } 75% { translate: 0 0; } }
 .me { z-index: 6; }
 
 /* 우리 집 가족: 집 앞을 천천히 왔다 갔다 */
@@ -142,6 +176,13 @@
 @keyframes v-pet-face { 0% { scale: 1 1; } 52% { scale: -1 1; } 90% { scale: 1 1; } }
 .v-person.pet .v-name { font-size: 10px; opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) { .v-person.pet .v-pet-walk, .v-person.pet .v-pet-fig { animation: none; } }
+
+
+/* 공원 분수: 물방울 두 무리(a·b)가 번갈아 반짝임 */
+.v-spray .b { opacity: 0; animation: v-spray 0.6s steps(1) infinite; }
+.v-spray .a { animation: v-spray 0.6s steps(1) -0.3s infinite; }
+@keyframes v-spray { 0% { opacity: 1; } 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .v-spray .a, .v-spray .b { animation: none; } }
 
 /* 다른 접속자: 흐린 실루엣 */
 .v-person.other .v-fig { opacity: 0.4; filter: grayscale(1); }
