@@ -203,7 +203,7 @@ function FindPage() {
           <div className={common.links}>
             <Link to="/login" state={{ background }}>로그인</Link>
             <span>|</span>
-            <Link to="/join" state={{ background }}>회원가입</Link>
+            <Link to="/join">회원가입</Link>
           </div>
         </div>
       </div>

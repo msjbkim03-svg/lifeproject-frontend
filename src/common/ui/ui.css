@@ -518,7 +518,7 @@
   box-shadow: var(--glow);
 }
 .orbit-mark.on b { background: var(--primary); color: var(--on-primary); font-weight: 700; font-size: 13px; }
-.orbit-hint { position: absolute; left: 0; bottom: 0; margin: 0; font-size: var(--fs-xs); color: var(--ink-light); pointer-events: none; }
+.orbit-hint { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; text-align: center; font-size: var(--fs-xs); color: var(--ink-light); pointer-events: none; }
 
 /* =========================================================
    인생 진행 화면 (C03·C09) 부품

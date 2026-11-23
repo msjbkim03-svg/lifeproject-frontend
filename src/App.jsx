@@ -30,7 +30,7 @@ import MemorialGuestTab from './pages/memorial/MemorialGuestTab';
 import MemorialLastTab from './pages/memorial/MemorialLastTab';
 
 function App() {
-  // 로그인·회원가입·찾기를 팝업으로 열면 background = 뒤에 깔린 화면 주소
+  // 로그인·찾기를 팝업으로 열면 background = 뒤에 깔린 화면 주소
   //   → 뒤 화면은 그대로 그리고, 그 위에 팝업만 따로 그림 (주소로 바로 들어오면 원래처럼 한 화면)
   const location = useLocation();
   const background = location.state?.background;
@@ -82,11 +82,10 @@ function App() {
         {/* C08 마을 이동 테스트 (엔진) */}
         <Route path="/village-test" element={<VillageTest />} />
       </Routes>
-      {/* 로그인·회원가입·찾기 팝업 (뒤 화면은 흐리게) */}
+      {/* 로그인·찾기 팝업 (뒤 화면은 어둡게) */}
       {background && (
         <Routes>
           <Route path="/login" element={<AuthModal><LoginPage /></AuthModal>} />
-          <Route path="/join" element={<AuthModal><JoinPage /></AuthModal>} />
           <Route path="/find" element={<AuthModal><FindPage /></AuthModal>} />
         </Routes>
       )}
