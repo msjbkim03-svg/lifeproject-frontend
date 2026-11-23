@@ -27,6 +27,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [tab, setTab] = useState("HAT");
 
   const lifeId = life.lifeId;
   const k = life.krwPerUsd;
@@ -99,9 +100,18 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
           </div>
           {msg && <p className={styles.msg} role="status">{msg}</p>}
 
-          {data && PARTS.map(({ part, key, label }) => (
+          <div className={styles.tabs} role="tablist">
+            {PARTS.map(({ part, label }) => (
+              <button key={part} type="button" role="tab" aria-selected={tab === part}
+                className={styles.tab + (tab === part ? " " + styles.tabOn : "")}
+                onClick={() => setTab(part)}>
+                {label} <small>{items.filter((c) => c.part === part).length}</small>
+              </button>
+            ))}
+          </div>
+
+          {data && PARTS.filter(({ part }) => part === tab).map(({ part, key }) => (
             <section key={part}>
-              <h3 className={styles.part}>{label}</h3>
               <ul className={styles.list}>
                 {items.filter((c) => c.part === part).map((c) => (
                   <li key={c.costumeId} className={styles.row + (c.equipped === "Y" ? " " + styles.on : "")}>
