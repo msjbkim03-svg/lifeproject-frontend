@@ -8,7 +8,9 @@ import styles from "./LoginPage.module.css";
 
 function LoginPage() {
   const navi = useNavigate();
-  const notice = useLocation().state?.message; 
+  const location = useLocation();
+  const notice = location.state?.message;
+  const background = location.state?.background;
 
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
@@ -66,9 +68,9 @@ function LoginPage() {
           <Button type="primary" size="lg" block className={styles.mainBtn} onClick={handleSubmit}>로그인</Button>
 
           <div className={styles.links}>
-            <Link to="/find">아이디·비밀번호 찾기</Link>
+            <Link to="/find" state={{ background }}>아이디·비밀번호 찾기</Link>
             <span>|</span>
-            <Link to="/join">회원가입</Link>
+            <Link to="/join" state={{ background }}>회원가입</Link>
           </div>
 
           <Button block className={styles.subBtn} onClick={() => navi("/")}>
