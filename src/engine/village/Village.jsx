@@ -1,5 +1,5 @@
 // C08 마을 이동 (인생 진행 화면 가운데 게임 화면)
-// - 마을 장소가 한 화면씩 이어져 있어요: 우리 집 → 학교 → 마을회관 → 시장 → 일터 → 보건소 → 공원
+// - 마을 장소가 한 화면씩 이어져 있어요: 우리 집 → 학교 → 대학교 → 마을회관 → 시장 → 일터 → 보건소 → 공원
 // - 오른쪽 끝까지 걸어가면 화면이 넘어가며 다음 장소, 왼쪽 끝이면 이전 장소로 가요
 // - 땅을 누르면 그 자리까지 걷고, ←·→ 방향키를 누르고 있으면 계속 걸어요. 양 끝 화살표(◀ 학교 / 마을회관 ▶)를 누르면 옆 장소로 가요
 // - place 가 바뀌면 (학교 입학, 취업, 은퇴 …) 장소 화면을 하나씩 지나 그 장소 앞까지 알아서 걸어가요 (villageData.placeOf)
@@ -215,7 +215,7 @@ function HomeScene({ tier, c, roof, deco }) {
 
 // 집 앞 탈것 (C06-3 가진 물건 owns: CAR 자동차 / MOTO 오토바이 / BIKE 자전거, villageData.vehicleOf)
 // x = 왼쪽 끝, 바퀴 아래가 땅과 길 사이 (y 103) / 바퀴는 밤에도 보이게 회색
-function Vehicle({ kind, x, c }) {
+function Vehicle({ kind, x }) {
   if (kind === 'CAR') {
     return (
       <g>
@@ -394,7 +394,7 @@ function Scene({ place, c, t, urban, house, vehicle, industry }) {
       return (
         <g>
           <HomeScene tier={house.tier} c={c} roof={roof} deco={deco} />
-          {vehicle && <Vehicle kind={vehicle} x={232} c={c} />}
+          {vehicle && <Vehicle kind={vehicle} x={232} />}
         </g>
       );
     case 'univ':
@@ -504,7 +504,7 @@ function Land({ kind, c }) {
   return <><path d="M0 66 Q40 44 80 58 Q128 34 176 56 Q232 40 272 54 Q296 48 320 52 L320 100 L0 100 Z" fill={c.far} /><path d="M0 80 Q64 68 128 78 Q192 66 256 76 Q288 72 320 74 L320 100 L0 100 Z" fill={c.near} /></>;
 }
 
-function Village({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null, industry = null }) {
+function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null, industry = null }) {
   const info = COUNTRIES[countryCode] || ['', 'EAST'];
   const flagCode = info[0];
   const t = THEMES[info[1]];
@@ -531,20 +531,10 @@ function Village({ countryCode, age, gender = 'M', place = 'home', urban = true,
   };
 
   // 인생 상황이 바뀌면 (입학·취업·은퇴 …) 그 장소 앞으로 걸어감
+  //   나라가 바뀌면(이민) 맨 아래 Village 가 key 로 이 화면을 새로 만들어서, 새 마을 올해 장소에서 시작
   useEffect(() => {
     go(idxOf(place), DOOR_X + 6);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place]);
-
-  // 나라가 바뀌면 (이민) 새 마을 우리 집 앞에서 시작
-  useEffect(() => {
-    sceneRef.current = 0;
-    setScene(0);
-    pos.current = DOOR_X;
-    setX(DOOR_X);
-    target.current = { scene: 0, x: DOOR_X };
-    setEnter('');
-  }, [countryCode]);
 
   // 걷기: 다른 장소로 가는 중이면 화면 끝까지 가서 넘어감
   useEffect(() => {
@@ -609,7 +599,6 @@ function Village({ countryCode, age, gender = 'M', place = 'home', urban = true,
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 땅 누르기: 그 자리로. 양 끝 근처를 누르면 옆 장소로 넘어감
@@ -696,6 +685,12 @@ function Village({ countryCode, age, gender = 'M', place = 'home', urban = true,
       </div>
     </div>
   );
+}
+
+// 나라가 바뀌면(이민) 마을을 처음부터 다시 그림
+//   key 가 바뀌면 React 가 안쪽 상태(장소 화면·위치·걷기)를 새로 만들어서, effect 안에서 상태를 되돌리지 않아도 됨
+function Village(props) {
+  return <VillageScene key={props.countryCode} {...props} />;
 }
 
 export default Village;
