@@ -86,6 +86,14 @@ const PHASE_TEXT = {
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// 태어난 집 (소득 1~5분위를 쉬운 말로, 11/23 동현님: '형편 N분위'가 무슨 뜻인지 모름)
+const HOME_WORD = {
+  1: '그 나라에서 가장 가난한 20% 집',
+  2: '넉넉지 않은 집 (아래에서 20~40%)',
+  3: '그 나라에서 딱 중간쯤인 집',
+  4: '넉넉한 집 (위에서 20~40%)',
+  5: '그 나라에서 가장 부유한 20% 집',
+};
 
 // ───────────────────────────────────────────────
 // 출생 추첨 화면 (C02)
@@ -272,8 +280,8 @@ function BirthPage() {
 
           <ul className={styles.facts}>
             <li>
-              <span>가정형편</span>
-              <strong><Spoon level={life.wealthClass} /> <small>소득 {life.wealthClass}분위</small></strong>
+              <span>태어난 집</span>
+              <strong><Spoon level={life.wealthClass} /> <small>{HOME_WORD[life.wealthClass] || ''}</small></strong>
             </li>
             <li>
               <span>사는 곳</span>

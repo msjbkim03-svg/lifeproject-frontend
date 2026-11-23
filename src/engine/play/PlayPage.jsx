@@ -556,6 +556,11 @@ function PlayPage() {
     while (yr.current.fetching) await new Promise((r) => setTimeout(r, 100));
   }, []);
   const onShopDone = useCallback((dto) => {
+    // 돈 쓰기로 바뀐 능력치를 기록 줄 아래 효과 칩으로 (11/23: 기록에 상태 변화가 안 보였음)
+    const prev = lifeRef.current || {};
+    const d = (k) => Math.round((dto[k] ?? prev[k] ?? 0) - (prev[k] ?? 0));
+    const fx = { effHealth: d('health'), effHappiness: d('happiness'), effKnowledge: d('knowledge'), effRelation: d('relation') };
+    const hasFx = Object.values(fx).some((v) => v !== 0);
     const patch = {
       assets: dto.assets, health: dto.health, happiness: dto.happiness, knowledge: dto.knowledge,
       relation: dto.relation, investType: dto.investType, owns: dto.owns,
@@ -563,7 +568,7 @@ function PlayPage() {
     };
     setLife((x) => ({ ...x, ...patch }));
     if (yr.current.data) yr.current.data = { ...yr.current.data, ...patch };
-    if (dto.message) pushLines([{ age: lifeRef.current?.currentAge ?? dto.logAge, kind: 'dec', text: dto.message }]);
+    if (dto.message) pushLines([{ age: prev.currentAge ?? dto.logAge, kind: 'dec', text: dto.message, ...(hasFx ? { fx } : {}) }]);
   }, [pushLines]);
   const closeShop = useCallback(() => setShopOpen(false), []);
 
@@ -1345,7 +1350,7 @@ function FamilyRows({ life, countryName, stageText }) {
       {hob && <div className="row"><span>취미</span><span>{hob}</span></div>}
       {svcText && <div className="row"><span>병역</span><span>{svcText}</span></div>}
       {owned.length > 0 && <div className="row"><span>내 물건</span><span>{owned.join(', ')}</span></div>}
-      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
+<rp></rp>      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
     </div>
   );
