@@ -1,8 +1,10 @@
 // C18 인생 결과 화면 (주소: /result/:lifeId)
 // GET /api/result/{lifeId}?guestToken=...  → 요약 + 능력치 그래프 + 인생 기록 + 퀘스트를 한 번에 받음
 // 회원은 api.js 가 로그인 토큰을 자동으로 붙이고, 비회원은 localStorage 의 guestToken 을 같이 보냄
+// C22 (11/23 동현님): 이 주소는 이제 엔딩 크레딧(EndingFilm)이 바로 틀어짐. 예전 결과 화면은 ?detail=1 (끝난 뒤 '인생 기록 보기')
+//   비회원 인생을 다른 브라우저에서 볼 땐 &guest=토큰
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import client from '../../api/api';
 import Panel from '../../common/ui/Panel';
 import InfoBox from '../../common/ui/InfoBox';
@@ -14,6 +16,7 @@ import LogItem from '../../common/ui/LogItem';
 import StatChart from './StatChart';
 import StoryPanel from './StoryPanel';
 import QnaPanel from './QnaPanel';
+import EndingFilm from '../../engine/film/EndingFilm';
 import styles from './ResultPage.module.css';
 
 // 학력 코드 → 화면 글자
@@ -42,16 +45,19 @@ function marriedText(r) {
 
 function ResultPage() {
   const { lifeId } = useParams();
+  const [query] = useSearchParams();
+  const guestParam = query.get('guest');   // 링크로 받은 비회원 토큰 (없으면 이 브라우저 것)
   const navigate = useNavigate();
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [showAllLogs, setShowAllLogs] = useState(false);
   const [showStory, setShowStory] = useState(false); // C19 AI 인생 이야기 펼치기
   const [showQna, setShowQna] = useState(false);     // C20 인생 Q&A 펼치기
+  const detail = query.get('detail') === '1';  // 예전 결과 화면 (요약·그래프·기록·퀘스트·AI 이야기)
 
   useEffect(() => {
     const isLogin = !!localStorage.getItem('token');
-    const guestToken = isLogin ? null : localStorage.getItem('guestToken');
+    const guestToken = guestParam || (isLogin ? null : localStorage.getItem('guestToken'));
 
     client.get(`/api/result/${lifeId}`, { params: { guestToken } })
       .then((res) => setResult(res.data))
@@ -60,7 +66,7 @@ function ResultPage() {
         const msg = err.response?.data;
         setError(typeof msg === 'string' && msg ? msg : '결과를 불러오지 못했어요.');
       });
-  }, [lifeId]);
+  }, [lifeId, guestParam]);
 
   if (error) {
     return (
@@ -70,6 +76,19 @@ function ResultPage() {
       </div>
     );
   }
+  const guestQ = guestParam ? `&guest=${encodeURIComponent(guestParam)}` : '';
+
+  // C22 엔딩 크레딧 (기본): 결과 화면 대신 바로 재생
+  if (!detail) {
+    return (
+      <EndingFilm lifeId={lifeId} result={result} guestToken={guestParam} onClose={() => navigate('/')}
+        actions={[
+          { label: '다시 태어나기', onClick: () => navigate('/') },
+          { label: '인생 기록 보기', onClick: () => navigate(`/result/${lifeId}?detail=1${guestQ}`) },
+        ]} />
+    );
+  }
+
   if (!result) {
     return <div className="page"><p className="sub">결과를 불러오는 중…</p></div>;
   }
@@ -90,6 +109,10 @@ function ResultPage() {
           </Badge>
           {r.currentCountry !== r.birthCountry && <Badge color="blue">{r.currentCountryName}에서 생을 마침</Badge>}
           <Badge>{r.birthYear} ~ {r.deathYear}</Badge>
+        </div>
+        {/* C22 엔딩 크레딧: 이 삶을 2분 안쪽 세로 영상처럼 */}
+        <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}>
+          <Button type="primary" pill onClick={() => navigate(`/result/${lifeId}${guestParam ? `?guest=${encodeURIComponent(guestParam)}` : ''}`)}>▶ 엔딩 크레딧 다시 보기</Button>
         </div>
       </div>
 

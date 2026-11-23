@@ -49,7 +49,7 @@ const yearSecOf = (le) => Math.min(120, Math.max(12, (PACE_MIN * 60) / Math.max(
 const fetchAtOf = (ys) => Math.min(0.3, Math.max(0, 1 - 4 / ys));
 // '1년 ≈ n초' 표시 (10초 미만은 소수 한 자리)
 const secText = (v) => (v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
-const RESULT_DELAY = 3500;                   // 죽은 뒤 결과 화면까지
+const RESULT_DELAY = 3500;                   // 죽은 뒤 엔딩 크레딧(/result, C22)까지
 const MAX_FEED = 1200;                       // 화면에 남겨 둘 기록 줄 수 (인생 지도 말풍선이 옛 해 이야기도 찾게, 100년 × 한 해 5~8줄)
 
 // 집중 코드 → 화면 문구 (EngineService.applyFocus·knowEff 기준)
@@ -875,8 +875,8 @@ function PlayPage() {
                 <b>{life.name}</b> 님은 {life.birthYear + deathAge}년, {deathAge}세에 세상을 떠났어요.
                 {life.deathCause && <span className="pp-sub"> ({life.deathCause})</span>}
               </p>
-              <p className="pp-sub">잠시 뒤 인생 결과로 넘어가요.</p>
-              <Button type="primary" onClick={() => navigate(`/result/${life.lifeId}`)}>결과 바로 보기</Button>
+              <p className="pp-sub">잠시 뒤 엔딩 크레딧이 시작돼요.</p>
+              <Button type="primary" onClick={() => navigate(`/result/${life.lifeId}`)}>엔딩 크레딧 바로 보기</Button>
             </section>
           ) : (
             <section className="pp-panel">
