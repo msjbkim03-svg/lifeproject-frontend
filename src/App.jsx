@@ -8,7 +8,6 @@ import BirthPage from './pages/birth/BirthPage';
 import PlayPage from './engine/play/PlayPage';
 import DesignGuide from './common/DesignGuide';
 import VillageTest from './engine/village/VillageTest';
-import CostumeTestPage from "./pages/costume/CostumeTestPage";
 import ResultPage from './pages/result/ResultPage';
 import MyPageLayout from './pages/mypage/MyPageLayout';
 import MyPage from './pages/mypage/MyPage';
@@ -54,7 +53,6 @@ function App() {
         <Route path="/birth" element={<BirthPage />} />
         {/* C03 인생 진행 */}
         <Route path="/play" element={<PlayPage />} />
-        <Route path="/costumeTest" element={<CostumeTestPage />} />
         {/* C18 인생 결과 */}
         <Route path="/result/:lifeId" element={<ResultPage />} />
         {/* B01 추모관 목록 (헤더·메인 [추모관]) → 방 */}

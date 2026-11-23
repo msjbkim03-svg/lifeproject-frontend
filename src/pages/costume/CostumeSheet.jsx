@@ -1,19 +1,21 @@
 // C21 코스튬 상점: 진행 화면에서 열고, 여는 동안 시간은 멈춰요 (ShopSheet 와 같은 방식)
-//   GET  /api/costumes?lifeId=&guestToken=        → { assets, wear: {hat, hair, clothes}, items }
+//   GET  /api/costumes?lifeId=&guestToken=        → { assets, wear: {hair, top, hat}, items }
 //   POST /api/costumes/{costumeId}/buy | equip | unequip   { lifeId, guestToken }
+//   그림은 동현님 마을 그림(Figure + costumeData.lookOf)을 그대로 씀, wear 는 Village costume 과 같은 모양
 // 사용법: {costumeOpen && <CostumeSheet life={life} guestToken={…} waitIdle={waitIdle}
-//            onDone={(data) => 돈(data.assets)·착용(data.wear) 반영} onClose={() => …} />}
+//            onDone={(data) => setLife((x) => ({ ...x, assets: data.assets, costume: data.wear }))} onClose={() => …} />}
 import { useEffect, useState } from "react";
 import client from "../../api/api";
 import { won } from "../../engine/play/lifeText";
-import { CostumeFigure } from "./CostumeParts";
+import Figure from "../../engine/village/Figure";
+import { lookOf } from "../../engine/village/costumeData";
 import "../../common/ui/ui.css";
 import styles from "./CostumeSheet.module.css";
 
 const PARTS = [
   { part: "HAT", key: "hat", label: "모자" },
   { part: "HAIR", key: "hair", label: "머리" },
-  { part: "CLOTHES", key: "clothes", label: "옷" },
+  { part: "CLOTHES", key: "top", label: "옷" },
 ];
 
 const errText = (err) => {
@@ -28,7 +30,6 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
 
   const lifeId = life.lifeId;
   const k = life.krwPerUsd;
-  const baseColor = life.gender === "F" ? "#e98aa6" : "#6f95e8";
 
   useEffect(() => {
     let alive = true;
@@ -62,6 +63,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
 
   const wear = data?.wear || {};
   const items = data?.items || [];
+  const lookWith = (costume) => lookOf({ gender: life.gender, age: life.currentAge, costume });
 
   const button = (c) => {
     if (c.equipped === "Y") {
@@ -86,7 +88,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
         <div className={styles.body}>
           <div className={styles.top}>
             <div className={styles.mirror}>
-              <CostumeFigure wear={wear} size={4} baseColor={baseColor} />
+              <Figure look={lookWith(wear)} />
             </div>
             <div>
               <h2 id="costumeTitle" className={styles.title}>
@@ -104,7 +106,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
                 {items.filter((c) => c.part === part).map((c) => (
                   <li key={c.costumeId} className={styles.row + (c.equipped === "Y" ? " " + styles.on : "")}>
                     <span className={styles.preview}>
-                      <CostumeFigure wear={{ ...wear, [key]: c.look }} size={1.6} baseColor={baseColor} />
+                      <Figure look={lookWith({ ...wear, [key]: c.look })} />
                     </span>
                     <b className={styles.name}>{c.costumeName}</b>
                     <span className={styles.price}>{c.owned === "Y" ? (c.equipped === "Y" ? "착용 중" : "가진 것") : won(c.price, k)}</span>
