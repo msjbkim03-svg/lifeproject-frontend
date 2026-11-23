@@ -1,6 +1,6 @@
-// 반려동물 그림 (픽셀, 오른쪽을 봄) - 강아지: 시바 / 고양이: 삼색냥이
+// 반려동물 그림 (픽셀, 오른쪽을 봄) - 강아지: 시바 / 고양이: 삼색냥이 · 고등어 · 치즈냥이
 // 그림 한 줄 = 문자열 한 줄, 글자 하나 = 칸 하나
-//   O 테두리 · F 털 · D 진한 털(얼룩) · W 흰 털 · K 눈 · N 코 · P 분홍 코 · . 빈칸
+//   O 테두리 · F 털 · D 진한 털(얼룩) · S 줄무늬 · W 흰 털 · K 눈 · N 코 · P 분홍 코 · . 빈칸
 const SHIBA = [
   '..........O..O....',
   '.........OFOOFO...',
@@ -16,6 +16,7 @@ const SHIBA = [
   '...OFO.....OFO....',
   '...OOO.....OOO....',
 ];
+// 삼색냥이: 흰 바탕에 주황 · 검정 얼룩
 const CALICO = [
   '.........O...O..',
   '........ODO.OFO.',
@@ -31,10 +32,32 @@ const CALICO = [
   '..OWO......OWO..',
   '..OOO......OOO..',
 ];
+// 줄무늬 고양이 (고등어 · 치즈냥이 같은 그림, 색만 다름): 이마 M 무늬 · 등 줄무늬 · 줄무늬 꼬리 · 흰 주둥이
+const STRIPED = [
+  '.........O...O..',
+  '........OFO.OFO.',
+  '........OFSOSFO.',
+  '.OO.....OFSFSFFO',
+  'OSO.....OFKFFKFO',
+  'OFO.....OFWWPWFO',
+  '.OSO.....OFWWFO.',
+  '..OFOOOOOFWWFO..',
+  '..OFSFSFSFSFFO..',
+  '..OFSFSFSFWWFO..',
+  '..OFOOOOOOOOFO..',
+  '..OFO......OFO..',
+  '..OOO......OOO..',
+];
 
 // 털색: 이름으로 하나를 골라서 같은 아이는 늘 같은 색
 const SHIBA_FUR = [{ F: '#d98b4a' }, { F: '#e8b864' }, { F: '#f2ece0' }, { F: '#7a6458' }]; // 적색 · 황색 · 백색 · 흑갈색
-const CALICO_FUR = [{ F: '#e8a85a', D: '#3d3840' }, { F: '#d9925a', D: '#6b5a50' }];
+// 고양이 털 무늬: calico 삼색 / mackerel 고등어 (회색 + 진회색 줄) / cheese 치즈 (주황 + 진주황 줄)
+const CAT_COATS = {
+  calico: { art: CALICO, fur: { F: '#e8a85a', D: '#3d3840' } },
+  mackerel: { art: STRIPED, fur: { F: '#a3a3a0', S: '#4e4b52' } },
+  cheese: { art: STRIPED, fur: { F: '#f2aa52', S: '#c9702e' } },
+};
+const CAT_KINDS = Object.keys(CAT_COATS); // ['calico', 'mackerel', 'cheese']
 
 const BASE = { O: '#2e2a33', K: '#2e2a33', N: '#2e2a33', W: '#fbf7ef', P: '#f29a9a' };
 const CELL = 1.4; // 칸 하나 = 1.4px (사람 그림과 같은 크기감)
@@ -46,10 +69,16 @@ function pick(name, n) {
   return h % n;
 }
 
-function Pet({ kind, name = '' }) {
-  const art = kind === 'c' ? CALICO : SHIBA;
-  const furs = kind === 'c' ? CALICO_FUR : SHIBA_FUR;
-  const colors = { ...BASE, ...furs[pick(name, furs.length)] };
+// coat: 고양이 무늬를 정해서 보여줄 때 (마을 테스트용), 없으면 이름으로 골라서 같은 아이는 늘 같은 무늬
+function Pet({ kind, name = '', coat }) {
+  let art = SHIBA;
+  let fur = SHIBA_FUR[pick(name, SHIBA_FUR.length)];
+  if (kind === 'c') {
+    const cat = CAT_COATS[coat] || CAT_COATS[CAT_KINDS[pick(name, CAT_KINDS.length)]];
+    art = cat.art;
+    fur = cat.fur;
+  }
+  const colors = { ...BASE, ...fur };
 
   // 한 줄에서 같은 글자가 이어지는 칸은 사각형 하나로 묶어서 그림
   const rects = [];
