@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
 import Chips from "../../common/ui/Chips";
@@ -15,6 +15,7 @@ import styles from "./FindPage.module.css";           // 탭·결과 칸만 따�
 //   ③ 비번 재설정    POST /api/members/find/resetPw   { loginId, email, code, newPassword, newPasswordCheck }
 function FindPage() {
   const navi = useNavigate();
+  const background = useLocation().state?.background;
 
   const [tab, setTab] = useState("FIND_ID"); // 'FIND_ID' 또는 'RESET_PW'
 
@@ -104,7 +105,7 @@ function FindPage() {
         loginId, email, code, newPassword, newPasswordCheck,
       });
       // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸)
-      navi("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요." } });
+      navi("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요.", background } });
     } catch (err) {
       setError(err.response?.data?.message || "비밀번호를 바꾸지 못했어요.");
     }
@@ -130,7 +131,7 @@ function FindPage() {
               <div className={styles.result}>
                 <InfoBox label="가입한 아이디" value={foundId} />
               </div>
-              <Button type="primary" size="lg" block className={styles.mainBtn} onClick={() => navi("/login")}>
+              <Button type="primary" size="lg" block className={styles.mainBtn} onClick={() => navi("/login", { state: { background } })}>
                 로그인하러 가기
               </Button>
               <Button block className={styles.subBtn} onClick={() => changeTab("RESET_PW")}>
@@ -200,9 +201,9 @@ function FindPage() {
           )}
 
           <div className={common.links}>
-            <Link to="/login">로그인</Link>
+            <Link to="/login" state={{ background }}>로그인</Link>
             <span>|</span>
-            <Link to="/join">회원가입</Link>
+            <Link to="/join" state={{ background }}>회원가입</Link>
           </div>
         </div>
       </div>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import client from "../../api/api";
 import Badge from "../../common/ui/Badge";
 import Button from "../../common/ui/Button";
 import LevelDots from "../../common/ui/LevelDots";
+import Modal from "../../common/ui/Modal";
 import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (main, card, stat …)
 import styles from "./TraitsPage.module.css";
 import { TRAIT_VIEW } from "../../utils/traits";
@@ -15,25 +16,31 @@ import { TRAIT_VIEW } from "../../utils/traits";
 // 화면용 짧은 이름 · 아이콘은 utils/traits.js 의 TRAIT_VIEW (퀘스트 화면과 같이 씀)
 
 function TraitsPage() {
+  const navi = useNavigate();
   const { my, setMy } = useOutletContext(); // 보유 포인트(my.point) - 바꾸면 마이페이지에도 반영
   const [traits, setTraits] = useState([]);
   const [selected, setSelected] = useState(null); // 확인 줄에 띄울 특성 (traitId)
   const [busy, setBusy] = useState(false);         // 서버 처리 중 (연속 클릭 막기)
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [noPoint, setNoPoint] = useState(false);  // 포인트 부족 안내 창
 
   // 1. 처음 한 번: 내 특성 레벨 받기
   useEffect(() => {
     client.get("/api/members/me/traits").then((resp) => setTraits(resp.data));
   }, []);
 
-  // 이 특성을 올릴 수 있는지 (포인트 1점 이상 + 최대 레벨 미만)
-  const canLevelUp = (t) => my.point >= 1 && t.traitLevel < t.maxLevel;
-
-  // 2. 카드의 [레벨 올리기 · 1P] → 아래 확인 줄 띄우기
+  // 2. 카드의 [레벨 올리기 · 1P]
+  //    포인트가 없으면 → 안내 창 (플레이하러 가기)
+  //    포인트가 있으면 → 아래 확인 줄 띄우기
   const pick = (t) => {
     setMessage("");
     setError("");
+    if (my.point < 1) {
+      setSelected(null);
+      setNoPoint(true);
+      return;
+    }
     setSelected(t.traitId);
   };
 
@@ -75,7 +82,7 @@ function TraitsPage() {
             <dt>시작 레벨</dt><dd>Lv.1</dd>
             <dt>최대 레벨</dt><dd>Lv.5</dd>
             <dt>비용</dt><dd>1레벨당 1P</dd>
-            <dt>버튼 비활성화</dt><dd>포인트가 없거나 Lv.5일 때</dd>
+            <dt>버튼 비활성화</dt><dd>Lv.5일 때</dd>
           </dl>
         </section>
       </div>
@@ -98,7 +105,7 @@ function TraitsPage() {
                   <p className={styles.desc}>{t.description}</p>
                   <LevelDots label="" level={t.traitLevel} max={t.maxLevel} />
                   <Button type={isMax ? undefined : "primary"} size="sm" block
-                    disabled={!canLevelUp(t)} onClick={() => pick(t)}>
+                    disabled={isMax} onClick={() => pick(t)}>
                     {isMax ? "올릴 수 없음" : "레벨 올리기 · 1P"}
                   </Button>
                 </div>
@@ -124,6 +131,16 @@ function TraitsPage() {
           </div>
         </section>
       )}
+
+      {/* 포인트 부족 안내 창 */}
+      <Modal open={noPoint} title="포인트가 부족해요" onClose={() => setNoPoint(false)}>
+        <p>특성을 올리려면 포인트 1P가 필요해요.</p>
+        <p className="sub">인생을 살면서 퀘스트를 달성하면 포인트를 받을 수 있어요.</p>
+        <div className={styles.modalBtns}>
+          <Button onClick={() => setNoPoint(false)}>닫기</Button>
+          <Button type="primary" onClick={() => navi("/")}>플레이하러 가기</Button>
+        </div>
+      </Modal>
     </main>
   );
 }
