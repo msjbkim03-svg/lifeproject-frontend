@@ -14,7 +14,7 @@ import styles from "./FindPage.module.css";           // 탭·결과 칸만 따�
 //   ② 아이디 확인    POST /api/members/find/id        { email, code }
 //   ③ 비번 재설정    POST /api/members/find/resetPw   { loginId, email, code, newPassword, newPasswordCheck }
 function FindPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
 
   const [tab, setTab] = useState("FIND_ID"); // 'FIND_ID' 또는 'RESET_PW'
 
@@ -104,7 +104,7 @@ function FindPage() {
         loginId, email, code, newPassword, newPasswordCheck,
       });
       // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸)
-      navigate("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요." } });
+      navi("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요." } });
     } catch (err) {
       setError(err.response?.data?.message || "비밀번호를 바꾸지 못했어요.");
     }
@@ -130,7 +130,7 @@ function FindPage() {
               <div className={styles.result}>
                 <InfoBox label="가입한 아이디" value={foundId} />
               </div>
-              <Button type="primary" size="lg" block className={styles.mainBtn} onClick={() => navigate("/login")}>
+              <Button type="primary" size="lg" block className={styles.mainBtn} onClick={() => navi("/login")}>
                 로그인하러 가기
               </Button>
               <Button block className={styles.subBtn} onClick={() => changeTab("RESET_PW")}>

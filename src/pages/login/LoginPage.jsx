@@ -7,7 +7,7 @@ import styles from "./LoginPage.module.css";
 // 로그인 화면 (M02)
 
 function LoginPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
   const notice = useLocation().state?.message; 
 
   const [loginId, setLoginId] = useState("");
@@ -36,7 +36,7 @@ function LoginPage() {
         localStorage.removeItem("guestToken");
       }
 
-      navigate("/");
+      navi("/");
     } catch (err) {
       setError(err.response?.data?.message || "아이디 또는 비밀번호가 맞지 않아요.");
     }
@@ -71,7 +71,7 @@ function LoginPage() {
             <Link to="/join">회원가입</Link>
           </div>
 
-          <Button block className={styles.subBtn} onClick={() => navigate("/")}>
+          <Button block className={styles.subBtn} onClick={() => navi("/")}>
             로그인 없이 태어나기
           </Button>
           <p className={styles.hint}>비회원은 퀘스트·포인트 없이 진행돼요.</p>

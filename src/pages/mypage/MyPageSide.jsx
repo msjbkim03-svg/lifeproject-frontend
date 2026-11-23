@@ -13,7 +13,7 @@ const MENUS = [
 ];
 
 function MyPageSide({ active, nickname, loginId }) {
-  const navigate = useNavigate();
+  const navi = useNavigate();
 
   return (
     <aside className={styles.side}>
@@ -30,7 +30,7 @@ function MyPageSide({ active, nickname, loginId }) {
         <button
           key={m.key}
           className={m.key === active ? `${styles.menu} ${styles.menuOn}` : styles.menu}
-          onClick={() => navigate(m.path)}
+          onClick={() => navi(m.path)}
         >
           {m.label} <span>›</span>
         </button>
