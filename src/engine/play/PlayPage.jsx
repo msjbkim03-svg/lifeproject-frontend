@@ -47,7 +47,7 @@ const fetchAtOf = (ys) => Math.min(0.3, Math.max(0, 1 - 4 / ys));
 // '1년 ≈ n초' 표시 (10초 미만은 소수 한 자리)
 const secText = (v) => (v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
 const RESULT_DELAY = 3500;                   // 죽은 뒤 결과 화면까지
-const MAX_FEED = 400;                        // 화면에 남겨 둘 기록 줄 수
+const MAX_FEED = 1200;                       // 화면에 남겨 둘 기록 줄 수 (인생 지도 말풍선이 옛 해 이야기도 찾게, 100년 × 한 해 5~8줄)
 
 // 집중 코드 → 화면 문구 (EngineService.applyFocus·knowEff 기준)
 const FOCUS = {
@@ -945,7 +945,7 @@ function PlayPage() {
                 const lvl = y == null ? 2 : y.h >= 70 ? 3 : y.h >= 50 ? 2 : 1;
                 const show = (e) => {
                   const r = e.currentTarget.getBoundingClientRect();
-                  setMapTip({ age: i, x: Math.min(window.innerWidth - 260, r.left), y: r.bottom + 6 });
+                  setMapTip({ age: i, x: Math.min(window.innerWidth - 290, r.left), y: r.bottom + 6 });
                 };
                 return (
                   <button key={i} type="button"
@@ -1191,21 +1191,30 @@ function TraitRows({ data, age }) {
   );
 }
 
-// 인생 지도 말풍선 (원작과 같은 내용): 나이·연도 / 행복·건강·순자산(15세부터) / 그해 돈 내역 3개 / 그해 큰 일 한 줄
+// 인생 지도 말풍선 (원작과 같은 내용): 나이·연도 / 행복·건강·순자산(15세부터) / 그해 돈 내역 3개 / 그해 이야기 두 줄
+const TIP_RANK = ['death', 'alert', 'bad', 'ms', 'loss', 'big', 'gain', 'hist', 'woe', 'ms2', 'dec', 'warm', 'daily'];
 function MapTipText({ age, life, y, feed, le }) {
   const year = life.birthYear + age;
   if (!y) {
     return <><b>{age}세 ({year}년)</b>{age === Math.floor(le) ? ' · 기대수명' : ''}</>;
   }
   const k = life.krwPerUsd;
-  const big = feed.find((e) => e.age === age && (e.big || e.kind === 'death'));
+  // 그해 이야기 두 줄 (원작은 큰 일 한 줄 → 우리는 기록 색 순서로 중요한 것 2개, 없으면 일상 한 줄이라도)
+  //   11/23 동현님: 말풍선에 상태 지수만 나와 허전함
+  const rank = (e) => TIP_RANK.indexOf(feedKind(e));
+  const story = feed
+    .filter((e) => e.age === age && e.text && e.kind !== 'ledger' && e.kind !== 'note')
+    .map((e) => ({ e, r: rank(e) }))
+    .sort((a, b) => (a.r < 0 ? 99 : a.r) - (b.r < 0 ? 99 : b.r))
+    .slice(0, 2)
+    .map((x) => x.e.text);
   const flow = (y.flow || []).slice(0, 3);
   return (
     <>
       <b>{age}세 · {year}년</b><br />
       행복 {y.h} · 건강 {y.hl}{age >= 15 && y.nw != null ? ` · 순자산 ${won(y.nw, k)}` : ''}
       {flow.length > 0 && (<><br />{flow.map((m) => `${m.label} ${won(m.amount, k, true)}`).join(' · ')}</>)}
-      {big && (<><br />{big.text.slice(0, 90)}</>)}
+      {story.map((t, i) => (<span key={i}><br />· {t.length > 90 ? t.slice(0, 90) + '…' : t}</span>))}
     </>
   );
 }
@@ -1322,8 +1331,34 @@ const HOBBY_NAME = {
 };
 const SVC_KIND = { A: '육군', N: '해군', F: '공군', S: '보충역' };
 
+// 자녀가 많으면 (4명부터) 한 줄로 모음: '6명 · 아들 3 · 딸 3' + 아랫줄 '이름 나이 · …' (11/23 동현님: 줄줄이 나와 징그러움)
+//   life.family 자체는 그대로 둠 (마을 그림 homeFamily 가 아들·딸 줄을 씀)
+const KIDS_FOLD = 4;
+const callOf = (full) => {
+  if (!full) return '';
+  if (full.includes(' ')) return full.split(' ')[0];
+  return full.length >= 3 ? full.slice(1) : full; // 붙여 쓰는 한·중 이름은 성을 뺌
+};
+const foldKids = (fam) => {
+  const kids = fam.filter((m) => m.role === '아들' || m.role === '딸');
+  if (kids.length < KIDS_FOLD) return fam;
+  const alive = kids.filter((m) => m.alive);
+  const sons = kids.filter((m) => m.role === '아들').length;
+  const gone = kids.length - alive.length;
+  const row = {
+    role: '자녀',
+    alive: true,
+    info: `${kids.length}명 · 아들 ${sons} · 딸 ${kids.length - sons}` + (gone ? ` · 먼저 떠난 아이 ${gone}명` : ''),
+    job: alive.map((m) => `${callOf(m.name)}${m.age != null ? ' ' + m.age + '세' : ''}`).join(' · '),
+  };
+  const at = fam.indexOf(kids[0]);
+  const rest = fam.filter((m) => m.role !== '아들' && m.role !== '딸');
+  rest.splice(Math.min(at, rest.length), 0, row);
+  return rest;
+};
+
 function FamilyRows({ life, countryName, stageText }) {
-  const fam = life.family;
+  const fam = life.family ? foldKids(life.family) : life.family;
   const owned = life.currentAge >= 6 ? ownNames(life) : [];
   // 반려동물 (엔진 OWNS 의 PET-종류-이름-들인나이-수명)
   const petTok = (life.owns || '').split(',').map((x) => x.trim().split('-')).find((p) => p.length === 5 && p[0] === 'PET');
@@ -1362,7 +1397,7 @@ function FamilyRows({ life, countryName, stageText }) {
       {hob && <div className="row"><span>취미</span><span>{hob}</span></div>}
       {svcText && <div className="row"><span>병역</span><span>{svcText}</span></div>}
       {owned.length > 0 && <div className="row"><span>내 물건</span><span>{owned.join(', ')}</span></div>}
-      <rp></rp>      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
+      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
     </div>
   );

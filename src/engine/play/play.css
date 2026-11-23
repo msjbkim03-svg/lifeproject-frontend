@@ -299,7 +299,7 @@
 .pp-gridkey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--line); }
 
 /* 인생 지도 말풍선 (원작 #tip) */
-.pp-maptip { position: fixed; z-index: 50; width: 250px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); color: var(--ink-sub); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); font-size: 12.5px; line-height: 1.55; pointer-events: none; }
+.pp-maptip { position: fixed; z-index: 50; width: 280px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); color: var(--ink-sub); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); font-size: 12.5px; line-height: 1.55; pointer-events: none; }
 .pp-maptip b { color: var(--ink); }
 
 /* ───── 생존 곡선 ───── */
