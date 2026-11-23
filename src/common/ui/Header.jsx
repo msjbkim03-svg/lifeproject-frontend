@@ -14,9 +14,10 @@ function Header() {
   // 주소가 바뀔 때마다 Header를 다시 그리게 함
   // (로그인 후 메인으로 이동하면 → 다시 그려지면서 토큰을 새로 읽음)
   const location = useLocation();
-  // 로그인·회원가입은 지금 화면 위에 팝업으로 (이미 팝업이면 뒤 화면은 그대로)
+  // 로그인은 지금 화면 위에 팝업으로 (회원가입은 한 화면 페이지)
+  // (이미 팝업이면 뒤 화면은 그대로)
   // 로그인 화면에 주소로 바로 들어와 있으면 팝업 없이 원래처럼 이동
-  const onAuthPage = ['/login', '/join', '/find'].includes(location.pathname);
+  const onAuthPage = ['/login', '/find'].includes(location.pathname);
   const background = location.state?.background || (onAuthPage ? null : location);
 
   // 브라우저에 저장된 값 읽기 (없으면 null)
@@ -55,7 +56,7 @@ function Header() {
           ) : (
             <>
               <Button size="sm" onClick={() => navigate('/login', { state: { background } })}>로그인</Button>
-              <Button size="sm" type="light" onClick={() => navigate('/join', { state: { background } })}>회원가입</Button>
+              <Button size="sm" type="light" onClick={() => navigate('/join')}>회원가입</Button>
             </>
           )}
         </div>

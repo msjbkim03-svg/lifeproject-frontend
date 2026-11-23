@@ -10,6 +10,15 @@ const CANDLE_COUNT = 7;
 // 예: <MemorialSide room={room} onCandle={lightCandle} onOpen={openRoom} />
 function MemorialSide({ room, onCandle, onOpen }) {
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false); // 서버 처리 중 (연속 클릭 막기)
+
+  // 열기·촛불 공통: 처리 중이면 무시 → 끝나면 다시 누를 수 있게
+  const run = async (action) => {
+    if (busy) return;
+    setBusy(true);
+    await action();
+    setBusy(false);
+  };
   const moved = room.birthCountryName !== room.deathCountryName;
   const lit = Math.min(room.tributeCount, CANDLE_COUNT);
   const maxHappy = Math.max(1, ...room.happiness);
@@ -50,7 +59,7 @@ function MemorialSide({ room, onCandle, onOpen }) {
             placeholder="마지막 한마디 (100자)"
             onChange={(e) => setMessage(e.target.value)}
           />
-          <Button type="primary" block disabled={!message.trim()} onClick={() => onOpen(message.trim())}>
+          <Button type="primary" block disabled={busy || !message.trim()} onClick={() => run(() => onOpen(message.trim()))}>
             추모관 열기
           </Button>
         </div>
@@ -68,7 +77,7 @@ function MemorialSide({ room, onCandle, onOpen }) {
               ? "아직 아무도 촛불을 켜지 않았어요."
               : `${room.tributeCount}명이 촛불을 켜 두었어요.`}
           </p>
-          <Button type="primary" disabled={room.myCandle} onClick={onCandle}>
+          <Button type="primary" disabled={busy || room.myCandle} onClick={() => run(onCandle)}>
             {room.myCandle ? "촛불을 켰어요" : "촛불 켜기"}
           </Button>
         </div>

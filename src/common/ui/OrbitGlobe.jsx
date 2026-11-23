@@ -349,9 +349,17 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
     ro.observe(box);
 
     let frame;
+    let lastDraw = 0; // 마지막으로 그린 시각
+    let lastCur = null; // 궤도 점을 마지막으로 옮긴 위치
+    let lastOn = null;
     const loop = (now) => {
+      frame = requestAnimationFrame(loop);
       const s = st.current;
       const { births: b, deaths: d, decades: decs } = dataRef.current;
+
+      // 가만히 있을 때는 1초에 30번만 그림 (돌리거나 끄는 중엔 60번 그대로)
+      if (!s.anim && !s.drag && now - lastDraw < 33) return;
+      lastDraw = now;
 
       if (s.anim) {
         if (s.anim.start == null) s.anim.start = now; // 누를 때 만든 움직임은 첫 프레임 시각부터 셈
@@ -364,8 +372,11 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
       if (paths.theme !== theme) paint(theme);
       draw(ctx, s.cur, now, b, d, paths);
 
-      // 궤도 점 옮기기 (DOM 직접)
+      // 궤도 점 옮기기 (DOM 직접) - 지구가 안 움직였으면 건너뜀
       const onIdx = s.drag ? Math.round(s.cur) : s.target;
+      if (s.cur === lastCur && onIdx === lastOn) return;
+      lastCur = s.cur;
+      lastOn = onIdx;
       for (let i = 0; i < decs.length; i++) {
         const el = markRefs.current[i];
         if (!el) continue;
@@ -377,8 +388,6 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
         el.classList.toggle('on', i === onIdx);
         el.setAttribute('aria-pressed', i === onIdx ? 'true' : 'false');
       }
-
-      frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
     return () => {
