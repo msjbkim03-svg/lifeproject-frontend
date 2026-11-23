@@ -122,6 +122,15 @@ export function houseOf(life) {
   return { tier: Math.min(3, rank), kind: 'rent' };
 }
 
+// 반려동물: owns 의 'PET-종류-이름-들인나이-수명' (엔진 C06) → { kind: 'd' 강아지 | 'c' 고양이, name }
+//   강아지·고양이만 그림 (햄스터·물고기 같은 작은 동물은 null), 없으면 null
+export function petOf(life) {
+  const tok = ownsOf(life).find((s) => s.startsWith('PET-')); // find: 'PET-' 로 시작하는 첫 번째 것
+  if (!tok) return null;
+  const [, kind, name] = tok.split('-');
+  return kind === 'd' || kind === 'c' ? { kind, name } : null;
+}
+
 // 집 앞에 세울 탈것: 가진 것 중 가장 좋은 것 하나 (자동차 > 오토바이 > 자전거, 없으면 null)
 const VEHICLES = ['CAR', 'MOTO', 'BIKE'];
 export function vehicleOf(life) {

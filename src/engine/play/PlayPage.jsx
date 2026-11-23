@@ -26,7 +26,7 @@ import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
 import Spoon from '../../common/ui/Spoon.jsx';
 import Village from '../village/Village';
-import { placeOf, THEMES, COUNTRIES, houseOf, vehicleOf, homeFamily } from '../village/villageData';
+import { placeOf, THEMES, COUNTRIES, houseOf, vehicleOf, homeFamily, petOf } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
@@ -550,7 +550,7 @@ function PlayPage() {
     if (!wearLifeId) return;
     client.get('/api/costumes', { params: { lifeId: wearLifeId, guestToken } })
       .then((res) => setWear(res.data.wear || {}))
-      .catch(() => {});
+      .catch(() => { });
   }, [wearLifeId, guestToken]);
   const onCostumeDone = useCallback((data) => {
     setWear(data.wear || {});
@@ -829,7 +829,7 @@ function PlayPage() {
             <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
               place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)}
               house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume || wear}
-              industry={life.jobIndustry} />
+              industry={life.jobIndustry} pet={petOf(life)} />
             <p className="pp-scenecap"><Flag cc={life.currentCountry} />{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
 
