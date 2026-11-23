@@ -48,12 +48,13 @@ export function ageGroup(age) {
 // costume: { hair: 'HAIR_02', top: 'TOP_01', hat: null } (서버 LifeDTO.costume 예정)
 //          예전처럼 색 글자('#3a7d44')가 오면 옷 색으로만 씀
 // soft: 가족은 옷 색을 조금 연하게 (나와 구분)
+const ELDER_HAIR = '#c9c9c9'; // 60세부터 흰머리 (기본 머리·산 머리 모두)
 export function lookOf({ gender, age, costume, soft = false }) {
   const group = ageGroup(age);
   const female = gender === 'F';
   const look = {
     group,
-    hair: group === 'baby' ? null : { style: female ? 'long' : 'short', color: group === 'elder' ? '#c9c9c9' : '#3a2c26' },
+    hair: group === 'baby' ? null : { style: female ? 'long' : 'short', color: group === 'elder' ? ELDER_HAIR : '#3a2c26' },
     top: { style: 'tee', color: female ? (soft ? '#e9a0b4' : '#e98aa6') : (soft ? '#8fb0ec' : '#6f95e8') },
     hat: null,
   };
@@ -62,9 +63,11 @@ export function lookOf({ gender, age, costume, soft = false }) {
     return look;
   }
   if (!costume) return look;
-  for (const part of ['hair', 'top', 'hat']) {
+    for (const part of ['hair', 'top', 'hat']) {
     const item = COSTUMES[costume[part]];
     if (item && item.part === part) look[part] = { style: item.style, color: item.color };
   }
+  // 60세부터는 산 머리도 모양(아프로·포니테일 등)은 그대로, 색만 흰머리로
+  if (group === 'elder' && look.hair) look.hair = { ...look.hair, color: ELDER_HAIR };
   return look;
 }
