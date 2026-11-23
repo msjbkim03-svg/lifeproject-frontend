@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Village from './Village';
 import { COUNTRIES, PLACES } from './villageData';
 import Panel from '../../common/ui/Panel';
+import { COSTUMES } from './costumeData';
 
 function VillageTest() {
   const [code, setCode] = useState('IND');
@@ -11,6 +12,15 @@ function VillageTest() {
   const [place, setPlace] = useState('home');
   const [msg, setMsg] = useState('');
   const [sent, setSent] = useState('');
+  const [tier, setTier] = useState(3);
+  const [kind, setKind] = useState('parents');
+  const [vehicle, setVehicle] = useState('');
+  const [age, setAge] = useState(34);
+  const [hair, setHair] = useState('');
+  const [top, setTop] = useState('');
+  const [hat, setHat] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [urban, setUrban] = useState(true);
 
   // 같은 나라 접속자 예시 (place = 있는 장소, x = 그 화면 안 위치 %)
   const others = [
@@ -38,13 +48,63 @@ function VillageTest() {
         <select className="input" value={place} onChange={(e) => setPlace(e.target.value)}>
           {PLACES.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
+        집 단계
+        <select className="input" value={tier} onChange={(e) => setTier(Number(e.target.value))}>
+          {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        집 종류
+        <select className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
+          <option value="parents">부모님 집</option>
+          <option value="own">내 집</option>
+          <option value="rent">셋집</option>
+        </select>
+        탈것
+        <select className="input" value={vehicle} onChange={(e) => setVehicle(e.target.value)}>
+          <option value="">없음</option>
+          <option value="BIKE">자전거</option>
+          <option value="MOTO">오토바이</option>
+          <option value="CAR">자동차</option>
+        </select>
+        내 나이
+        <select className="input" value={age} onChange={(e) => setAge(Number(e.target.value))}>
+          {[1, 8, 34, 70].map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        {[['hair', '머리', hair, setHair], ['top', '옷', top, setTop], ['hat', '모자', hat, setHat]].map(([part, label, value, set]) => (
+          <label key={part} className="row">
+            {label}
+            <select className="input" value={value} onChange={(e) => set(e.target.value)}>
+              <option value="">기본</option>
+              {Object.entries(COSTUMES).filter(([, it]) => it.part === part).map(([code, it]) => (
+                <option key={code} value={code}>{it.name}</option>
+              ))}
+            </select>
+          </label>
+        ))}
+        일터
+        <select className="input" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+          <option value="">정보 없음</option>
+          <option value="AGRI">농업</option>
+          <option value="INDUSTRY">공업</option>
+          <option value="SERVICE">서비스</option>
+        </select>
+        <label className="row">
+          <input type="checkbox" checked={urban} onChange={(e) => setUrban(e.target.checked)} /> 도시
+        </label>
       </div>
 
       <div style={{ maxWidth: 760 }}>
         <Panel title={code + ' 마을과 채팅'}>
-          <Village countryCode={code} age={34} gender={gender} place={place}
-            caption={code + ' · 청년기 (34세, 공장 조장)'}
-            myMessage={sent} others={others} />
+          <Village countryCode={code} age={age} gender={gender} place={place}
+            caption={code + ` · 테스트 (${age}세)`}
+            myMessage={sent} others={others} house={{ tier, kind }} vehicle={vehicle || null}
+            costume={{ hair: hair || null, top: top || null, hat: hat || null }}
+            industry={industry || null} urban={urban}
+            family={[
+              { id: 'mom', label: '엄마', gender: 'F', age: 58 },
+              { id: 'dad', label: '아빠', gender: 'M', age: 62 },
+              { id: 'kid0', label: '딸', gender: 'F', age: 5 },
+              { id: 'kid1', label: '아들', gender: 'M', age: 1 },
+            ]} />
           <div className="row" style={{ marginTop: 8 }}>
             <input className="input" style={{ flex: 1 }} placeholder="채팅 입력 후 Enter" value={msg}
               onChange={(e) => setMsg(e.target.value)}

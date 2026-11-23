@@ -26,10 +26,11 @@ import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
 import Spoon from '../../common/ui/Spoon.jsx';
 import Village from '../village/Village';
-import { placeOf, THEMES, COUNTRIES } from '../village/villageData';
+import { placeOf, THEMES, COUNTRIES, houseOf, vehicleOf, homeFamily } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
+import CostumeSheet from '../../pages/costume/CostumeSheet';
 import { won, ppp, PPP_TIP, rankStr, splitMoney, feedKind, belongings, commute, traitLine, ro, iga, ownNames } from './lifeText';
 import { TRAIT_VIEW } from '../../utils/traits';
 import './play.css';
@@ -121,39 +122,6 @@ const koBig = (v) => {
   return Math.round(v).toLocaleString();
 };
 const fix1 = (v) => (Math.round(v * 10) / 10).toLocaleString();
-
-// 우리 집 마을 화면에 같이 사는 가족 (Village family)
-//   부모님(살아 계시면) · 형제자매(내가 20살 전까지, 25살 아래만) · 배우자 · 자녀(서버 가족 줄 '아들'·'딸', 30살 아래만)
-const SIB_RE = /(형|오빠|누나|언니|남동생|여동생) (\d+)세/g;
-const SIB_LABEL = { 형: ['형', 'M'], 오빠: ['오빠', 'M'], 누나: ['누나', 'F'], 언니: ['언니', 'F'], 남동생: ['동생', 'M'], 여동생: ['동생', 'F'] };
-const homeFamily = (life) => {
-  const out = [];
-  const age = life.currentAge;
-  const fam = life.family || [];
-  let kid = 0;
-  fam.forEach((m) => {
-    if (!m.alive) return;
-    if (m.role === '어머니') out.push({ id: 'mom', label: '엄마', gender: 'F', age: m.age });
-    else if (m.role === '아버지') out.push({ id: 'dad', label: '아빠', gender: 'M', age: m.age });
-    else if (m.role === '형제자매' && age < 20 && (m.info || m.job)) {
-      let k = 0;
-      for (const [, w, n] of (m.info || m.job).matchAll(SIB_RE)) {
-        const sa = Number(n);
-        if (sa < 25) out.push({ id: 'sib' + k, label: SIB_LABEL[w][0], gender: SIB_LABEL[w][1], age: sa });
-        k += 1;
-      }
-    } else if (m.role === '배우자' && m.name) {
-      out.push({ id: 'spouse', label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: m.age });
-    } else if (m.role === '아들' || m.role === '딸') {
-      if (m.age == null || m.age < 30) out.push({ id: 'kid' + kid, label: m.role, gender: m.role === '아들' ? 'M' : 'F', age: m.age ?? 5 });
-      kid += 1;
-    }
-  });
-  if (!fam.length && life.parentAlive !== 'N' && age < 40) {
-    out.push({ id: 'mom', label: '엄마', gender: 'F' }, { id: 'dad', label: '아빠', gender: 'M' });
-  }
-  return out.slice(0, 10);
-};
 
 // 서버 오류 문구 꺼내기
 const errText = (err) => {
@@ -247,6 +215,8 @@ function PlayPage() {
   const [ctyView, setCtyView] = useState('cur');      // 나라 패널: cur 사는 나라 / born 태어난 나라 (이민했을 때)
   const [cty, setCty] = useState(null);               // 나라 패널 통계 (GET /api/engine/country)
   const [shopOpen, setShopOpen] = useState(false);    // 돈 쓰기 · 투자 창 (여는 동안 시간 멈춤)
+  const [costumeOpen, setCostumeOpen] = useState(false); // C21 옷 가게 창 (여는 동안 시간 멈춤)
+  const [wear, setWear] = useState({});                 // C21 입은 착장 { hair, top, hat } (해마다 life 가 바뀌어도 유지)
   // 선택 이벤트를 운에 맡기기 (원작 '자동으로 맡기기', 이 브라우저에 기억)
   const [autoChoice, setAutoChoiceState] = useState(() => {
     try { return localStorage.getItem('autoChoice') === 'Y'; } catch { return false; }
@@ -468,7 +438,7 @@ function PlayPage() {
   // ② 한 해 흐르기: 막대가 차는 동안 미리 받은 그해 일을 하나씩 보여 주고, 다 차면 나이 +1
   //    매 프레임 막대는 DOM 으로 바로 칠하고(React 다시 그리기 없음), 해가 바뀔 때만 화면을 새로 그려서 버벅임 없음
   //    다음 해는 막대가 끝나기 조금 전에 미리 요청해 두어 해 사이에 멈춤이 없게 함
-  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen;
+  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen && !costumeOpen;
   // 화면을 다시 그린 뒤 진행 막대를 지금 위치로 맞춤 (막대가 새로 만들어져도 0으로 보이지 않게)
   useLayoutEffect(() => { if (!ended) setProg(yr.current.t); });
   const loopRef = useRef({ yearSec, guestToken, pushLines, remember, reload });
@@ -574,6 +544,20 @@ function PlayPage() {
     if (dto.message) pushLines([{ age: prev.currentAge ?? dto.logAge, kind: 'dec', text: dto.message, ...(hasFx ? { fx } : {}) }]);
   }, [pushLines]);
   const closeShop = useCallback(() => setShopOpen(false), []);
+  // C21 옷 가게: 인생을 불러오면 입은 착장을 받아 두고, 사거나 갈아입으면 돈·착장만 바꿈
+  const wearLifeId = life?.lifeId;
+  useEffect(() => {
+    if (!wearLifeId) return;
+    client.get('/api/costumes', { params: { lifeId: wearLifeId, guestToken } })
+      .then((res) => setWear(res.data.wear || {}))
+      .catch(() => {});
+  }, [wearLifeId, guestToken]);
+  const onCostumeDone = useCallback((data) => {
+    setWear(data.wear || {});
+    setLife((x) => ({ ...x, assets: data.assets }));
+    if (yr.current.data) yr.current.data = { ...yr.current.data, assets: data.assets };
+  }, []);
+  const closeCostume = useCallback(() => setCostumeOpen(false), []);
 
   // 다른 탭으로 가면 멈췄다가(멈춤 버튼은 그대로), 돌아오면 다시 진행 (원작과 같음)
   useEffect(() => {
@@ -803,6 +787,12 @@ function PlayPage() {
                 돈 쓰기 · 투자{life.investType ? ` (${INV_NAME[life.investType] || ''})` : ''}
               </button>
             )}
+            {!ended && (
+              <button type="button" className="shop-b ghost pp-shopbtn" disabled={waiting} title={waiting ? '결정 창을 먼저 골라 주세요' : undefined}
+                onClick={() => setCostumeOpen(true)}>
+                옷 가게
+              </button>
+            )}
           </section>
 
           {/* 내 퀘스트: 시작할 때 고른 것을 계속 보이게 (퀘스트를 안 고른 인생·비회원은 칸을 안 그림) */}
@@ -837,7 +827,9 @@ function PlayPage() {
         <div className="pp-col">
           <section className="pp-panel pp-scene">
             <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
-              place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)} />
+              place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)}
+              house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume || wear}
+              industry={life.jobIndustry} />
             <p className="pp-scenecap"><Flag cc={life.currentCountry} />{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
 
@@ -1034,6 +1026,12 @@ function PlayPage() {
           waitIdle={waitIdle} onDone={onShopDone} onClose={closeShop} />
       )}
 
+      {/* C21 옷 가게 */}
+      {costumeOpen && (
+        <CostumeSheet life={life} guestToken={guestToken}
+          waitIdle={waitIdle} onDone={onCostumeDone} onClose={closeCostume} />
+      )}
+
       {/* 잠시 멈춤 (원작 reflect) */}
       {showReflect && (
         <ReflectModal key={reflectKey} life={life} aliveNow={aliveNow} countryName={countryName}
@@ -1079,15 +1077,15 @@ function PlayPage() {
 const REFLECT_AGES = [5, 15, 30, 50, 70];
 const REFLECT_Q = {
   5: [[() => '당신의 다섯 살은 어땠나요? 그때 당연하게 누렸던 것 하나를 떠올려 보세요.', (poor) => (poor ? '아플 때 데려가 주던 병원' : '매일 저녁 차려지던 밥상')],
-    [(n) => `다섯 살 ${n}에게 지금 가장 필요한 것은 무엇일까요?`, (poor) => (poor ? '배불리 먹는 저녁' : '잠들기 전 읽어 주는 그림책')]],
+  [(n) => `다섯 살 ${n}에게 지금 가장 필요한 것은 무엇일까요?`, (poor) => (poor ? '배불리 먹는 저녁' : '잠들기 전 읽어 주는 그림책')]],
   15: [[() => '열다섯 살의 당신에게 학교는 어떤 곳이었나요?', () => '친구들을 만나러 가던 곳'],
-    [(n) => `${iga(n)} 꿈꿀 수 있는 미래와, 열다섯의 당신이 꿈꾸던 미래는 얼마나 달랐을까요?`, () => '꿈꾸는 마음은 비슷했을 것 같다']],
+  [(n) => `${iga(n)} 꿈꿀 수 있는 미래와, 열다섯의 당신이 꿈꾸던 미래는 얼마나 달랐을까요?`, () => '꿈꾸는 마음은 비슷했을 것 같다']],
   30: [[(n) => `${n}의 삶과 당신의 삶은 무엇이 같고, 무엇이 다른가요?`, () => '일에 지친 건 같고, 사는 곳은 다르다'],
-    [(n) => `${iga(n)} 오늘 가장 고마워할 일은 무엇일까요?`, () => '가족이 건강하다는 것']],
+  [(n) => `${iga(n)} 오늘 가장 고마워할 일은 무엇일까요?`, () => '가족이 건강하다는 것']],
   50: [[(n) => `${iga(n)} 당신의 이웃이었다면, 어떤 이야기를 나누고 싶나요?`, () => '자식 키우는 이야기'],
-    [() => '살면서 당신을 붙잡아 준 사람은 누구였나요?', () => '힘들 때 전화해 준 친구']],
+  [() => '살면서 당신을 붙잡아 준 사람은 누구였나요?', () => '힘들 때 전화해 준 친구']],
   70: [[(n) => `한 번뿐인 삶에서, ${iga(n)} 가장 소중히 여긴 것은 무엇이었을까요?`, () => '가족과 함께한 저녁'],
-    [() => '당신은 어떤 사람으로 기억되고 싶나요?', () => '곁에 있으면 편했던 사람']],
+  [() => '당신은 어떤 사람으로 기억되고 싶나요?', () => '곁에 있으면 편했던 사람']],
 };
 
 function ReflectModal({ life, aliveNow, countryName, auto, speed, onClose }) {
@@ -1364,7 +1362,7 @@ function FamilyRows({ life, countryName, stageText }) {
       {hob && <div className="row"><span>취미</span><span>{hob}</span></div>}
       {svcText && <div className="row"><span>병역</span><span>{svcText}</span></div>}
       {owned.length > 0 && <div className="row"><span>내 물건</span><span>{owned.join(', ')}</span></div>}
-<rp></rp>      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
+      <rp></rp>      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
     </div>
   );
