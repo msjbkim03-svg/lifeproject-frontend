@@ -16,7 +16,7 @@ const MAX_PICK = 3; // 1~3개
 // 특성 짧은 이름은 utils/traits.js 의 TRAIT_VIEW (특성 강화 화면과 같이 씀)
 
 function QuestPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
   const decade = useLocation().state?.decade; // 메인에서 고른 시대
 
   const [quests, setQuests] = useState([]); // 퀘스트 목록
@@ -27,11 +27,11 @@ function QuestPage() {
   // 1. 처음 한 번: 시대·로그인 확인 → 퀘스트 목록과 내 특성 레벨 받기
   useEffect(() => {
     if (!decade) {
-      navigate("/"); // 주소로 바로 들어오면 메인으로
+      navi("/"); // 주소로 바로 들어오면 메인으로
       return;
     }
     if (!localStorage.getItem("token")) {
-      navigate("/birth", { state: { decade } }); // 비회원은 퀘스트 없이 바로 출생
+      navi("/birth", { state: { decade } }); // 비회원은 퀘스트 없이 바로 출생
       return;
     }
     client.get("/api/quests")
@@ -42,13 +42,13 @@ function QuestPage() {
           localStorage.removeItem("token");
           localStorage.removeItem("nickname");
           localStorage.removeItem("memberRole");
-          navigate("/login");
+          navi("/login");
           return;
         }
         setError("퀘스트 목록을 불러오지 못했어요.");
       });
     client.get("/api/members/me/traits").then((resp) => setTraits(resp.data)).catch(() => {});
-  }, [decade, navigate]);
+  }, [decade, navi]);
 
   // 2. 퀘스트 누르기: 이미 골랐으면 빼고, 아니면 넣기 (3개까지)
   const toggle = (questId) => {
@@ -65,7 +65,7 @@ function QuestPage() {
   // 3. 퀘스트 정하고 태어나기 → 고른 퀘스트를 들고 출생 화면으로
   const goBirth = () => {
     if (picked.length === 0) return setError("퀘스트를 1개 이상 골라 주세요.");
-    navigate("/birth", { state: { decade, questIds: picked } });
+    navi("/birth", { state: { decade, questIds: picked } });
   };
 
   // 고른 퀘스트를 고른 순서대로 (이름 보여 주기용)
@@ -115,7 +115,7 @@ function QuestPage() {
                 <LevelDots key={t.traitId} label={TRAIT_VIEW[t.traitId]?.label || t.traitName} level={t.traitLevel} max={t.maxLevel} />
               ))}
             </div>
-            <Button block size="sm" className={styles.traitBtn} onClick={() => navigate("/mypage/traits")}>
+            <Button block size="sm" className={styles.traitBtn} onClick={() => navi("/mypage/traits")}>
               특성 강화하러 가기
             </Button>
           </Panel>
@@ -125,7 +125,7 @@ function QuestPage() {
           <Button type="primary" size="lg" block disabled={picked.length === 0} onClick={goBirth}>
             퀘스트 정하고 태어나기
           </Button>
-          <Button block onClick={() => navigate("/")}>시대 다시 고르기</Button>
+          <Button block onClick={() => navi("/")}>시대 다시 고르기</Button>
         </div>
       </div>
     </div>
@@ -133,3 +133,4 @@ function QuestPage() {
 }
 
 export default QuestPage;
+

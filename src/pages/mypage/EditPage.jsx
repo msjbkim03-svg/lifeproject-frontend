@@ -10,7 +10,7 @@ import styles from "./EditPage.module.css"; // 이 화면만 쓰는 입력칸 �
 // 개인정보 수정 (M05) + 회원 탈퇴 (M06)  주소: /mypage/edit
 // 와이어프레임 16쪽
 function EditPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
 
   // 내 정보는 MyPageLayout 이 넘겨 줌 (setMy 로 바꾸면 왼쪽 메뉴 닉네임도 같이 바뀜)
   const { my, setMy } = useOutletContext();
@@ -115,7 +115,7 @@ function EditPage() {
       localStorage.removeItem("token");
       localStorage.removeItem("nickname");
       localStorage.removeItem("memberRole");
-      navigate("/");
+      navi("/");
     } catch (err) {
       setConfirmOpen(false);
       setWithdrawError(err.response?.data?.message || "탈퇴하지 못했어요.");
@@ -193,7 +193,7 @@ function EditPage() {
           {message && <div className={styles.ok}>{message}</div>}
 
           <div className={styles.actions}>
-            <Button onClick={() => navigate("/mypage")}>취소</Button>
+            <Button onClick={() => navi("/mypage")}>취소</Button>
             <Button type="primary" onClick={save}>저장하기</Button>
           </div>
         </section>

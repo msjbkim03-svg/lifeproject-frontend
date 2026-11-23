@@ -14,7 +14,7 @@ import styles from "./AdminMembers.module.css";
 const STATUS_NAME = { ACTIVE: "활동 중", WITHDRAWN: "탈퇴" };
 
 function AdminMembers() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
 
   // 입력칸 값 (치는 중) / 검색 버튼을 눌렀을 때의 값 (실제로 서버에 보내는 값)
   const [keyword, setKeyword] = useState("");
@@ -37,16 +37,15 @@ function AdminMembers() {
       })
       .catch((err) => {
         if (err.response?.status === 401) {
-          navigate("/login", { state: { message: "로그인이 필요해요." } });
+          navi("/login", { state: { message: "로그인이 필요해요." } });
           return;
         }
         setError(err.response?.status === 403 ? "관리자만 볼 수 있어요." : "회원 목록을 불러오지 못했어요.");
       });
-  }, [search, page, reload, navigate]);
+  }, [search, page, reload, navi]);
 
-  // 2. 검색 버튼 (또는 엔터) → 1페이지부터
-  const handleSearch = (e) => {
-    e.preventDefault();
+  // 2. 검색 버튼 → 1페이지부터
+  const handleSearch = () => {
     setSearch({ keyword: keyword.trim(), status });
     setPage(1);
   };
@@ -79,7 +78,7 @@ function AdminMembers() {
 
       <Panel title={`회원 ${data.total}명`}>
         {/* 검색 */}
-        <form className={styles.search} onSubmit={handleSearch}>
+        <div className={styles.search}>
           <input
             className="input"
             placeholder="아이디, 닉네임, 이메일"
@@ -91,9 +90,8 @@ function AdminMembers() {
             <option value="ACTIVE">활동 중</option>
             <option value="WITHDRAWN">탈퇴</option>
           </select>
-          <button type="submit" hidden />
           <Button type="primary" onClick={handleSearch}>검색</Button>
-        </form>
+        </div>
 
         {message && <p className={styles.message}>{message}</p>}
 

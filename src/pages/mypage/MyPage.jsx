@@ -6,7 +6,7 @@ import styles from "./MyPage.module.css";
 // 마이페이지 (M04)  주소: /mypage
 // 와이어프레임 15쪽: (왼쪽 메뉴는 MyPageLayout) 가입 정보 + 숫자 칸 3개 + 진행 중인 인생 + 전생 기록·특성 강화 바로가기
 function MyPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
   // 내 정보는 MyPageLayout 이 서버에서 받아서 넘겨 줌 (여기서는 꺼내 쓰기만)
   const { my } = useOutletContext();
 
@@ -20,7 +20,7 @@ function MyPage() {
         <section className={styles.card}>
           <div className={styles.cardHead}>
             <span className={styles.cardTitle}>가입 정보</span>
-            <Button size="sm" onClick={() => navigate("/mypage/edit")}>개인정보 수정</Button>
+            <Button size="sm" onClick={() => navi("/mypage/edit")}>개인정보 수정</Button>
           </div>
           <dl className={styles.info}>
             <dt>아이디</dt><dd>{my.loginId}</dd>
@@ -50,7 +50,7 @@ function MyPage() {
                 <b>{my.lifeName}</b>
                 <span>{my.currentCountryName} · {my.currentAge}살</span>
               </div>
-              <Button type="primary" onClick={() => navigate("/play", { state: { lifeId: my.lifeId } })}>
+              <Button type="primary" onClick={() => navi("/play", { state: { lifeId: my.lifeId } })}>
                 이어서 살기
               </Button>
             </div>
@@ -61,7 +61,7 @@ function MyPage() {
                 <b>진행 중인 인생이 없어요</b>
                 <span>메인에서 새 인생을 시작해 보세요.</span>
               </div>
-              <Button onClick={() => navigate("/")}>새 인생 시작하기</Button>
+              <Button onClick={() => navi("/")}>새 인생 시작하기</Button>
             </div>
           )}
         </section>
@@ -71,12 +71,12 @@ function MyPage() {
           <section className={styles.card}>
             <div className={styles.cardHead}><span className={styles.cardTitle}>전생 기록</span></div>
             <p className={styles.desc}>지금까지 {my.lifeCount}번의 인생을 살았어요.</p>
-            <Button block onClick={() => navigate("/mypage/lives")}>바로가기 ›</Button>
+            <Button block onClick={() => navi("/mypage/lives")}>바로가기 ›</Button>
           </section>
           <section className={styles.card}>
             <div className={styles.cardHead}><span className={styles.cardTitle}>특성 강화</span></div>
             <p className={styles.desc}>포인트 {my.point}P로 특성을 올릴 수 있어요.</p>
-            <Button block onClick={() => navigate("/mypage/traits")}>바로가기 ›</Button>
+            <Button block onClick={() => navi("/mypage/traits")}>바로가기 ›</Button>
           </section>
         </div>
       </main>

@@ -8,7 +8,7 @@ import styles from "./JoinPage.module.css";
 
 // 회원가입 화면 (M01)
 function JoinPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
 
   // 입력값 6개를 한 상자에
   const [form, setForm] = useState({
@@ -115,7 +115,7 @@ function JoinPage() {
       // captchaToken 도 같이 보내면 서버가 구글에 진짜인지 확인함
       await client.post("/api/members", { ...form, privacyAgreed: agreed ? "Y" : "N", captchaToken });
       // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸)
-      navigate("/login", { state: { message: "회원가입을 마쳤어요. 로그인해 주세요." } });
+      navi("/login", { state: { message: "회원가입을 마쳤어요. 로그인해 주세요." } });
     } catch (err) {
       setError(err.response?.data?.message || "서버에 연결할 수 없어요.");
       // 토큰은 한 번만 쓸 수 있어서, 실패하면 체크박스를 비우고 다시 체크하게 함
@@ -236,7 +236,7 @@ function JoinPage() {
           <p className={styles.error}>{error}</p>
           <div className={styles.footerBtns}>
             <button type="submit" hidden />
-            <Button onClick={() => navigate("/")}>취소</Button>
+            <Button onClick={() => navi("/")}>취소</Button>
             <Button type="primary" onClick={handleSubmit}>가입하기</Button>
           </div>
         </div>

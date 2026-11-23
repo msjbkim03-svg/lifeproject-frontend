@@ -11,7 +11,7 @@ import s from "./MemorialRoom.module.css";
 // 열린 추모관을 최신순으로 12개씩 카드로 보여 주고, 카드를 누르면 그 방(/memorial/:lifeId)으로 감
 
 function MemorialListPage() {
-  const navigate = useNavigate();
+  const navi = useNavigate();
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);           // { total, size, list }
   const [loadError, setLoadError] = useState(false);
@@ -47,7 +47,7 @@ function MemorialListPage() {
       ) : (
         <div className={s.cardGrid}>
           {list.map((c) => (
-            <button key={c.lifeId} className={`panel ${s.card}`} onClick={() => navigate(`/memorial/${c.lifeId}`)}>
+            <button key={c.lifeId} className={`panel ${s.card}`} onClick={() => navi(`/memorial/${c.lifeId}`)}>
               <MemorialSlot label="초상" className={s.cardSlot} />
               <b className={s.cardName}>{c.name}</b>
               <span className={s.mono}>{c.birthYear} – {c.deathYear} · {c.deathAge}세</span>
