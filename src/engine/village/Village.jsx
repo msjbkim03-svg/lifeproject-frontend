@@ -1020,7 +1020,7 @@ function PetWalker({ pet }) {
   return (
     <div className="v-person pet" style={{ left: PET_X + '%', top: GROUND_Y + '%' }}>
       <div className="v-pet-walk">
-        <Pet kind={pet.kind} name={pet.name} />
+        <Pet kind={pet.kind} name={pet.name} coat={pet.coat} />
         <div className="v-name">{pet.name}</div>
       </div>
     </div>

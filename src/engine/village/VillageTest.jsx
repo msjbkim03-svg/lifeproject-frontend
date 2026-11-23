@@ -102,7 +102,9 @@ function VillageTest() {
         <select className="input" value={pet} onChange={(e) => setPet(e.target.value)}>
           <option value="">없음</option>
           <option value="d">강아지 (시바)</option>
-          <option value="c">고양이 (삼색)</option>
+          <option value="c-calico">고양이 (삼색)</option>
+          <option value="c-mackerel">고양이 (고등어)</option>
+          <option value="c-cheese">고양이 (치즈)</option>
         </select>
         <label className="row">
           <input type="checkbox" checked={urban} onChange={(e) => setUrban(e.target.checked)} /> 도시
@@ -116,7 +118,7 @@ function VillageTest() {
             myMessage={sent} others={others} house={{ tier, kind }} vehicle={vehicle || null}
             costume={{ hair: hair || null, top: top || null, hat: hat || null }}
             industry={industry || null} urban={urban}
-            pet={pet ? { kind: pet, name: pet === 'd' ? '복찬' : '콩' } : null}
+            pet={pet ? { kind: pet[0], name: pet === 'd' ? '복찬' : '콩', coat: pet.split('-')[1] } : null}
             happiness={happy}
             family={[
               { id: 'mom', label: '엄마', gender: 'F', age: 58 },
