@@ -102,12 +102,17 @@
 .v-person .v-fig { display: block; transform: translateY(-41px) scale(var(--s)); transform-origin: 50% 100%; }
 .v-person.me.left .v-fig { transform: translateY(-41px) scale(calc(var(--s) * -1), var(--s)); }
 .v-person.me .v-fig { filter: drop-shadow(0 0 2px var(--primary-light)); }
-.v-person.me.walking .v-fig { animation: v-step 0.32s steps(2) infinite; }
-@keyframes v-step { 50% { translate: 0 -2px; } }
-/* 걸을 때 팔다리: fa(왼팔+오른다리)와 fb(오른팔+왼다리)가 번갈아 1칸씩 올라감 */
-.v-person.me.walking .v-fig .fa { animation: v-limb 0.32s steps(1) infinite; }
-.v-person.me.walking .v-fig .fb { animation: v-limb 0.32s steps(1) -0.16s infinite; }
-@keyframes v-limb { 0% { translate: 0 0; } 50% { translate: 0 -1px; } }
+/* 걷기 (4장면, 발은 늘 땅에, SVG 안이라 1px = 그림 1칸)
+   다리: 앞뒤로 1칸씩 엇갈리고 넘어가는 다리는 1칸 들림
+   팔: 제자리에서 안쪽으로만 1칸 (바깥으로 퍼지지 않게), 반대쪽 다리가 앞으로 갈 때 */
+.v-person.me.walking .v-fig .fa.leg { animation: v-stride-a 0.56s steps(1) infinite; }
+.v-person.me.walking .v-fig .fb.leg { animation: v-stride-b 0.56s steps(1) infinite; }
+.v-person.me.walking .v-fig .fa.arm { animation: v-arm-a 0.56s steps(1) infinite; }
+.v-person.me.walking .v-fig .fb.arm { animation: v-arm-b 0.56s steps(1) infinite; }
+@keyframes v-stride-a { 0% { translate: 1px 0; } 25% { translate: 0 0; } 50% { translate: -1px 0; } 75% { translate: 0 -1px; } }
+@keyframes v-stride-b { 0% { translate: -1px 0; } 25% { translate: 0 -1px; } 50% { translate: 1px 0; } 75% { translate: 0 0; } }
+@keyframes v-arm-a { 0% { translate: 1px 0; } 25% { translate: 0 0; } }
+@keyframes v-arm-b { 0% { translate: 0 0; } 50% { translate: -1px 0; } 75% { translate: 0 0; } }
 .me { z-index: 6; }
 
 /* 우리 집 가족: 집 앞을 천천히 왔다 갔다 */
