@@ -129,6 +129,20 @@
 @keyframes v-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -2px; } }
 @media (prefers-reduced-motion: reduce) { .v-person.fam .v-wander { animation: none; } }
 
+
+/* 반려동물 (우리 집 화면): 그림은 Pet.jsx (높이 18px), 가족처럼 마당을 오감 */
+.v-person.pet { z-index: 4; }
+.v-person.pet .v-pet-walk {
+  display: flex; flex-direction: column; align-items: center;
+  transform: translateY(-22px);
+  animation: v-wander 12s ease-in-out infinite;
+}
+/* 가는 쪽 바라보기 (v-wander 가 오른쪽 → 왼쪽 → 오른쪽으로 움직이는 때에 맞춤) + 종종걸음 */
+.v-person.pet .v-pet-fig { display: block; animation: v-pet-face 12s steps(1) infinite, v-bob 0.5s steps(2) infinite; }
+@keyframes v-pet-face { 0% { scale: 1 1; } 52% { scale: -1 1; } 90% { scale: 1 1; } }
+.v-person.pet .v-name { font-size: 10px; opacity: 0.85; }
+@media (prefers-reduced-motion: reduce) { .v-person.pet .v-pet-walk, .v-person.pet .v-pet-fig { animation: none; } }
+
 /* 다른 접속자: 흐린 실루엣 */
 .v-person.other .v-fig { opacity: 0.4; filter: grayscale(1); }
 .village.dark .v-person.other .v-fig { filter: grayscale(1) brightness(1.8); }
