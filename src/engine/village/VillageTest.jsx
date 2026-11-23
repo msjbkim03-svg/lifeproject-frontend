@@ -22,11 +22,12 @@ function VillageTest() {
   const [industry, setIndustry] = useState('');
   const [urban, setUrban] = useState(true);
   const [pet, setPet] = useState('');
+  const [happy, setHappy] = useState(50);
 
   // 같은 나라 접속자 예시 (place = 있는 장소, x = 그 화면 안 위치 %)
   const others = [
     { id: 1, name: '라훌', age: 30, place: 'home', x: 30, message: '안녕하세요!' },
-    { id: 2, name: '프리야', age: 27, place: 'hall', x: 70, message: '저도 1950년대생이에요' },
+    { id: 2, name: '프리야', age: 27, place: 'park', x: 70, message: '저도 1950년대생이에요' },
     { id: 3, name: '아밋', age: 41, place: 'work', x: 35 },
   ];
 
@@ -58,6 +59,9 @@ function VillageTest() {
           <option value="parents">부모님 집</option>
           <option value="own">내 집</option>
           <option value="rent">셋집</option>
+          <option value="apt">셋집 (도시 아파트)</option>
+          <option value="prison">교도소</option>
+          <option value="barracks">군 부대</option>
         </select>
         탈것
         <select className="input" value={vehicle} onChange={(e) => setVehicle(e.target.value)}>
@@ -88,11 +92,19 @@ function VillageTest() {
           <option value="INDUSTRY">공업</option>
           <option value="SERVICE">서비스</option>
         </select>
+        행복
+        <select className="input" value={happy} onChange={(e) => setHappy(Number(e.target.value))}>
+          <option value={20}>낮음 20 (흐림·비)</option>
+          <option value={50}>보통 50</option>
+          <option value={85}>높음 85 (맑음)</option>
+        </select>
         반려동물
         <select className="input" value={pet} onChange={(e) => setPet(e.target.value)}>
           <option value="">없음</option>
           <option value="d">강아지 (시바)</option>
-          <option value="c">고양이 (삼색)</option>
+          <option value="c-calico">고양이 (삼색)</option>
+          <option value="c-mackerel">고양이 (고등어)</option>
+          <option value="c-cheese">고양이 (치즈)</option>
         </select>
         <label className="row">
           <input type="checkbox" checked={urban} onChange={(e) => setUrban(e.target.checked)} /> 도시
@@ -106,7 +118,8 @@ function VillageTest() {
             myMessage={sent} others={others} house={{ tier, kind }} vehicle={vehicle || null}
             costume={{ hair: hair || null, top: top || null, hat: hat || null }}
             industry={industry || null} urban={urban}
-            pet={pet ? { kind: pet, name: pet === 'd' ? '복찬' : '콩' } : null}
+            pet={pet ? { kind: pet[0], name: pet === 'd' ? '복찬' : '콩', coat: pet.split('-')[1] } : null}
+            happiness={happy}
             family={[
               { id: 'mom', label: '엄마', gender: 'F', age: 58 },
               { id: 'dad', label: '아빠', gender: 'M', age: 62 },
