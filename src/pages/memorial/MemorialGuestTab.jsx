@@ -11,12 +11,15 @@ import s from "./MemorialRoom.module.css";
 function MemorialGuestTab() {
   const { room, isLogin, sendComment } = useOutletContext();
   const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false); // 보내는 중 (Enter 연타로 같은 글 여러 번 막기)
 
   const send = async () => {
     const content = text.trim();
-    if (!content) return;
+    if (!content || busy) return;
+    setBusy(true);
     const ok = await sendComment(content); // 틀(MemorialRoomPage)이 서버에 보냄
     if (ok) setText("");
+    setBusy(false);
   };
 
   if (!room.opened) return <p className={s.muted}>추모관을 열면 방명록을 남길 수 있어요.</p>;
@@ -43,7 +46,7 @@ function MemorialGuestTab() {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && send()}
           />
-          <Button type="primary" onClick={send}>남기기</Button>
+          <Button type="primary" disabled={busy} onClick={send}>{busy ? "남기는 중…" : "남기기"}</Button>
         </div>
       ) : (
         <p className={s.muted}>

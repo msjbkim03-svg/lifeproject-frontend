@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
@@ -9,6 +9,11 @@ import styles from "./JoinPage.module.css";
 // 회원가입 화면 (M01)
 function JoinPage() {
   const navi = useNavigate();
+
+  // 이미 로그인한 상태로 들어오면 메인으로
+  useEffect(() => {
+    if (localStorage.getItem("token")) navi("/", { replace: true });
+  }, [navi]);
 
   // 입력값 6개를 한 상자에
   const [form, setForm] = useState({

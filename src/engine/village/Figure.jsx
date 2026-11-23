@@ -15,7 +15,7 @@ function P({ x, y, w = 1, h = 1, c, o }) {
 
 // 줄 단위로 칠하기: rows = [[y, 시작 x, 끝 x], ...]  (끝 x 칸까지 포함)
 function S({ rows, c, o }) {
-  return rows.map(([y, a, b]) => <P key={y} x={a} y={y} w={b - a + 1} c={c} o={o} />);
+  return rows.map(([y, a, b]) => <P key={y + '_' + a} x={a} y={y} w={b - a + 1} c={c} o={o} />);
 }
 
 // 동그란 얼굴: 테두리 줄과 피부 줄
@@ -191,4 +191,4 @@ function Figure({ look }) {
   );
 }
 
-export default Figure;
+export default Figure;

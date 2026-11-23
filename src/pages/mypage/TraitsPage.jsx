@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import client from "../../api/api";
 import Badge from "../../common/ui/Badge";
 import Button from "../../common/ui/Button";
@@ -18,16 +18,20 @@ import { TRAIT_VIEW } from "../../utils/traits";
 function TraitsPage() {
   const navi = useNavigate();
   const { my, setMy } = useOutletContext(); // 보유 포인트(my.point) - 바꾸면 마이페이지에도 반영
+  const fromQuest = useLocation().state; // 퀘스트 화면에서 왔으면 { decade, picked } → 돌아가기 버튼
   const [traits, setTraits] = useState([]);
   const [selected, setSelected] = useState(null); // 확인 줄에 띄울 특성 (traitId)
   const [busy, setBusy] = useState(false);         // 서버 처리 중 (연속 클릭 막기)
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [noPoint, setNoPoint] = useState(false);  // 포인트 부족 안내 창
+  const [loadError, setLoadError] = useState(""); // 처음 불러오기 실패 안내
 
   // 1. 처음 한 번: 내 특성 레벨 받기
   useEffect(() => {
-    client.get("/api/members/me/traits").then((resp) => setTraits(resp.data));
+    client.get("/api/members/me/traits")
+      .then((resp) => setTraits(resp.data))
+      .catch(() => setLoadError("특성을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요."));
   }, []);
 
   // 2. 카드의 [레벨 올리기 · 1P]
@@ -68,6 +72,11 @@ function TraitsPage() {
     <main className={common.main}>
       <h1 className={common.title}>특성 강화</h1>
       <p className={common.lead}>퀘스트로 모은 포인트로 특성을 키워요. 올린 레벨은 다음 생부터 적용돼요.</p>
+      {fromQuest?.decade && (
+        <Button type="primary" onClick={() => navi("/quest", { state: fromQuest })}>
+          ← {fromQuest.decade}년대 퀘스트 정하러 돌아가기
+        </Button>
+      )}
 
       {/* 보유 포인트 + 강화 규칙 */}
       <div className={styles.top}>
@@ -90,6 +99,12 @@ function TraitsPage() {
       {/* 특성 4종 */}
       <section className={common.card}>
         <div className={common.cardHead}><span className={common.cardTitle}>특성 4종</span></div>
+        {loadError && (
+          <div>
+            <p className={styles.error}>{loadError}</p>
+            <Button onClick={() => window.location.reload()}>다시 시도</Button>
+          </div>
+        )}
         <div className={styles.grid}>
           {traits.map((t) => {
             const view = TRAIT_VIEW[t.traitId] || { label: t.traitName, icon: "⭐" };

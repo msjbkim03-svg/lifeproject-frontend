@@ -198,8 +198,8 @@ function drawGrid(ctx, lon0, pal) {
   }
 }
 
-// 지구본 한 장 그리기
-function draw(ctx, cur, now, births, deaths, paths) {
+// 지구본 바탕 (궤도 뒤 · 바다 · 땅 · 유리) - 시대(cur)·테마가 바뀔 때만 다시 그림
+function drawBase(ctx, cur, paths) {
   const pal = paths.pal;
   const lon0 = rad(92 + (cur - 4) * 8); // 시대 한 칸마다 8도씩 돌아감
   ctx.clearRect(0, 0, W, H);
@@ -240,6 +240,12 @@ function draw(ctx, cur, now, births, deaths, paths) {
   ctx.strokeStyle = pal.rim;
   ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.arc(CX, CY, R - 0.5, 0, Math.PI * 2); ctx.stroke();
+}
+
+// 바탕 위에 매번 그리는 것 (반짝이는 별 · 빈 원 · 궤도 앞)
+function drawLive(ctx, cur, now, births, deaths, paths) {
+  const pal = paths.pal;
+  const lon0 = rad(92 + (cur - 4) * 8);
 
   // 떠난 사람 (빈 원)
   ctx.strokeStyle = pal.death;
@@ -312,6 +318,10 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
     const canvas = canvasRef.current;
     const box = boxRef.current;
     const ctx = canvas.getContext('2d');
+    // 바탕 그림을 그려 둘 안 보이는 캔버스 (땅 계산이 무거워서 지구가 안 돌면 다시 안 그림)
+    const base = document.createElement('canvas');
+    const bctx = base.getContext('2d');
+    let baseKey = ''; // 마지막으로 그린 바탕의 시대·테마
 
     // 매 프레임 새로 만들 필요 없는 것들
     // 테마마다 대기 빛·바다 색 (테마가 바뀌면 다시 만듦)
@@ -319,18 +329,18 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
     const paint = (theme) => {
       const pal = PAL[theme];
       const [ar, ag, ab] = pal.atm;
-      const atm = ctx.createRadialGradient(CX, CY, 0, CX, CY, R * 1.16);
+      const atm = bctx.createRadialGradient(CX, CY, 0, CX, CY, R * 1.16);
       atm.addColorStop(0.84, `rgba(${ar},${ag},${ab},0)`);
       atm.addColorStop(0.92, `rgba(${ar},${ag},${ab},${pal.atmA ?? 0.3})`);
       atm.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
-      const sea = ctx.createRadialGradient(CX - R * 0.2, CY - R * 0.3, 0, CX, CY, R);
+      const sea = bctx.createRadialGradient(CX - R * 0.2, CY - R * 0.3, 0, CX, CY, R);
       sea.addColorStop(0, pal.sea[0]);
       sea.addColorStop(1, pal.sea[1]);
       // 유리 구슬 그늘(오른쪽 아래)·빛(왼쪽 위)
-      const shade = ctx.createRadialGradient(CX + R * 0.4, CY + R * 0.5, 0, CX + R * 0.4, CY + R * 0.5, R * 1.2);
+      const shade = bctx.createRadialGradient(CX + R * 0.4, CY + R * 0.5, 0, CX + R * 0.4, CY + R * 0.5, R * 1.2);
       shade.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
       shade.addColorStop(1, 'rgba(0, 0, 0, 0.28)');
-      const hilite = ctx.createRadialGradient(CX - R * 0.36, CY - R * 0.5, 0, CX - R * 0.36, CY - R * 0.5, R * 0.9);
+      const hilite = bctx.createRadialGradient(CX - R * 0.36, CY - R * 0.5, 0, CX - R * 0.36, CY - R * 0.5, R * 0.9);
       hilite.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
       hilite.addColorStop(1, 'rgba(255, 255, 255, 0)');
       Object.assign(paths, { theme, pal, atm, sea, shade, hilite });
@@ -343,6 +353,10 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(((w * H) / W) * dpr);
       ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+      base.width = canvas.width;
+      base.height = canvas.height;
+      bctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+      baseKey = ''; // 크기가 바뀌면 바탕 다시
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -370,7 +384,18 @@ function OrbitGlobe({ value = 1980, onChange, births = SAMPLE_BIRTHS, deaths = S
 
       const theme = getTheme();
       if (paths.theme !== theme) paint(theme);
-      draw(ctx, s.cur, now, b, d, paths);
+      // 바탕: 시대·테마가 바뀌었을 때만 다시 그림 → 화면에는 붙이기만
+      const key = s.cur + '|' + theme;
+      if (key !== baseKey) {
+        drawBase(bctx, s.cur, paths);
+        baseKey = key;
+      }
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(base, 0, 0);
+      ctx.restore();
+      drawLive(ctx, s.cur, now, b, d, paths);
 
       // 궤도 점 옮기기 (DOM 직접) - 지구가 안 움직였으면 건너뜀
       const onIdx = s.drag ? Math.round(s.cur) : s.target;

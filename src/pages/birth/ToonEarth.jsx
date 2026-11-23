@@ -319,7 +319,7 @@ function ToonEarth({ phase, target, onParked }) {
     for (let i = 0; i < 12; i++) {
       const dot = new THREE.Mesh(
         new THREE.SphereGeometry(0.13 * (1 - i / 12), 8, 8),
-        new THREE.MeshBasicMaterial({ color: C.gold, transparent: true, opacity: 0.9 - i * 0.07 }),
+        new THREE.MeshBasicMaterial({ color: C.plane, transparent: true, opacity: 0.9 - i * 0.07 }),
       );
       const a = (i + 1) * 0.12;
       dot.position.set(ORBIT_RADIUS * Math.cos(a), 0, ORBIT_RADIUS * Math.sin(a));
