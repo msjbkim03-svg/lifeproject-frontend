@@ -83,8 +83,21 @@ export const rankStr = (p) => {
 //   alert 큰 역사 사건: 빨간 왼쪽 줄 + 아래 '큰 사건' 경고등 (11/20 동현님 요청, 원작에는 없음)
 //     기준은 서버 한 곳 (EngineService.bigHist): 역사 사건 중 강도 2 이상 또는 전쟁·재난 유형, 끝난 소식은 빼고
 //     진행 중엔 응답 alerts, 새로고침 땐 /api/engine/logs 의 alert='Y' 로 받아서 line.alert
-const BAD = /(세상을 떠|숨을 거|사망|잃었|잃은|다쳤|부상|사고|병에 걸|앓|입원|수술|실직|해고|그만두었|중퇴|빚|이혼|헤어졌|전쟁|피란|기근|굶|가뭄|홍수|지진|폭격|체포|감옥|파산|망했|형편이 어려워졌|사업이 기울어|살림이 빠듯해졌|살림이 어려워졌|사기|도둑|불이 나|아팠|열병|설사|폐렴|결핵|말라리아)/;
-const MS = /(태어났|입학|진학|졸업|결혼|첫째|둘째|셋째|아이가 생|아이를 낳|일을 시작|이 되었다|취업|승진|은퇴|이사|이민|처음으로|첫 월급|집을 샀|문을 열)/;
+// 중요도 단계 (11/23 동현님: 큰 일이 더 떠 보이게, 한 번 더 세분화)
+//   alert 큰 역사 사건 (빨간 띠)
+//   bad  내 삶이 크게 흔들린 일 (빨강 + 옅은 빨간 바탕 + 왼쪽 줄)  ·  loss 가까운 사람을 잃음 (굵게 + 옅은 바탕 ✿)
+//   gain 크게 잘된 일 (금색 + 옅은 금빛 바탕 ★)                    ·  ms 인생의 큰 마디 (청록 굵게 + 왼쪽 청록 줄)
+//   woe  작은 손해·실패 (빨강 글씨만)                               ·  ms2 작은 마디 (청록 글씨만)
+//   big > warm > daily(작고 흐리게)
+const GAIN = /(당첨|물려받았|물려주셨|크게 올라|뛰었다|불었다|크게 자리를 잡|더 큰 자리|합격했|장학금|갚아 주셨|보태 주셨|보내 주시기로|다시 기운을 차렸)/;
+// 날마다의 작은 탈 (빨강까지는 아님)
+const MINOR = /(감기|몸살|독감|치과|무릎이 까|넘어져|열이 올라)/;
+const BAD = /(세상을 떠|숨을 거|사망|잃었|잃은|다쳤|부상|사고|병에 걸|앓|입원|수술|실직|해고|그만두었|중퇴|빚 걱정|빚이 불|빚을 내|빚을 졌|이혼|헤어졌|전쟁|피란|기근|굶|가뭄|홍수|지진|폭격|체포|감옥|파산|망했|형편이 어려워졌|사업이 기울어|살림이 빠듯해졌|살림이 어려워졌|사기|도둑|불이 나|아팠|열병|설사|폐렴|결핵|말라리아|사라졌|대신 갚았|손해|폭락|떨어졌다\.|끝내 떠났|돌려받지 못했)/;
+const MS = /(태어났|입학|진학|졸업|결혼|첫째|둘째|셋째|아이가 생|아이를 낳|일을 시작|이 되었다|취업|승진|은퇴|이사|이민|처음으로|첫 월급|집을 샀|집을 마련|문을 열)/;
+// 큰 마디 (결혼·출산·졸업·첫 일·내 집·은퇴·이민) - 나머지 MS 는 작은 마디
+const MS_BIG = /(태어났|졸업|결혼|첫째|둘째|셋째|아이가 생|아이를 낳|일을 시작|취업|승진|은퇴|이민|집을 샀|집을 마련|문을 열)/;
+// 크게 흔들린 일 - 나머지 BAD 는 작은 손해·실패 (woe)
+const BAD_BIG = /(사고|병에 걸|입원|수술|실직|해고|이혼|전쟁|피란|기근|굶|폭격|체포|감옥|파산|망했|빚이 불|빚을 졌|대신 갚았|폭락|결핵|말라리아|폐렴|열병|불이 나|홍수|지진|끝내 떠났)/;
 const NOTE = /(같은 해 .*태어난 .*살아 있다|또래 가운데|^“)/; // 마지막: 잠시 멈춤에 적은 한 줄 (따옴표)
 // 원작 loss: 가까운 사람을 잃음 (굵게 + ✿)
 const LOSS = /(아버지|어머니|부모님|아빠|엄마|남편|아내|배우자|아이|아들|딸|자녀|형|누나|언니|오빠|동생|형제|할머니|할아버지|친구|손주).{0,12}(세상을 떠|돌아가|잃었|떠나보냈|숨을 거)/;
@@ -105,11 +118,14 @@ export const feedKind = (line) => {
   if (NOTE.test(t)) return 'note';
   if (LOSS.test(t)) return 'loss';
   const hurt = (fx.effHealth || 0) <= -8 || (fx.effWealthRate || 0) <= -0.2 || (fx.deathAdd || 0) > 0;
-  if (hurt || BAD.test(t)) return 'bad';
-  if (MS.test(t)) return 'ms';
-  if (WARM.test(t)) return 'warm';
+  if (!line.eventId && !hurt && MINOR.test(t)) return 'daily';
+  if (hurt) return 'bad';
+  if (GAIN.test(t)) return 'gain';
+  if (BAD.test(t)) return BAD_BIG.test(t) ? 'bad' : 'woe';
+  if (MS.test(t)) return MS_BIG.test(t) ? 'ms' : 'ms2';
   if (line.big) return 'big';
-  return '';
+  if (WARM.test(t)) return 'warm';
+  return 'daily';
 };
 
 // ───────── 내 물건 · 주로 다니는 곳 (원작 살림 패널 아랫줄) ─────────
@@ -148,6 +164,7 @@ const guessBelongings = (life, year) => {
 
 // 주로 다니는 곳: '어디 · 어떻게' (산 탈것이 있으면 그걸로)
 export const commute = (life, year) => {
+  if (life.jobStatus === 'PRISON') return '교도소 안 · 나갈 수 없음';
   const age = life.currentAge;
   const urban = life.isUrban === 'Y';
   const rank = life.incomeRankCountry ?? (life.wealthClass - 0.5) / 5;
