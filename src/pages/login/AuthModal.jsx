@@ -16,6 +16,7 @@ function AuthModal({ children }) {
     setTimeout(() => navi(background ? background.pathname + background.search : "/"), 200);
   };
 
+  
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") close();
