@@ -120,13 +120,36 @@
 }
 .pp-id-top {
   position: relative;
-  display: flex; justify-content: space-between;
-  padding: 8px 14px;
-  background: var(--primary); color: var(--on-primary);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 8px 7px 14px;
+  background: var(--tier-edge, var(--primary));
+  color: #ffffff;
   font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em;
+  animation: pp-tier-flash 0.9s ease-out;
 }
-.pp-id-in { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding: 14px 14px 10px; }
-.pp-photo { width: 64px; height: 80px; border: 1px solid var(--line-strong); border-radius: 2px; image-rendering: pixelated; }
+.pp-id-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 7px; border-radius: var(--radius-pill); background: #ffffff; color: var(--tier-edge, var(--primary)); font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
+.pp-id-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--tier, var(--primary)); border: 1px solid var(--tier-edge, var(--primary)); box-sizing: border-box; }
+.pp-id { border: 3px solid var(--tier-edge, var(--line)); }
+.pp-id.dim { border-style: dashed; }
+.pp-id.dim .pp-id-top { opacity: 0.6; }
+.pp-guilloche { stroke: var(--tier-edge, var(--primary)); }
+@keyframes pp-tier-flash { 0% { filter: brightness(1.6); } 100% { filter: none; } }
+.pp-tier-pop {
+  position: absolute; right: 12px; top: 46px; z-index: 2;
+  padding: 4px 10px; border-radius: var(--radius-pill);
+  background: var(--tier-edge); color: #ffffff; font-size: 12px; font-weight: 600;
+  animation: pp-tier-pop 2.6s ease-out forwards; pointer-events: none;
+}
+.pp-tier-pop.dn { background: var(--ink-sub); }
+@keyframes pp-tier-pop { 0% { opacity: 0; transform: translateY(6px); } 12%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pp-id-top, .pp-tier-pop { animation: none; } .pp-tier-pop { display: none; } }
+.pp-id-in { position: relative; display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 16px; padding: 18px 14px 14px; align-items: start; }
+/* 폴라로이드: 흰 테두리 + 아래 여백에 나이, 위에 테이프 (안 기울임, 페르소나 4차 8번) */
+.pp-polaroid { position: relative; margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 5px 6px; background: #ffffff; border: 1px solid var(--line-strong); box-shadow: 0 2px 6px rgba(26, 34, 48, 0.12); }
+.pp-tape { position: absolute; left: 50%; top: -8px; width: 40px; height: 14px; margin-left: -20px; background: rgba(240, 217, 184, 0.88); transform: rotate(-4deg); z-index: 1; }
+.pp-polaroid-cap { font-family: var(--font-display); font-size: 13px; color: #3a4556; line-height: 1; }
+.pp-photo { width: 70px; height: 84px; background: color-mix(in srgb, var(--tier, #edf1f5) 18%, #ffffff); overflow: hidden; display: flex; justify-content: center; align-items: flex-start; }
+.pp-photo .v-fig { width: 60px; height: auto; margin-top: 8px; flex: none; image-rendering: pixelated; }
 .pp-id-nm { font-family: var(--font-display); font-size: 22px; font-weight: 400; line-height: 1.2; margin-bottom: 6px; }
 .pp-id-dl { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 2px 8px; margin: 0; font-size: 12.5px; }
 .pp-id-dl dt { color: var(--ink-light); font-size: 12px; }
@@ -135,9 +158,19 @@
 .pp-dot.on { background: var(--ink); }
 
 /* ───── 상태 ───── */
-.pp-stat { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) 2.2em; gap: 10px; align-items: center; font-size: 13.5px; padding-block: 4px; }
+.pp-stat { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) 2.2em 3.6em; gap: 10px; align-items: center; font-size: 13.5px; padding-block: 6px; }
+.pp-stat-i { flex: none; }
+/* 막대 끝에 상태 아이콘 동그라미 (상태창 2차 9번) */
+.pp-track { position: relative; height: 26px; display: flex; align-items: center; margin-inline: 13px; }
+.pp-track .pp-bar { position: absolute; left: -13px; right: -13px; }
+.pp-knob { position: absolute; top: 0; width: 26px; height: 26px; margin-left: -13px; box-sizing: border-box; border-radius: 50%; border: 2px solid; background: var(--panel); display: flex; align-items: center; justify-content: center; transition: left 0.5s ease; }
+.pp-dv { justify-self: end; font-size: 11px; line-height: 1; padding: 3px 6px; border-radius: var(--radius-pill); background: var(--panel-2); color: var(--ink-light); white-space: nowrap; }
+.pp-dv:empty { display: none; }
+.pp-dv.up { color: var(--green); background: color-mix(in srgb, var(--green) 12%, transparent); }
+.pp-dv.dn { color: var(--red); background: var(--red-soft); }
+
 .pp-stat > span:first-child { color: var(--ink-sub); }
-.pp-bar { position: relative; height: 10px; background: var(--line); border-radius: var(--radius-pill); overflow: hidden; }
+.pp-bar { position: relative; height: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-pill); overflow: hidden; }
 .pp-bar i { position: absolute; inset: 0 auto 0 0; transition: width 0.5s ease; }
 .pp-v { text-align: right; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
 .pp-help { margin-top: 8px; font-size: 13px; color: var(--ink-sub); }
@@ -299,7 +332,7 @@
 .pp-gridkey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--line); }
 
 /* 인생 지도 말풍선 (원작 #tip) */
-.pp-maptip { position: fixed; z-index: 50; width: 250px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); color: var(--ink-sub); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); font-size: 12.5px; line-height: 1.55; pointer-events: none; }
+.pp-maptip { position: fixed; z-index: 50; width: 280px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); color: var(--ink-sub); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); font-size: 12.5px; line-height: 1.55; pointer-events: none; }
 .pp-maptip b { color: var(--ink); }
 
 /* ───── 생존 곡선 ───── */

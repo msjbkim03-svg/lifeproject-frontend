@@ -747,6 +747,8 @@
 .dec-name { display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px; font-size: 13px; }
 .dec-name input { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line, #c9d1dc); background: var(--panel, #fff); color: inherit; font: inherit; }
 /* 유언장 남길 말 (EventChoiceModal ENG_WILL) */
-.dec-will { align-items: flex-start; }
-.dec-will span { padding-top: 8px; white-space: nowrap; }
+.dec-will { align-items: flex-start; flex-wrap: wrap; } /* 안내 글은 다음 줄로 (같은 줄에 있으면 글이 칸을 다 차지해 입력칸이 손톱만 해졌음) */
+.dec-will textarea { flex: 1 1 220px; min-height: 64px; }
+.dec-will .dec-will-h { flex: 0 0 100%; padding-left: 64px; box-sizing: border-box; }
+.dec-will span { padding-top: 8px; white-space: nowrap; width: 56px; flex: none; }
 .dec-name textarea { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line, #c9d1dc); background: var(--panel, #fff); color: inherit; font: inherit; resize: vertical; }
