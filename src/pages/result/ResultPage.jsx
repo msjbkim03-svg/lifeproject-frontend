@@ -29,6 +29,17 @@ function eduText(r) {
 // 금액 (엔진 소득 단위: 달러)
 const money = (v) => (v == null ? '-' : '$' + Math.round(v).toLocaleString('ko-KR'));
 
+// 결혼: 지금 상태 + 이력 (이혼·사별하면 마지막엔 미혼이라 '안 함'으로 나오던 것)
+function marriedText(r) {
+  const w = r.weddingCount || 0;
+  const d = r.divorceCount || 0;
+  const x = r.widowCount || 0;
+  if (r.marriedYn === 'Y') return w > 1 ? `했음 (재혼, ${w}번)` : '했음';
+  if (w === 0) return '안 함';
+  const end = d > 0 && x > 0 ? '이혼·사별' : x > 0 ? '사별' : '이혼';
+  return w > 1 ? `했음 → ${end} (${w}번 결혼)` : `했음 → ${end}`;
+}
+
 function ResultPage() {
   const { lifeId } = useParams();
   const navigate = useNavigate();
@@ -97,7 +108,7 @@ function ResultPage() {
           <InfoBox label="학력" value={eduText(r)} />
           <InfoBox label="마지막 직업" value={r.jobName || '없음'} />
           <InfoBox label="평균 소득 (연)" value={money(r.avgIncome)} />
-          <InfoBox label="결혼" value={r.marriedYn === 'Y' ? '했음' : '안 함'} />
+          <InfoBox label="결혼" value={marriedText(r)} />
           <InfoBox label="자녀" value={`${r.childCount}명`} />
         </div>
       </Panel>

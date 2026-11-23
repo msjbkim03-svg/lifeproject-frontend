@@ -78,6 +78,10 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   // 반려동물 이름 (원작 petNameAsk): 엔진 반려동물 창에만 이름 칸, 비우면 서버가 그 나라 흔한 이름으로
   const [petName, setPetName] = useState('');
   const nameRef = useRef('');
+  // 반려동물을 들이는 선택지를 누르면 이름 짓기 단계 (원작처럼 고른 뒤에 이름을 물음) - 그 선택지 번호
+  const [naming, setNaming] = useState(null);
+  // 유언장 (ENG_WILL): 유언장 끝에 남길 말 (선택, 비우면 없음)
+  const [willWords, setWillWords] = useState('');
   const poolRef = useRef([]);
   useEffect(() => { chooseRef.current = onChoose; }, [onChoose]);
   useEffect(() => { poolRef.current = fateCandidates(event?.choices, costs); }, [event, costs]);
@@ -115,6 +119,9 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   if (!open || !event) return null;
   const choices = event.choices || [];
   const askName = /^ENG_PET_(ADOPT|BEG)$/.test(event.eventId || '');
+  const askWill = event.eventId === 'ENG_WILL';
+  // 이름을 물을 선택지: 들인다 · 조른다 (지금은 아니다 · 참는다는 이름이 필요 없음)
+  const needsName = (c) => askName && /들인다|조른다|키운다/.test(c.choiceText || '');
 
   const costOf = (c) => (costs || []).find((k) => k.choiceId === c.choiceId);
 
@@ -127,7 +134,11 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
       setArmed(c.choiceId);
       return;
     }
-    if (onChoose) onChoose(c.choiceId, askName ? petName : undefined);
+    if (needsName(c)) {
+      setNaming(c.choiceId);
+      return;
+    }
+    if (onChoose) onChoose(c.choiceId, askWill && !/법에 맡긴다/.test(c.choiceText || '') ? willWords : undefined);
   };
 
   const meta = age != null ? `${age}세${year ? ' · ' + year + '년' : ''}` : undefined;
@@ -135,6 +146,35 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   let hint = '누르면 바로 결정되고, 되돌릴 수 없어요. 숫자 키로도 고를 수 있어요.';
   if (fate) hint = '자동으로 골랐어요. 곧 결정돼요.';
   else if (auto && stopped) hint = '이번 선택은 자동 결정을 멈췄어요. 직접 골라 주세요.';
+
+  // 이름 짓기 단계: 고른 동물에게 이름을 지어 주고 결정
+  if (naming != null) {
+    const picked = choices.find((c) => c.choiceId === naming);
+    const what = /^(.*\S)\s*\(([^()]+)\)$/.exec(picked?.choiceText || '')?.[1] || picked?.choiceText || '';
+    const nm = petName.trim();
+    return (
+      <DecisionModal open label="새 가족" meta={meta} title="이름을 지어 주세요"
+        text={`${what}. 어떤 이름으로 부를까요? 비워 두면 그 나라에서 흔한 이름으로 지어요.`}
+        options={[
+          { key: 'ok', title: nm ? `'${nm}'(으)로 정하기` : '흔한 이름으로 정하기' },
+          { key: 'back', title: '다시 고르기' },
+        ]}
+        onPick={(o) => {
+          if (o.key === 'back') { setNaming(null); return; }
+          if (onChoose) onChoose(naming, nm || undefined);
+        }}
+        busy={busy}
+        hint="이름은 인생 기록과 가족 칸에 남아요."
+        footer={(
+          <label className="dec-name">
+            <span>이름</span>
+            <input type="text" maxLength={12} value={petName} autoFocus placeholder="예: 초코, 보리"
+              onChange={(e) => { setPetName(e.target.value); nameRef.current = e.target.value; }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !busy && onChoose) onChoose(naming, petName.trim() || undefined); }} />
+          </label>
+        )} />
+    );
+  }
 
   return (
     <DecisionModal open label={event.eventType === 'SMALL' ? '작은 선택' : '중대 결정'} meta={meta}
@@ -167,11 +207,11 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
       auto={autoId != null ? { key: autoId, sec: autoSec, onStop: () => setStopped(true), onOff: onAutoChange ? () => onAutoChange(false) : undefined } : undefined}
       footer={(
         <div className="dec-fate">
-          {askName && (
-            <label className="dec-name">
-              <span>이름</span>
-              <input type="text" maxLength={12} value={petName} placeholder="비워 두면 흔한 이름으로 지어요"
-                onChange={(e) => { setPetName(e.target.value); nameRef.current = e.target.value; }} />
+          {askWill && (
+            <label className="dec-name dec-will">
+              <span>남길 말</span>
+              <textarea maxLength={100} rows={2} value={willWords} placeholder="유언장 끝에 적을 말 (선택 · 100자까지)"
+                onChange={(e) => setWillWords(e.target.value)} />
             </label>
           )}
           {autoId == null && <button type="button" className="dec-fate-b" disabled={locked} onClick={leaveToFate}>자동으로 선택하기</button>}

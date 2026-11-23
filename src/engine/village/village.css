@@ -88,36 +88,34 @@
 .v-mini i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
 .v-mini i.on { width: 16px; border-radius: 3px; background: var(--primary); }
 
-/* 사람 (나, 다른 접속자) */
+/* 사람 (나, 가족, 다른 접속자) - 그림은 Figure.jsx (.v-fig, 높이 37px) */
 .v-person {
   position: absolute; width: 0; height: 0;
   display: flex; flex-direction: column; align-items: center;
   z-index: 5;
 }
-.v-person > * { flex: none; }
-.v-person .v-head, .v-person .v-body { transform: translateY(-36px); }
-.v-head { width: 15px; height: 15px; border-radius: 50%; background: #f2c9a0; margin-bottom: -1px; position: relative; z-index: 1; }
-.v-body { width: 17px; height: 17px; border-radius: 7px 7px 3px 3px; }
-.v-person.me.left .v-head, .v-person.me.left .v-body { transform: translateY(-36px) scaleX(-1); }
-.v-person.me .v-head { box-shadow: 0 0 0 2px var(--primary-light); }
-.v-person.me.walking .v-body { animation: v-step 0.32s steps(2) infinite; }
-@keyframes v-step { 50% { margin-top: -2px; } }
+.v-person > * { flex: none; } /* 높이 0 상자 안에서 그림·이름표가 쪼그라들지 않게 (빠지면 내 그림이 안 보임) */
+/* --s: 몸 크기 (아이·아기는 작게). 발밑 기준으로 먼저 줄이고 위로 올려서, 크기가 달라도 발이 땅에 닿음 */
+.v-person { --s: 1; }
+.v-person.kid { --s: 0.82; }
+.v-person.baby { --s: 0.7; }
+.v-person .v-fig { display: block; transform: translateY(-41px) scale(var(--s)); transform-origin: 50% 100%; }
+.v-person.me.left .v-fig { transform: translateY(-41px) scale(calc(var(--s) * -1), var(--s)); }
+.v-person.me .v-fig { filter: drop-shadow(0 0 2px var(--primary-light)); }
+.v-person.me.walking .v-fig { animation: v-step 0.32s steps(2) infinite; }
+@keyframes v-step { 50% { translate: 0 -2px; } }
 .me { z-index: 6; }
 
-/* 우리 집 가족: 나보다 살짝 흐리게, 집 앞을 천천히 왔다 갔다 */
+/* 우리 집 가족: 집 앞을 천천히 왔다 갔다 */
 .v-person.fam { z-index: 4; }
 .v-person.fam .v-wander {
   display: flex; flex-direction: column; align-items: center;
-  transform: translateY(-36px); transform-origin: 50% 100%;
+  transform: translateY(-41px) scale(var(--s)); transform-origin: 50% 100%;
   animation: v-wander 11s ease-in-out infinite;
 }
-.v-person.fam .v-head, .v-person.fam .v-body { transform: none; }
+.v-person.fam .v-fig { transform: none; }
 .v-person.fam .v-name { font-size: 10px; opacity: 0.85; }
-.v-person.fam.elder .v-head { box-shadow: inset 0 4px 0 #c9c9c9; }
-.v-person.fam.adult .v-head { box-shadow: inset 0 4px 0 #3a2c26; }
-.v-person.fam.kid .v-wander { scale: 0.78; }
-.v-person.fam.kid .v-head { box-shadow: inset 0 4px 0 #3a2c26; }
-.v-person.fam.baby .v-wander { scale: 0.6; animation-name: v-bob; }
+.v-person.fam.baby .v-wander { animation-name: v-bob; }
 @keyframes v-wander {
   0%, 12% { translate: 0 0; }
   40%, 52% { translate: 34px 0; }
@@ -128,14 +126,12 @@
 @media (prefers-reduced-motion: reduce) { .v-person.fam .v-wander { animation: none; } }
 
 /* 다른 접속자: 흐린 실루엣 */
-.v-person.other .v-head { background: rgba(120, 90, 100, 0.35); }
-.v-person.other .v-body { background: rgba(120, 90, 100, 0.25); }
-.village.dark .v-person.other .v-head { background: rgba(201, 210, 255, 0.35); }
-.village.dark .v-person.other .v-body { background: rgba(201, 210, 255, 0.25); }
+.v-person.other .v-fig { opacity: 0.4; filter: grayscale(1); }
+.village.dark .v-person.other .v-fig { filter: grayscale(1) brightness(1.8); }
 
 /* 이름표 */
 .v-name {
-  transform: translateY(-32px);
+  transform: translateY(-39px);
   white-space: nowrap; font-size: 11px; padding: 0 7px;
   color: var(--ink-sub);
   background: var(--chip-bg);
