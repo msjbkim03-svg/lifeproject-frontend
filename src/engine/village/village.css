@@ -104,6 +104,10 @@
 .v-person.me .v-fig { filter: drop-shadow(0 0 2px var(--primary-light)); }
 .v-person.me.walking .v-fig { animation: v-step 0.32s steps(2) infinite; }
 @keyframes v-step { 50% { translate: 0 -2px; } }
+/* 걸을 때 팔다리: fa(왼팔+오른다리)와 fb(오른팔+왼다리)가 번갈아 1칸씩 올라감 */
+.v-person.me.walking .v-fig .fa { animation: v-limb 0.32s steps(1) infinite; }
+.v-person.me.walking .v-fig .fb { animation: v-limb 0.32s steps(1) -0.16s infinite; }
+@keyframes v-limb { 0% { translate: 0 0; } 50% { translate: 0 -1px; } }
 .me { z-index: 6; }
 
 /* 우리 집 가족: 집 앞을 천천히 왔다 갔다 */
