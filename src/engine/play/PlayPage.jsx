@@ -25,7 +25,10 @@ import DecisionModal from '../../common/ui/DecisionModal';
 import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
 import Spoon from '../../common/ui/Spoon.jsx';
+import { SPOONS } from '../../common/ui/spoon';
 import Village from '../village/Village';
+import Figure from '../village/Figure';
+import { lookOf } from '../village/costumeData';
 import { placeOf, THEMES, COUNTRIES, houseOf, vehicleOf, homeFamily, petOf } from '../village/villageData';
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
@@ -47,7 +50,7 @@ const fetchAtOf = (ys) => Math.min(0.3, Math.max(0, 1 - 4 / ys));
 // '1년 ≈ n초' 표시 (10초 미만은 소수 한 자리)
 const secText = (v) => (v >= 10 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1));
 const RESULT_DELAY = 3500;                   // 죽은 뒤 결과 화면까지
-const MAX_FEED = 400;                        // 화면에 남겨 둘 기록 줄 수
+const MAX_FEED = 1200;                       // 화면에 남겨 둘 기록 줄 수 (인생 지도 말풍선이 옛 해 이야기도 찾게, 100년 × 한 해 5~8줄)
 
 // 집중 코드 → 화면 문구 (EngineService.applyFocus·knowEff 기준)
 const FOCUS = {
@@ -398,6 +401,28 @@ function PlayPage() {
   const yearSec = ff ? FF_SEC : yearSecOf(life?.lifeExpectancy) / speed;
 
   // 결정 창이 뜨면 빨리 감기 끝 (waiting 이 바뀐 렌더에서 바로 끔 - React 권장 방식, effect 로 한 번 더 그리지 않음)
+  // 상태창: 작년 값 기억 (나이마다 마지막으로 본 4가지 수치) → 막대 위 '작년' 눈금과 ▲▼ 변화량
+  //   새로고침 직후엔 작년 값이 없어서 눈금·변화량을 안 그림. 다른 인생이 시작되면 비움
+  const [statHist, setStatHist] = useState({ lifeId: null, rows: {} });
+  if (life) {
+    const cur = STATS.map(([k]) => Math.max(0, Math.min(100, Math.round(life[k] || 0)))).join(',');
+    const base = statHist.lifeId === life.lifeId ? statHist.rows : {};
+    if (statHist.lifeId !== life.lifeId || base[life.currentAge] !== cur) setStatHist({ lifeId: life.lifeId, rows: { ...base, [life.currentAge]: cur } });
+  }
+  const lastYear = life ? statHist.rows[life.currentAge - 1]?.split(',').map(Number) : null;
+
+  // 신원 기록 등급: 18세까지 집안 수저, 19세부터 내 소득(나라 안 순위) 5구간 색. 은퇴하면 마지막 등급을 흐리게
+  const [lastTier, setLastTier] = useState({ lifeId: null, t: null });
+  const tier = life ? tierOf(life, lastTier.lifeId === life.lifeId ? lastTier.t : null) : null;
+  if (life && tier.kind === 'income' && (lastTier.lifeId !== life.lifeId || lastTier.t?.key !== tier.key || lastTier.t?.title !== tier.title)) setLastTier({ lifeId: life.lifeId, t: tier });
+  // 등급이 바뀐 해: 띠가 한 번 반짝이고 '▲ 상위 12%' 배지 (색 구간이 바뀔 때만)가 잠깐 뜸 (처음 불러올 때는 안 뜸)
+  const [tierSeen, setTierSeen] = useState({ lifeId: null, key: null, n: 0, pop: null });
+  if (life && (tierSeen.lifeId !== life.lifeId || tierSeen.key !== tier.key)) {
+    const same = tierSeen.lifeId === life.lifeId && tierSeen.key != null;
+    const pop = same && tier.n && tierSeen.n && tier.n !== tierSeen.n ? { k: (tierSeen.pop?.k || 0) + 1, dir: tier.n > tierSeen.n ? 'up' : 'dn' } : tierSeen.pop;
+    setTierSeen({ lifeId: life.lifeId, key: tier.key, n: tier.n || 0, pop });
+  }
+
   const [prevWaiting, setPrevWaiting] = useState(waiting);
   if (prevWaiting !== waiting) {
     setPrevWaiting(waiting);
@@ -734,11 +759,14 @@ function PlayPage() {
       <div className="pp-wrap pp-life">
         {/* ───── 왼쪽: 나 ───── */}
         <div className="pp-col">
-          <section className="pp-panel pp-id">
+          <section className={'pp-panel pp-id' + (tier.dim ? ' dim' : '')}
+            style={{ '--tier': tier.color, '--tier-edge': tier.edge }}>
             <Guilloche />
-            <div className="pp-id-top"><span>신원 기록 · {life.birthCountry}</span><span>{life.birthYear}</span></div>
+            {/* 진한 등급색 띠 + 오른쪽 흰 알약 칩(안에 등급색 점). 등급이 바뀐 해엔 한 번 반짝임 */}
+            <div className="pp-id-top" key={tier.key}><span>신원 기록 · {life.birthCountry}</span><span className="pp-id-chip"><i className="pp-id-dot" aria-hidden="true" />{tier.title}</span></div>
+            {tierSeen.pop && <span key={tierSeen.pop.k} className={'pp-tier-pop ' + tierSeen.pop.dir} role="status">{tierSeen.pop.dir === 'up' ? '▲' : '▼'} {tier.title}</span>}
             <div className="pp-id-in">
-              <Portrait gender={life.gender} age={life.currentAge} />
+              <Portrait gender={life.gender} age={life.currentAge} costume={life.costume || wear} />
               <div>
                 <div className="pp-id-nm">{life.name}</div>
                 <dl className="pp-id-dl">
@@ -756,6 +784,7 @@ function PlayPage() {
                   </dd>
                   <dt>학력</dt><dd>{schoolText(life)}</dd>
                   <dt>직업</dt><dd>{jobText(life)}</dd>
+                  {tier.kind !== 'spoon' && <><dt>소득</dt><dd title="내 소득(연봉)을 사는 나라 사람들과 견준 위치예요">{tier.title}</dd></>}
                 </dl>
               </div>
             </div>
@@ -763,15 +792,21 @@ function PlayPage() {
 
           <section className="pp-panel">
             <h3 className="pp-h"><span>상태</span><span className="pp-lbl">0–100</span></h3>
-            {STATS.map(([key, label, color]) => {
+            {STATS.map(([key, label, color], si) => {
               const v = Math.max(0, Math.min(100, Math.round(life[key] || 0)));
+              const before = lastYear ? lastYear[si] : null;
+              const diff = before == null ? null : v - before;
               return (
                 <div key={key} className="pp-stat">
                   <span>{label}</span>
-                  <span className="pp-bar" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={v}>
-                    <i style={{ width: v + '%', background: color }} />
+                  <span className="pp-track" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={v}>
+                    <span className="pp-bar"><i style={{ width: v + '%', background: color }} /></span>
+                    <span className="pp-knob" style={{ left: v + '%', borderColor: color }}><StatIcon name={key} color={color} /></span>
                   </span>
                   <span className="pp-v">{v}</span>
+                  <span className={'pp-dv' + (diff > 0 ? ' up' : diff < 0 ? ' dn' : '')}>
+                    {diff == null ? '' : diff > 0 ? `▲${diff}` : diff < 0 ? `▼${-diff}` : '그대로'}
+                  </span>
                 </div>
               );
             })}
@@ -945,7 +980,7 @@ function PlayPage() {
                 const lvl = y == null ? 2 : y.h >= 70 ? 3 : y.h >= 50 ? 2 : 1;
                 const show = (e) => {
                   const r = e.currentTarget.getBoundingClientRect();
-                  setMapTip({ age: i, x: Math.min(window.innerWidth - 260, r.left), y: r.bottom + 6 });
+                  setMapTip({ age: i, x: Math.min(window.innerWidth - 290, r.left), y: r.bottom + 6 });
                 };
                 return (
                   <button key={i} type="button"
@@ -1191,21 +1226,30 @@ function TraitRows({ data, age }) {
   );
 }
 
-// 인생 지도 말풍선 (원작과 같은 내용): 나이·연도 / 행복·건강·순자산(15세부터) / 그해 돈 내역 3개 / 그해 큰 일 한 줄
+// 인생 지도 말풍선 (원작과 같은 내용): 나이·연도 / 행복·건강·순자산(15세부터) / 그해 돈 내역 3개 / 그해 이야기 두 줄
+const TIP_RANK = ['death', 'alert', 'bad', 'ms', 'loss', 'big', 'gain', 'hist', 'woe', 'ms2', 'dec', 'warm', 'daily'];
 function MapTipText({ age, life, y, feed, le }) {
   const year = life.birthYear + age;
   if (!y) {
     return <><b>{age}세 ({year}년)</b>{age === Math.floor(le) ? ' · 기대수명' : ''}</>;
   }
   const k = life.krwPerUsd;
-  const big = feed.find((e) => e.age === age && (e.big || e.kind === 'death'));
+  // 그해 이야기 두 줄 (원작은 큰 일 한 줄 → 우리는 기록 색 순서로 중요한 것 2개, 없으면 일상 한 줄이라도)
+  //   11/23 동현님: 말풍선에 상태 지수만 나와 허전함
+  const rank = (e) => TIP_RANK.indexOf(feedKind(e));
+  const story = feed
+    .filter((e) => e.age === age && e.text && e.kind !== 'ledger' && e.kind !== 'note')
+    .map((e) => ({ e, r: rank(e) }))
+    .sort((a, b) => (a.r < 0 ? 99 : a.r) - (b.r < 0 ? 99 : b.r))
+    .slice(0, 2)
+    .map((x) => x.e.text);
   const flow = (y.flow || []).slice(0, 3);
   return (
     <>
       <b>{age}세 · {year}년</b><br />
       행복 {y.h} · 건강 {y.hl}{age >= 15 && y.nw != null ? ` · 순자산 ${won(y.nw, k)}` : ''}
       {flow.length > 0 && (<><br />{flow.map((m) => `${m.label} ${won(m.amount, k, true)}`).join(' · ')}</>)}
-      {big && (<><br />{big.text.slice(0, 90)}</>)}
+      {story.map((t, i) => (<span key={i}><br />· {t.length > 90 ? t.slice(0, 90) + '…' : t}</span>))}
     </>
   );
 }
@@ -1322,8 +1366,34 @@ const HOBBY_NAME = {
 };
 const SVC_KIND = { A: '육군', N: '해군', F: '공군', S: '보충역' };
 
+// 자녀가 많으면 (4명부터) 한 줄로 모음: '6명 · 아들 3 · 딸 3' + 아랫줄 '이름 나이 · …' (11/23 동현님: 줄줄이 나와 징그러움)
+//   life.family 자체는 그대로 둠 (마을 그림 homeFamily 가 아들·딸 줄을 씀)
+const KIDS_FOLD = 4;
+const callOf = (full) => {
+  if (!full) return '';
+  if (full.includes(' ')) return full.split(' ')[0];
+  return full.length >= 3 ? full.slice(1) : full; // 붙여 쓰는 한·중 이름은 성을 뺌
+};
+const foldKids = (fam) => {
+  const kids = fam.filter((m) => m.role === '아들' || m.role === '딸');
+  if (kids.length < KIDS_FOLD) return fam;
+  const alive = kids.filter((m) => m.alive);
+  const sons = kids.filter((m) => m.role === '아들').length;
+  const gone = kids.length - alive.length;
+  const row = {
+    role: '자녀',
+    alive: true,
+    info: `${kids.length}명 · 아들 ${sons} · 딸 ${kids.length - sons}` + (gone ? ` · 먼저 떠난 아이 ${gone}명` : ''),
+    job: alive.map((m) => `${callOf(m.name)}${m.age != null ? ' ' + m.age + '세' : ''}`).join(' · '),
+  };
+  const at = fam.indexOf(kids[0]);
+  const rest = fam.filter((m) => m.role !== '아들' && m.role !== '딸');
+  rest.splice(Math.min(at, rest.length), 0, row);
+  return rest;
+};
+
 function FamilyRows({ life, countryName, stageText }) {
-  const fam = life.family;
+  const fam = life.family ? foldKids(life.family) : life.family;
   const owned = life.currentAge >= 6 ? ownNames(life) : [];
   // 반려동물 (엔진 OWNS 의 PET-종류-이름-들인나이-수명)
   const petTok = (life.owns || '').split(',').map((x) => x.trim().split('-')).find((p) => p.length === 5 && p[0] === 'PET');
@@ -1362,7 +1432,7 @@ function FamilyRows({ life, countryName, stageText }) {
       {hob && <div className="row"><span>취미</span><span>{hob}</span></div>}
       {svcText && <div className="row"><span>병역</span><span>{svcText}</span></div>}
       {owned.length > 0 && <div className="row"><span>내 물건</span><span>{owned.join(', ')}</span></div>}
-      <rp></rp>      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
+      <div className="row"><span>사는 곳</span><span>{countryName}{life.birthCountry !== life.currentCountry ? ' (이민)' : ''}</span></div>
       <div className="row"><span>지금 시기</span><span>{stageText || '아기'}</span></div>
     </div>
   );
@@ -1380,20 +1450,52 @@ function Guilloche() {
 }
 
 // 신원 기록 사진 자리: 픽셀 얼굴 (나이대에 따라 머리색, 성별에 따라 머리 길이)
-function Portrait({ gender, age }) {
-  const hair = age >= 60 ? '#b9b9b9' : age >= 45 ? '#5a4a42' : '#2b2420';
-  const shirt = gender === 'F' ? 'var(--primary)' : 'var(--blue)';
+// 신원 기록 등급 (카드 테두리·띠 색): 수저와 같은 5단계 색
+//   18세까지: 집안 형편(wealthClass) 수저 / 19세부터: '상위 N%' 글자, 색은 나라 안 순위 20%씩 → 흙·동·은·금·다이아 색
+//   소득이 없으면 회색. 은퇴했으면 마지막으로 벌던 등급을 흐리게 (새로고침하면 기억이 없어 회색)
+const NO_INCOME = { color: '#b8c0cc', edge: '#7d8796' };
+function tierOf(life, last) {
+  const sp = (n) => SPOONS[Math.max(1, Math.min(5, n))];
+  if (life.currentAge <= 18) {
+    const n = Math.round(life.wealthClass || 3);
+    const s = sp(n);
+    return { kind: 'spoon', key: 's' + n, n, title: s.name, sub: '', color: s.color, edge: s.edge };
+  }
+  if (life.income > 0 && life.incomeRankCountry != null) {
+    const n = Math.max(1, Math.min(5, Math.floor(life.incomeRankCountry * 5) + 1));
+    const s = sp(n);
+    const top = Math.max(1, Math.round((1 - life.incomeRankCountry) * 100)); // 늘 '상위 N%'로 (하위 쪽도 상위 90% 처럼)
+    return { kind: 'income', key: 'i' + n, n, title: `상위 ${top}%`, sub: '', color: s.color, edge: s.edge };
+  }
+  if (life.jobStatus === 'RETIRED' && last) {
+    return { ...last, kind: 'retired', key: 'r' + last.n, title: '은퇴 전 ' + last.title, dim: true };
+  }
+  return { kind: 'none', key: 'none', n: 0, title: '소득 없음', sub: '', ...NO_INCOME };
+}
+
+// 상태창 아이콘 (선 그림, 상태 색)
+const STAT_ICON = {
+  health: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />,
+  happiness: <><circle cx="12" cy="12" r="8" /><path d="M9 14c1.5 1.6 4.5 1.6 6 0" /></>,
+  knowledge: <><path d="M4 5c3-1 5-1 8 1 3-2 5-2 8-1v13c-3-1-5-1-8 1-3-2-5-2-8-1z" /><path d="M12 6v13" /></>,
+  relation: <><circle cx="9" cy="9" r="3" /><path d="M3 19c0-3 3-5 6-5s6 2 6 5" /><circle cx="17" cy="9" r="2.5" /><path d="M17 14c2.5 0 4 1.6 4 4" /></>,
+};
+function StatIcon({ name, color }) {
   return (
-    <svg className="pp-photo" viewBox="0 0 16 20" shapeRendering="crispEdges" aria-hidden="true">
-      <rect width="16" height="20" style={{ fill: 'var(--panel-2)' }} />
-      <rect x="4" y="4" width="8" height="8" fill="#f1c9a2" />
-      <rect x="3" y="3" width="10" height="3" fill={hair} />
-      {gender === 'F' && <><rect x="3" y="6" width="2" height="7" fill={hair} /><rect x="11" y="6" width="2" height="7" fill={hair} /></>}
-      <rect x="6" y="8" width="1" height="1" fill="#13212A" />
-      <rect x="9" y="8" width="1" height="1" fill="#13212A" />
-      <rect x="7" y="10" width="2" height="1" fill="#c47a6a" />
-      <rect x="3" y="13" width="10" height="7" style={{ fill: shirt }} />
+    <svg className="pp-stat-i" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {STAT_ICON[name]}
     </svg>
+  );
+}
+
+// 신원 기록 사진(테이프로 붙인 폴라로이드): 마을 속 내 캐릭터(Figure)를 그대로 써서 옷·머리·모자까지 똑같이 (가슴 위만 보이게 자름)
+function Portrait({ gender, age, costume }) {
+  return (
+    <div className="pp-polaroid" aria-hidden="true">
+      <span className="pp-tape" />
+      <div className="pp-photo"><Figure look={lookOf({ gender, age, costume })} /></div>
+      <span className="pp-polaroid-cap">{age}세</span>
+    </div>
   );
 }
 
