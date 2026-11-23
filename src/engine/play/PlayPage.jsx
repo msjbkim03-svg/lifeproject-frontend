@@ -829,7 +829,7 @@ function PlayPage() {
             <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
               place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)}
               house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume || wear}
-              industry={life.jobIndustry} pet={petOf(life)} />
+              industry={life.jobIndustry} pet={petOf(life)} happiness={life.happiness} />
             <p className="pp-scenecap"><Flag cc={life.currentCountry} />{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
 
