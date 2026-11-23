@@ -1,0 +1,64 @@
+/* 모자: 머리(15px 동그라미) 안에 겹쳐 그림. i = 윗부분, b = 챙·장식 */
+.hat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+.hat i,
+.hat b {
+  position: absolute;
+  display: block;
+  background: var(--hat);
+}
+
+/* 야구모자: 둥근 윗부분 + 앞으로 나온 챙 */
+.cap i { left: -1px; top: -2px; width: 17px; height: 8px; border-radius: 9px 9px 1px 1px; }
+.cap b { left: 11px; top: 4px; width: 8px; height: 3px; border-radius: 0 3px 3px 0; }
+
+/* 비니: 머리를 덮는 털모자 + 방울 */
+.beanie i { left: -1px; top: -3px; width: 17px; height: 9px; border-radius: 9px 9px 2px 2px; }
+.beanie b { left: 5px; top: -7px; width: 5px; height: 5px; border-radius: 50%; }
+
+/* 밀짚모자: 넓은 챙 + 낮은 윗부분 */
+.straw i { left: 2px; top: -3px; width: 11px; height: 7px; border-radius: 5px 5px 0 0; }
+.straw b { left: -5px; top: 3px; width: 25px; height: 3px; border-radius: 2px; }
+
+/* 신사 모자: 높은 원통 + 챙 */
+.tophat i { left: 2px; top: -11px; width: 11px; height: 12px; border-radius: 2px 2px 0 0; }
+.tophat b { left: -3px; top: 0; width: 21px; height: 3px; border-radius: 2px; }
+
+/* 왕관: 뾰족뾰족 */
+.crown i { left: 1px; top: -7px; width: 13px; height: 8px; clip-path: polygon(0 100%, 0 20%, 25% 60%, 50% 0, 75% 60%, 100% 20%, 100% 100%); }
+.crown b { display: none; }
+
+/* 리본 머리핀 */
+.ribbon i { left: 8px; top: -3px; width: 10px; height: 6px; clip-path: polygon(0 0, 50% 40%, 100% 0, 100% 100%, 50% 60%, 0 100%); }
+.ribbon b { left: 12px; top: -1px; width: 2px; height: 2px; border-radius: 50%; filter: brightness(0.8); }
+
+/* 가게 미리보기용 캐릭터 (마을과 같은 모양을 size 배로 키움) */
+.figure {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: 17px;
+  height: 33px;
+  zoom: var(--s);
+  margin-top: 6px;
+}
+.head {
+  position: relative;
+  z-index: 1;
+  width: 15px;
+  height: 15px;
+  margin-bottom: -1px;
+  border-radius: 50%;
+  background: #f2c9a0;
+}
+.body {
+  width: 17px;
+  height: 17px;
+  border-radius: 7px 7px 3px 3px;
+}
