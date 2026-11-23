@@ -30,6 +30,7 @@ import { placeOf, THEMES, COUNTRIES, houseOf, vehicleOf, homeFamily } from '../v
 import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
+import CostumeSheet from '../../pages/costume/CostumeSheet';
 import { won, ppp, PPP_TIP, rankStr, splitMoney, feedKind, belongings, commute, traitLine, ro, iga, ownNames } from './lifeText';
 import { TRAIT_VIEW } from '../../utils/traits';
 import './play.css';
@@ -213,6 +214,8 @@ function PlayPage() {
   const [ctyView, setCtyView] = useState('cur');      // 나라 패널: cur 사는 나라 / born 태어난 나라 (이민했을 때)
   const [cty, setCty] = useState(null);               // 나라 패널 통계 (GET /api/engine/country)
   const [shopOpen, setShopOpen] = useState(false);    // 돈 쓰기 · 투자 창 (여는 동안 시간 멈춤)
+  const [costumeOpen, setCostumeOpen] = useState(false); // C21 옷 가게 창 (여는 동안 시간 멈춤)
+  const [wear, setWear] = useState({});                 // C21 입은 착장 { hair, top, hat } (해마다 life 가 바뀌어도 유지)
   // 선택 이벤트를 운에 맡기기 (원작 '자동으로 맡기기', 이 브라우저에 기억)
   const [autoChoice, setAutoChoiceState] = useState(() => {
     try { return localStorage.getItem('autoChoice') === 'Y'; } catch { return false; }
@@ -432,7 +435,7 @@ function PlayPage() {
   // ② 한 해 흐르기: 막대가 차는 동안 미리 받은 그해 일을 하나씩 보여 주고, 다 차면 나이 +1
   //    매 프레임 막대는 DOM 으로 바로 칠하고(React 다시 그리기 없음), 해가 바뀔 때만 화면을 새로 그려서 버벅임 없음
   //    다음 해는 막대가 끝나기 조금 전에 미리 요청해 두어 해 사이에 멈춤이 없게 함
-  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen;
+  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen && !costumeOpen;
   // 화면을 다시 그린 뒤 진행 막대를 지금 위치로 맞춤 (막대가 새로 만들어져도 0으로 보이지 않게)
   useLayoutEffect(() => { if (!ended) setProg(yr.current.t); });
   const loopRef = useRef({ yearSec, guestToken, pushLines, remember, reload });
@@ -538,6 +541,20 @@ function PlayPage() {
     if (dto.message) pushLines([{ age: prev.currentAge ?? dto.logAge, kind: 'dec', text: dto.message, ...(hasFx ? { fx } : {}) }]);
   }, [pushLines]);
   const closeShop = useCallback(() => setShopOpen(false), []);
+  // C21 옷 가게: 인생을 불러오면 입은 착장을 받아 두고, 사거나 갈아입으면 돈·착장만 바꿈
+  const wearLifeId = life?.lifeId;
+  useEffect(() => {
+    if (!wearLifeId) return;
+    client.get('/api/costumes', { params: { lifeId: wearLifeId, guestToken } })
+      .then((res) => setWear(res.data.wear || {}))
+      .catch(() => {});
+  }, [wearLifeId, guestToken]);
+  const onCostumeDone = useCallback((data) => {
+    setWear(data.wear || {});
+    setLife((x) => ({ ...x, assets: data.assets }));
+    if (yr.current.data) yr.current.data = { ...yr.current.data, assets: data.assets };
+  }, []);
+  const closeCostume = useCallback(() => setCostumeOpen(false), []);
 
   // 다른 탭으로 가면 멈췄다가(멈춤 버튼은 그대로), 돌아오면 다시 진행 (원작과 같음)
   useEffect(() => {
@@ -767,6 +784,12 @@ function PlayPage() {
                 돈 쓰기 · 투자{life.investType ? ` (${INV_NAME[life.investType] || ''})` : ''}
               </button>
             )}
+            {!ended && (
+              <button type="button" className="shop-b ghost pp-shopbtn" disabled={waiting} title={waiting ? '결정 창을 먼저 골라 주세요' : undefined}
+                onClick={() => setCostumeOpen(true)}>
+                옷 가게
+              </button>
+            )}
           </section>
 
           {/* 내 퀘스트: 시작할 때 고른 것을 계속 보이게 (퀘스트를 안 고른 인생·비회원은 칸을 안 그림) */}
@@ -801,7 +824,7 @@ function PlayPage() {
           <section className="pp-panel pp-scene">
             <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
               place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)}
-              house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume}
+              house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume || wear}
               industry={life.jobIndustry} />
             <p className="pp-scenecap"><Flag cc={life.currentCountry} />{countryText} · {town} · {stageText}{life.jobStatus === 'EMPLOYED' && life.jobName ? ` · ${life.jobName}` : ''}</p>
           </section>
@@ -996,6 +1019,12 @@ function PlayPage() {
       {shopOpen && (
         <ShopSheet life={life} age={life.currentAge} guestToken={guestToken}
           waitIdle={waitIdle} onDone={onShopDone} onClose={closeShop} />
+      )}
+
+      {/* C21 옷 가게 */}
+      {costumeOpen && (
+        <CostumeSheet life={life} guestToken={guestToken}
+          waitIdle={waitIdle} onDone={onCostumeDone} onClose={closeCostume} />
       )}
 
       {/* 잠시 멈춤 (원작 reflect) */}

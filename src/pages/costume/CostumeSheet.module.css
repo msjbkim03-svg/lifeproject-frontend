@@ -27,7 +27,23 @@
 .sub { margin: 0; font-size: 13px; color: var(--ink-sub); line-height: 1.6; }
 .msg { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--primary-light); color: var(--ink); font-size: 13.5px; }
 
-.part { margin: 14px 0 8px; font-size: 15px; }
+.tabs { display: flex; gap: 6px; margin: 4px 0 12px; }
+.tab {
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.tab small { font-weight: 400; color: var(--ink-light); }
+.tab:hover { border-color: var(--primary); }
+.tabOn { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.tabOn small { color: var(--on-primary); opacity: 0.8; }
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 
 .row {

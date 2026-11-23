@@ -16,6 +16,23 @@ export const COSTUMES = {
   HAT_01: { part: 'hat', style: 'cap', color: '#e8584c', name: '빨간 야구 모자' },
   HAT_02: { part: 'hat', style: 'straw', color: '#e2c27a', name: '밀짚모자' },
   HAT_03: { part: 'hat', style: 'beanie', color: '#5b86c9', name: '파란 털모자' },
+  HAIR_05: { part: 'hair', style: 'afro', color: '#3a2c26', name: '아프로' },
+  HAIR_06: { part: 'hair', style: 'ponytail', color: '#7a4a2a', name: '포니테일' },
+  HAIR_07: { part: 'hair', style: 'mohawk', color: '#e8584c', name: '빨간 모히칸' },
+  HAIR_08: { part: 'hair', style: 'twinbun', color: '#5a3a2a', name: '양갈래 똥머리' },
+  HAIR_09: { part: 'hair', style: 'spiky', color: '#e6c35c', name: '금발 삐죽 머리' },
+  TOP_05: { part: 'top', style: 'hanbok', color: '#e86a8a', name: '분홍 한복' },
+  TOP_06: { part: 'top', style: 'school', color: '#2f3b5c', name: '교복' },
+  TOP_07: { part: 'top', style: 'hoodie', color: '#4a9a7a', name: '초록 후드티' },
+  TOP_08: { part: 'top', style: 'hero', color: '#d0383f', name: '히어로 슈트' },
+  TOP_09: { part: 'top', style: 'pajama', color: '#9ec5f0', name: '줄무늬 잠옷' },
+  TOP_10: { part: 'top', style: 'space', color: '#e9ecf2', name: '우주복' },
+  HAT_04: { part: 'hat', style: 'crown', color: '#f2c230', name: '황금 왕관' },
+  HAT_05: { part: 'hat', style: 'tophat', color: '#2b2d33', name: '신사 모자' },
+  HAT_06: { part: 'hat', style: 'beret', color: '#c9544a', name: '빨간 베레모' },
+  HAT_07: { part: 'hat', style: 'ribbon', color: '#f07aa8', name: '분홍 리본' },
+  HAT_08: { part: 'hat', style: 'bunny', color: '#ffffff', name: '토끼 머리띠' },
+  HAT_09: { part: 'hat', style: 'hardhat', color: '#f2b22e', name: '노란 안전모' },
 };
 
 // 나이 → 몸 크기 (아기 · 아이 · 어른 · 노인), 나이를 모르면 어른
