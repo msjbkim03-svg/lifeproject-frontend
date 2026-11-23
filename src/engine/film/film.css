@@ -1,0 +1,190 @@
+/* C22 엔딩 크레딧 (원작 주마등 필름) - EndingFilm.jsx */
+/* 화면 전체를 덮는 검은 극장 + 가운데 가로 16:9 필름(웹 크기) + 아래 조작 막대 */
+.ef {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 5, 8, 0.94);
+  font-family: var(--font-body);
+}
+.ef-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ef-frame {
+  position: relative;
+  width: min(calc(100vw - 48px), calc((100vh - 96px) * 16 / 9), 1600px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #000;
+  border-radius: 14px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  container-type: size;      /* 글자 크기를 필름 높이(cqh)에 맞춤 */
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 장면 한 장 */
+.ef-shot { position: absolute; inset: 0; overflow: hidden; }
+.ef-cam { position: absolute; inset: 0; transform-origin: 50% 80%; will-change: transform; }
+.ef-sky { position: absolute; left: -150%; right: -150%; top: -200%; bottom: calc(100% - var(--vtop) - 1%); }
+.ef-ground { position: absolute; left: -150%; right: -150%; top: calc(var(--vbot) - 1%); bottom: -200%; }
+.ef-vbox {
+  position: absolute; left: 50%; top: var(--vtop);
+  width: 720px; height: 292.5px;
+  transform-origin: 50% 0;
+  transform: translateX(-50%) scale(var(--vs, 1));
+  pointer-events: none;
+}
+.ef-map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* 필름 안 마을: 조작 버튼·이름표·지도 점은 숨김 (그림만) */
+.ef .village {
+  width: 100%; min-height: 0; aspect-ratio: 32 / 13;
+  border: 0; border-radius: 0; cursor: default; pointer-events: none;
+}
+.ef .village .v-edge, .ef .village .v-mini, .ef .village .v-place-name,
+.ef .village .v-caption, .ef .village .v-name, .ef .village .v-bubble { display: none; }
+.ef-shot.funeral .village .v-person.me { display: none; } /* 장례: 떠난 사람은 없음 */
+
+/* 빛깔 (원작 filmLook): 그해 행복 빛, 마지막 보라, 어둡게 */
+.ef-tint { position: absolute; inset: 0; mix-blend-mode: soft-light; pointer-events: none; }
+.ef-mult { position: absolute; inset: 0; mix-blend-mode: multiply; pointer-events: none; }
+.ef-dark, .ef-dim { position: absolute; inset: 0; background: #000; pointer-events: none; }
+.ef-look {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 72% at 50% 50%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.6) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 28%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0) 37%);
+}
+.ef-grain {
+  position: absolute; inset: -10%; pointer-events: none; opacity: 0.1; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 320px;
+}
+.ef-sweep {
+  position: absolute; top: 0; bottom: 0; width: 60%; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 33%, rgba(255, 170, 90, 0.32) 0%, rgba(255, 178, 96, 0) 60%);
+}
+
+/* 글 */
+.ef-over { position: absolute; inset: 0; pointer-events: none; }
+.ef-t {
+  position: absolute;
+  white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere;
+  letter-spacing: -0.01em;
+}
+.ef-t.in { position: static; margin-left: auto; margin-right: auto; text-align: center; }
+.ef-t.sh { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.6); }
+.ef-fd { font-family: var(--font-display); font-weight: 400 !important; }
+.ef-fm { font-family: var(--font-mono); }
+.ef-fb { font-family: var(--font-body); }
+.ef-stack { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; }
+.ef-rule { width: 4.7%; height: 2px; margin: 3.6cqh auto; background: #f0dfb5; }
+.ef-roll { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; }
+.ef-mark {
+  position: absolute; left: 0; right: 0; bottom: 2.6%;
+  text-align: center; font-size: 2.2cqh; color: #a49d92; opacity: 0.4; pointer-events: none;
+}
+
+/* 필름 위 버튼 */
+.ef-skip {
+  position: absolute; top: 2%; right: 3%; z-index: 3;
+  padding: 1cqh 2.6cqh; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(0, 0, 0, 0.35);
+  color: #f2ede4; font: 600 2.2cqh var(--font-body); cursor: pointer;
+}
+.ef-skip:hover { background: rgba(0, 0, 0, 0.6); }
+.ef-paused {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-size: 7cqh; color: rgba(255, 255, 255, 0.8); pointer-events: none;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+.ef-endbox {
+  position: absolute; left: 0; right: 0; bottom: 14%; z-index: 3;
+  display: flex; justify-content: center; gap: 2cqh; cursor: default;
+}
+.ef-btn {
+  padding: 1.6cqh 3.6cqh; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.4);
+  color: #f2ede4; font: 600 2.6cqh var(--font-body);
+}
+.ef-btn.main { background: #f0dfb5; color: #2a2420; border-color: #f0dfb5; }
+.ef-msg .ef-btn { font-size: 14px; padding: 8px 18px; }
+
+/* 아래 조작 막대 (필름 폭) */
+.ef-bar {
+  display: flex; align-items: center; gap: 10px;
+  width: min(calc(100vw - 48px), calc((100vh - 96px) * 16 / 9), 1600px);
+  color: #d6d0c4; font-size: 12px;
+}
+.ef-ic {
+  width: 32px; height: 32px; flex: none; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3); background: transparent;
+  color: #f2ede4; font-size: 13px; cursor: pointer;
+}
+.ef-ic:hover { border-color: #f0dfb5; color: #f0dfb5; }
+.ef-ic.off { opacity: 0.45; text-decoration: line-through; }
+.ef-track {
+  position: relative; flex: 1; height: 6px; border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18); cursor: pointer;
+}
+.ef-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: #f0dfb5; }
+.ef-track b { position: absolute; top: -2px; width: 2px; height: 10px; background: rgba(255, 255, 255, 0.45); }
+.ef-time { font-family: var(--font-mono); white-space: nowrap; }
+.ef-msg { color: #d6d0c4; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ef-cam { transform: none !important; }
+}
+
+/* 브라우저가 소리를 막고 있을 때 (한 번 누르면 켜짐) */
+.ef-sound {
+  position: absolute; left: 50%; top: 4%; transform: translateX(-50%); z-index: 3;
+  padding: 0.8cqh 2cqh; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55); color: #f2ede4; font: 600 2cqh var(--font-body);
+  pointer-events: none; animation: ef-blink 1.6s ease-in-out infinite;
+}
+@keyframes ef-blink { 50% { opacity: 0.55; } }
+
+/* 전용 장면 그림 (FilmScene.jsx): 결혼식 · 아이가 태어난 날 · 장례식 - 마을과 같은 크기 규칙 */
+.fs { position: relative; width: 100%; aspect-ratio: 32 / 13; overflow: hidden; }
+.fs-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.fs-art.top { z-index: 3; }
+.fs-p { position: absolute; width: 0; height: 0; display: flex; flex-direction: column; align-items: center; z-index: 2; --s: 1; }
+.fs-p > * { flex: none; }
+.fs-p .v-fig { display: block; transform: translateY(-41px) scale(var(--s)); transform-origin: 50% 100%; }
+.fs-p.dim .v-fig { filter: brightness(0.75); }
+.fs-petals i {
+  position: absolute; top: -4%; width: 4px; height: 4px; border-radius: 50% 0;
+  background: #f6a5bd; opacity: 0.85; z-index: 4; animation: fs-fall 6s linear infinite;
+}
+.fs-petals i:nth-child(3n) { background: #ffffff; }
+@keyframes fs-fall { to { transform: translate(-30px, 140px) rotate(320deg); } }
+.fs-mobile { transform-origin: 160px 30px; animation: fs-swing 4s ease-in-out infinite; }
+@keyframes fs-swing { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+.fs-flame { animation: fs-flick 0.9s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes fs-flick { from { transform: scale(1, 1); opacity: 0.9; } to { transform: scale(0.85, 1.15); opacity: 1; } }
+.fs-smoke { animation: fs-smoke 4s ease-in-out infinite; }
+@keyframes fs-smoke { 0%, 100% { opacity: 0.2; transform: translateX(0); } 50% { opacity: 0.55; transform: translateX(2px); } }
+.fs-portrait {
+  position: absolute; left: 50%; top: 25.4%; width: 8.1%; height: 21.5%; transform: translateX(-50%);
+  display: flex; justify-content: center; overflow: hidden; z-index: 1; filter: sepia(0.35) saturate(0.7);
+}
+.fs-portrait .v-fig { width: 80%; height: auto; margin-top: 6%; }
+
+/* 장면 그림 효과 (FilmScene) */
+.fs-crowd { position: absolute; inset: 0; pointer-events: none; }
+.fs-p.flip .v-fig { transform: translateY(-41px) scale(calc(var(--s) * -1), var(--s)); }
+.fs-confetti i, .fs-rain i { position: absolute; top: -6%; z-index: 4; pointer-events: none; }
+.fs-confetti i { width: 4px; height: 6px; animation: fs-fall 4s linear infinite; }
+.fs-rain i { width: 1px; height: 14px; background: rgba(220, 230, 255, 0.55); animation: fs-drop 0.9s linear infinite; }
+@keyframes fs-drop { to { transform: translate(-12px, 330px); } }
+.fs-heart { animation: fs-beat 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes fs-beat { 50% { transform: scale(1.25); } }
+.fs-pulse { stroke-dasharray: 40; animation: fs-dash 1.6s linear infinite; }
+@keyframes fs-dash { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+.fs-tv { animation: fs-tv 0.5s steps(2) infinite; }
+@keyframes fs-tv { 50% { fill: #cfe3f0; } }
+.fs-plane { animation: fs-plane 9s linear infinite; }
+@keyframes fs-plane { from { transform: translateX(80px); } to { transform: translateX(-260px); } }
+.fs-cap { animation: fs-toss 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes fs-toss { 50% { transform: translateY(-8px) rotate(160deg); } }
+.fs-smokecol { animation: fs-smoke 5s ease-in-out infinite; }
