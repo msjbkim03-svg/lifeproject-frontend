@@ -20,6 +20,17 @@ import { DECADES } from '../common/ui/decades';
 import { useAsiaCounter, useLiveFeed } from './useLiveStats';
 import './main.css';
 
+// 방금 시작된 인생: 형편 대신 그 나라에서 태어난 아이의 기대수명 (원작 국가 데이터 le, 유엔 세계인구전망)
+//   목록 데이터는 useLiveStats 예시 그대로 두고, 보여 줄 때만 오른쪽 글자를 바꿈 (11/23)
+const LIFE_EXP = {
+  인도: 72, 중국: 78, 파키스탄: 68, 인도네시아: 71, 방글라데시: 75, 필리핀: 70, 베트남: 75, 아프가니스탄: 66, 이라크: 72, 이란: 78,
+  튀르키예: 77, 미얀마: 67, 우즈베키스탄: 72, 예멘: 69, 일본: 85, 사우디아라비아: 79, 태국: 76, 네팔: 70, 말레이시아: 77, 대한민국: 84,
+};
+const withLifeExp = (items) => items.map((it) => {
+  const le = LIFE_EXP[String(it.title || '').split(' ')[0]];
+  return le ? { ...it, side: `기대수명\n${le}세` } : it;
+});
+
 // 주사위 아이콘 (아무 시대에나)
 function DiceIcon() {
   return (
@@ -121,7 +132,7 @@ function Main() {
         </Panel>
 
         <Panel title="방금 시작된 인생" right={<a href="#">전체 보기</a>} className="ms-c1">
-          <FeedList items={feed.born} />
+          <FeedList items={withLifeExp(feed.born)} />
         </Panel>
         <Panel title="방금 끝난 인생" right={<a href="/memorial">추모관</a>} className="ms-c2">
           <FeedList items={feed.died} />

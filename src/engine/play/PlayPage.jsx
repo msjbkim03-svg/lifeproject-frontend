@@ -139,6 +139,7 @@ const jobText = (life) => {
   if (life.jobStatus === 'EMPLOYED') return life.jobName || '일하는 중';
   if (life.jobStatus === 'UNEMPLOYED') return '구직 중';
   if (life.jobStatus === 'RETIRED') return '은퇴';
+  if (life.jobStatus === 'PRISON') return '수감 중';
   return life.currentAge < 15 ? '—' : '일 없음';
 };
 
@@ -320,11 +321,13 @@ function PlayPage() {
     setBusy(true);
     try {
       const label = decLabel(l, url, body);
+      // 원작처럼 따로 '결정:' 줄을 두지 않고, 결과 줄 위에 무엇을 물었는지 작게 (원작 log 의 q)
+      const q = url.endsWith('/job') ? '일자리' : url.endsWith('/destination') ? '어디로 갈까?' : l.pendingEvent?.title;
       const res = await client.post(url, { lifeId: l.lifeId, guestToken, ...body });
       setLife(res.data);
-      // 원작처럼 '결정: 고른 것' 줄 바로 뒤에 그 결과(효과 칩 포함)를 이어 보여 줌
       const lines = toLines(res.data.currentAge - 1, res.data.events, res.data.alerts);
-      if (label) lines.unshift({ age: res.data.currentAge - 1, kind: 'dec', text: `결정: ${label}` });
+      if (lines.length && q) lines[0] = { ...lines[0], q };
+      else if (!lines.length && label) lines.push({ age: res.data.currentAge - 1, kind: 'dec', text: label, q });
       pushLines(lines);
     } catch (err) {
       setNotice(errText(err));
@@ -798,8 +801,9 @@ function PlayPage() {
               <h3 className="pp-h"><span>내 퀘스트</span><span className="pp-lbl">{life.quests.length}개</span></h3>
               <ul>
                 {life.quests.map((q) => (
-                  <li key={q.questId} className={q.achieved === 'Y' || q.live === 'Y' ? 'done' : ''}>
-                    <b>{q.questName}{(q.achieved === 'Y' || q.live === 'Y') && <em className="pp-qdone"> 달성</em>}</b>
+                  <li key={q.questId} className={q.achieved === 'Y' || q.live === 'Y' ? 'done' : q.live === 'NOW' ? 'now' : ''}>
+                    <b>{q.questName}{(q.achieved === 'Y' || q.live === 'Y') && <em className="pp-qdone"> 달성</em>}
+                      {q.achieved == null && q.live === 'NOW' && <em className="pp-qnow" title="끝날 때 상태로 판정해요. 지금은 조건을 채우고 있어요."> 지금 달성 중</em>}</b>
                     {q.description && <small>{q.description}</small>}
                   </li>
                 ))}
@@ -875,6 +879,7 @@ function PlayPage() {
                     <li key={e.id ?? `k${i}`} className={[kind ? 'fk-' + kind : '', e.struck ? 'fk-struck' : ''].join(' ').trim() || undefined}>
                       <span className="a">{e.age}세</span>
                       <span className="x">
+                        {e.q && <small className="pp-q">{e.q}</small>}
                         {e.flow?.length ? (
                           <button type="button" className="pp-ledger-b" aria-expanded={openLedger === e.id}
                             onClick={() => setOpenLedger((o) => (o === e.id ? null : e.id))}>
@@ -1090,11 +1095,20 @@ function ReflectModal({ life, aliveNow, countryName, auto, speed, onClose }) {
   const qs = REFLECT_Q[age] || REFLECT_Q[30];
   const [q, ex] = qs[life.lifeId % qs.length];
   const poor = life.wealthClass <= 2;
-  // 거울 문장: 그 나이의 처지를 통계로 한두 줄
+  // 거울 문장 (원작 reflectMirror): 5세 다섯 살 생일 · 15세 학교 · 30세 소득 · 50·70세 또래 생존
   const mirror = [];
-  if (aliveNow != null) mirror.push(`같은 해 ${countryName}에서 태어난 사람 중 약 ${Math.round(aliveNow * 100)}%가 지금 살아 있어요.`);
-  if (age === 15) mirror.push(life.schoolStatus === 'ENROLLED' ? '지금 학교에 다니고 있어요.' : '지금은 학교에 다니지 않아요.');
-  if (age === 30) mirror.push(life.income > 0 ? `소득은 ${countryName} 사람들 가운데 ${rankStr(life.incomeRankCountry)}에 들어요.` : '지금은 소득이 없어요.');
+  const pct = (v) => `${v < 1 ? v.toFixed(1) : Math.round(v)}%`;
+  if (age === 5 && life.u5Mortality != null) mirror.push(`${countryName}에서는 아이 ${(life.u5Mortality / 10).toFixed(1)}%가 다섯 살 생일을 맞이하지 못합니다. 이 아이는 맞이했습니다.`);
+  else if (age === 5 && aliveNow != null) mirror.push(`같은 해 ${countryName}에서 태어난 아이 중 ${pct((1 - aliveNow) * 100)}가 다섯 살 생일을 맞이하지 못했습니다. 이 아이는 맞이했습니다.`);
+  if (age === 15) {
+    mirror.push(life.schoolStatus === 'ENROLLED' ? '이 아이는 지금 학교에 다닙니다.'
+      : life.marriedYn === 'Y' ? '이 아이는 이미 결혼했습니다.'
+        : life.jobStatus === 'EMPLOYED' ? '이 아이는 학교 대신 일을 하고 있습니다.'
+          : '이 아이는 학교에 다니지 않고 가족과 집에서 지냅니다.');
+  }
+  if (age === 30) mirror.push(life.income > 0 ? `이 사람의 한 해 소득은 ${countryName} 사람들 가운데 ${rankStr(life.incomeRankCountry)}에 듭니다.` : '이 사람은 지금 소득이 없습니다.');
+  if (age === 50 && aliveNow != null) mirror.push(`같은 해 ${countryName}에서 태어난 사람 중 ${pct(aliveNow * 100)}가 쉰 살을 맞습니다.`);
+  if (age === 70 && aliveNow != null) mirror.push(`같은 해 ${countryName}에서 태어난 사람 중 ${pct(aliveNow * 100)}만 일흔을 맞습니다.`);
   const sec = speed >= 16 ? 4.5 : 9;
   useEffect(() => {
     if (!auto || hold) return undefined;

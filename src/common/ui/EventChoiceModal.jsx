@@ -82,6 +82,7 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   const [naming, setNaming] = useState(null);
   // 유언장 (ENG_WILL): 유언장 끝에 남길 말 (선택, 비우면 없음)
   const [willWords, setWillWords] = useState('');
+  const willRef = useRef(''); // 자동 결정 때도 적은 말을 함께 보냄 (11/23: 적는 도중 자동으로 넘어가 남길 말이 빠졌음)
   const poolRef = useRef([]);
   useEffect(() => { chooseRef.current = onChoose; }, [onChoose]);
   useEffect(() => { poolRef.current = fateCandidates(event?.choices, costs); }, [event, costs]);
@@ -101,9 +102,11 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
   const autoId = autoPick?.choiceId;
   useEffect(() => {
     if (!autoOn || busy || autoId == null) return undefined;
-    const t = setTimeout(() => { if (chooseRef.current) chooseRef.current(autoId, nameRef.current); }, autoSec * 1000);
+    const t = setTimeout(() => {
+      if (chooseRef.current) chooseRef.current(autoId, (event?.eventId === 'ENG_WILL' ? willRef.current : nameRef.current) || undefined);
+    }, autoSec * 1000);
     return () => clearTimeout(t);
-  }, [autoOn, busy, autoId, autoSec]);
+  }, [autoOn, busy, autoId, autoSec, event?.eventId]);
 
   // 운이 고른 게 보이고 나서 결정
   useEffect(() => {
@@ -111,10 +114,10 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
     const t = setTimeout(() => {
       // 보낸 결정이 끝나면 운이 고른 표시를 풀어 둠: 성공하면 창이 닫히고,
       // 실패해서(409 등) 창이 그대로 남으면 다시 고를 수 있게
-      Promise.resolve(chooseRef.current && chooseRef.current(fate, nameRef.current)).finally(() => setFate(null));
+      Promise.resolve(chooseRef.current && chooseRef.current(fate, (event?.eventId === 'ENG_WILL' ? willRef.current : nameRef.current) || undefined)).finally(() => setFate(null));
     }, FATE_MS);
     return () => clearTimeout(t);
-  }, [fate]);
+  }, [fate, event?.eventId]);
 
   if (!open || !event) return null;
   const choices = event.choices || [];
@@ -211,7 +214,9 @@ function EventChoiceModal({ open, event, onChoose, busy, age, year, showEffects 
             <label className="dec-name dec-will">
               <span>남길 말</span>
               <textarea maxLength={100} rows={2} value={willWords} placeholder="유언장 끝에 적을 말 (선택 · 100자까지)"
-                onChange={(e) => setWillWords(e.target.value)} />
+                onFocus={() => setStopped(true)}
+                onChange={(e) => { setWillWords(e.target.value); willRef.current = e.target.value; setStopped(true); }} />
+              <small className="dec-will-h" style={{ display: 'block', marginTop: 4, fontSize: 12, color: 'var(--ink-light)' }}>적은 뒤 위에서 나눌 방법을 고르면 유언장이 완성돼요. ('법에 맡긴다'를 고르면 남기지 않아요)</small>
             </label>
           )}
           {autoId == null && <button type="button" className="dec-fate-b" disabled={locked} onClick={leaveToFate}>자동으로 선택하기</button>}

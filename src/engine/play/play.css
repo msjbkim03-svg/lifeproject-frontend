@@ -213,17 +213,32 @@
 }
 .pp-feed li:last-child { border-bottom: 0; }
 .pp-feed .a { font-family: var(--font-mono); font-size: 12px; color: var(--ink-light); padding-top: 3px; }
-.pp-feed li.fk-big .x { font-weight: 600; }
+.pp-feed li.fk-big .x { font-weight: 650; color: var(--ink); }
 /* 원작 기록 색 (원작 .feed li.* 와 같은 규칙, 색은 우리 밤하늘 변수로): 클래스 앞에 fk- (다른 화면 클래스와 안 겹치게)
    bad 빨강 · ms 청록 · hist 회색 작은 글씨 + 왼쪽 줄 + 나이 옆 ◆ · warm 진한 글씨 + 나이 옆 금색 점
    loss 굵게 + 나이 옆 ✿ · note 제목 글꼴 청록 · dec 작은 회색 + ▸ · death 큰 제목 글꼴 · ledger 작은 돈 줄 */
-.pp-feed li.fk-bad .x { color: var(--red); }
-.pp-feed li.fk-ms .x { color: var(--teal); }
+/* 중요도 단계 (11/23 세분화): 큰 일은 옅은 바탕 + 왼쪽 줄로 떠 보이게, 작은 일은 글씨 색만 */
+.pp-feed li.fk-bad, .pp-feed li.fk-loss, .pp-feed li.fk-gain, .pp-feed li.fk-ms { margin: 3px 0; padding-left: 8px; padding-right: 6px; border-radius: 8px; border-bottom-color: transparent; }
+.pp-feed li.fk-bad { background: rgba(229, 72, 77, 0.10); box-shadow: inset 3px 0 0 var(--red); }
+.pp-feed li.fk-bad .x { color: var(--red); font-weight: 700; }
+.pp-feed li.fk-bad .a { color: var(--red); }
+.pp-feed li.fk-woe .x { color: var(--red); font-weight: 500; opacity: 0.85; }
+.pp-feed li.fk-ms { background: color-mix(in srgb, var(--teal) 9%, transparent); box-shadow: inset 3px 0 0 var(--teal); }
+.pp-feed li.fk-ms .x { color: var(--teal); font-weight: 700; }
+.pp-feed li.fk-ms .a { color: var(--teal); }
+.pp-feed li.fk-ms2 .x { color: var(--teal); font-weight: 500; }
+/* 중요도 단계 (11/23): 크게 잘된 일은 금색 ★, 날마다의 작은 일은 작고 흐리게 (큰 일이 먼저 눈에 들어오게) */
+.pp-feed li.fk-gain { background: rgba(212, 160, 23, 0.12); box-shadow: inset 3px 0 0 var(--gold, #d4a017); }
+.pp-feed li.fk-gain .x { color: var(--gold, #d4a017); font-weight: 700; }
+.pp-feed li.fk-gain .a::after { content: ' ★'; color: var(--gold, #d4a017); font-size: 10px; vertical-align: 1px; }
+.pp-feed li.fk-daily .x { color: var(--ink-sub); font-size: 13.5px; }
+.pp-feed li.fk-daily .a { opacity: 0.75; }
 .pp-feed li.fk-hist .x { color: var(--ink-sub); font-size: 14px; border-left: 2px solid var(--line-strong); padding-left: 8px; }
 .pp-feed li.fk-hist .a::after { content: ' ◆'; color: var(--ink-light); font-size: 9px; vertical-align: 2px; }
 .pp-feed li.fk-warm .x { color: var(--ink); }
 .pp-feed li.fk-warm .a::after { content: ' ·'; color: var(--primary); }
-.pp-feed li.fk-loss .x { font-weight: 600; }
+.pp-feed li.fk-loss { background: rgba(140, 140, 170, 0.12); box-shadow: inset 3px 0 0 var(--ink-light); }
+.pp-feed li.fk-loss .x { font-weight: 700; color: var(--ink); }
 .pp-feed li.fk-loss .a::after { content: ' ✿'; }
 /* 큰 사건 경고 (11/23 더 세게): 줄 전체를 빨간 띠로 + 처음 생길 때 흔들림, 오른쪽 빨간 딱지는 계속 깜빡 */
 .pp-feed li.fk-alert { position: relative; margin: 4px 0; border-radius: 10px; background: linear-gradient(90deg, rgba(229, 72, 77, 0.28), rgba(229, 72, 77, 0.10) 75%, rgba(229, 72, 77, 0.04)); box-shadow: inset 5px 0 0 var(--red), 0 0 0 1px rgba(229, 72, 77, 0.35); animation: pp-alert-row 0.12s linear 6 alternate, pp-alert-glow 1.6s ease-in-out 0.8s 4; }
@@ -238,6 +253,9 @@
 @media (prefers-reduced-motion: reduce) { .pp-alert i, .pp-feed li.fk-alert { animation: none; } }
 .pp-feed li.fk-note .x { color: var(--teal); font-family: var(--font-display); font-size: 15.5px; }
 .pp-feed li.fk-dec .x { color: var(--ink-sub); font-size: 13px; }
+/* 결정 결과 줄 위의 작은 질문 (원작 q): 따로 '결정:' 줄을 두지 않음 (11/23) */
+.pp-feed .pp-q { display: block; margin-bottom: 2px; font-size: 11.5px; font-weight: 500; color: var(--ink-light); }
+.pp-feed .pp-q::before { content: '▸ '; color: var(--primary); }
 .pp-feed li.fk-dec .x::before { content: '▸ '; color: var(--primary); }
 .pp-feed li.fk-death .x { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--ink); }
 .pp-feed li.fk-ledger .x { color: var(--ink-sub); font-size: 13.5px; font-variant-numeric: tabular-nums; }
@@ -401,3 +419,6 @@
 .pp-ledger-d .neg { color: var(--stat-health); }
 .pp-ledger-d .pos { color: var(--stat-relation); }
 .pp-qdone { font-style: normal; font-size: 11px; color: var(--stat-relation); margin-left: 4px; }
+/* 끝날 때 판정하는 퀘스트(이민·재산·행복)를 지금 채우는 중 (11/23) */
+.pp-quests li.now b { color: var(--ink); }
+.pp-qnow { font-style: normal; font-size: 11px; color: var(--gold, #d4a017); margin-left: 4px; }
