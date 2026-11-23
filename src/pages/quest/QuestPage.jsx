@@ -17,11 +17,12 @@ const MAX_PICK = 3; // 1~3개
 
 function QuestPage() {
   const navi = useNavigate();
-  const decade = useLocation().state?.decade; // 메인에서 고른 시대
+  const location = useLocation();
+  const decade = location.state?.decade; // 메인에서 고른 시대
 
   const [quests, setQuests] = useState([]); // 퀘스트 목록
   const [traits, setTraits] = useState([]); // 내 특성 레벨
-  const [picked, setPicked] = useState([]); // 고른 퀘스트 번호 (고른 순서대로)
+  const [picked, setPicked] = useState(location.state?.picked || []); // 고른 퀘스트 번호 (특성 강화 갔다 오면 그대로)
   const [error, setError] = useState("");
 
   // 1. 처음 한 번: 시대·로그인 확인 → 퀘스트 목록과 내 특성 레벨 받기
@@ -115,7 +116,7 @@ function QuestPage() {
                 <LevelDots key={t.traitId} label={TRAIT_VIEW[t.traitId]?.label || t.traitName} level={t.traitLevel} max={t.maxLevel} />
               ))}
             </div>
-            <Button block size="sm" className={styles.traitBtn} onClick={() => navi("/mypage/traits")}>
+            <Button block size="sm" className={styles.traitBtn} onClick={() => navi("/mypage/traits", { state: { decade, picked } })}>
               특성 강화하러 가기
             </Button>
           </Panel>
