@@ -1,4 +1,4 @@
-// C22 엔딩 크레딧 (원작 1in8b '주마등 필름') - 끝난 삶 하나를 2분 안쪽 영상처럼 보여 줌 (웹 가로 16:9)
+// C22 엔딩 크레딧 (원작 1in8b '주마등 필름') - 끝난 삶 하나를 1분 안팎 영상처럼 보여 줌 (웹 가로 16:9)
 // 순서: 지구 지도('그해 지구에서는 …' 인트로, 꼭 남길 것) → 이름 · 태어난 해 → 큰 사건 장면들 → 마지막 → 장례 → 묘비 → 엔딩 크레딧 → 끝
 // - 인생 결과 화면 대신 죽은 뒤 바로 틀어짐 (/result/:lifeId, 11/23 동현님)
 // - 장면 그림 = 마을(C08 Village, 윤아님 파일은 import 해서 쓰기만)을 그 나이의 모습으로 다시 세운 것
@@ -14,7 +14,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import client from '../../api/api';
 import Village from '../village/Village';
-import FilmScene, { Crowd } from './FilmScene';
+import FilmScene from './FilmScene';
 import { COUNTRIES, THEMES } from '../village/villageData';
 import { useTheme } from '../../common/theme';
 import { ASIA, OTHER } from '../../common/ui/globeDots';
@@ -32,6 +32,8 @@ const Y = (px) => `${(px / FILM_H) * 100}%`;
 const SZ = (px) => `${(px / FILM_H) * 100}cqh`;
 const XW = (px) => `${(px / FILM_W) * 100}%`;
 
+const PACE = 1.5;  // 필름 전체 진행을 1.5배 느리게 (11/24 동현님: 너무 빠름). 글 · 화면 전환 · 카메라 모두 같이 느려짐
+const SPEED = 1;   // 장면 안 사람 움직임 빠르기 (PACE 로 느려진 만큼 장면 그림 시간은 FilmScene 에서 PACE 배 → 움직임은 실제 속도)
 const C = { i: '#f2ede4', r: '#d6d0c4', c: '#a49d92', d: '#f0dfb5' }; // 원작 글자색
 
 // 글 한 줄 (원작 ftext): y = 글자 아랫줄 자리(px, 1280×720 기준)
@@ -66,19 +68,14 @@ function T({ y, size, w = 400, font = 'b', color = C.i, op = 1, max = 0, lh, ali
 
 // 글 묶음: 아랫줄을 bottom(px) 에 맞춰 위로 쌓음 (원작 자막처럼 줄이 늘면 위로 올라감)
 //   bottom 대신 middle 을 주면 화면 가운데에 세로로 가운데 맞춤
-function Stack({ bottom, middle, children }) {
-  const style = middle ? { top: 0, bottom: 0, justifyContent: 'center' } : { bottom: Y(FILM_H - bottom) };
+function Stack({ bottom, top, middle, children }) {
+  const style = middle ? { top: 0, bottom: 0, justifyContent: 'center' } : top != null ? { top: Y(top) } : { bottom: Y(FILM_H - bottom) };
   return <div className="ef-stack" style={style}>{children}</div>;
 }
 
-// 마을 그림 (한 번 그리면 다시 안 그림 → 카메라만 움직임)
+// 마을 그림 (장면 그림이 없을 때만, 한 번 그리면 다시 안 그림 → 카메라만 움직임)
 const VillageLayer = memo(function VillageLayer({ v }) {
-  return (
-    <div className="ef-vbox">
-      {v.scene ? <FilmScene v={v} /> : <Village {...v} />}
-      {!v.scene && v.extra && <Crowd people={v.extra} />}
-    </div>
-  );
+  return <div className="ef-vbox"><Village {...v} /></div>;
 });
 
 // 카메라 (원작 filmCam): [가로 이동 %, 세로 이동 %, 확대]
@@ -101,17 +98,21 @@ function camStyle([x, y, z]) {
 }
 
 // 장면 한 장: 하늘·땅 채우기 + 마을 + 빛깔
-function Shot({ seg, idx, cam, op, tint, arch, fills, extra, cls = '' }) {
+//   장면 그림(FilmScene)은 겹마다 카메라 시차를 스스로 줌 + 장면 시간 tt(ms)로 사람이 움직임
+function Shot({ seg, idx, cam, op, tint, arch, fills, extra, tt = 0, cls = '', shade = true }) {
   if (op <= 0) return null;
   const filter = arch > 0.02 ? `sepia(${(arch * 0.55).toFixed(3)}) saturate(${(1 - 0.34 * arch).toFixed(3)})` : undefined;
   return (
     <div className={'ef-shot ' + cls} style={{ opacity: op, filter }}>
-      <div className="ef-cam" style={camStyle(cam)}>
-        <div className="ef-sky" style={{ background: fills.sky }} />
-        <div className="ef-ground" style={{ background: fills.ground }} />
-        <VillageLayer key={idx} v={seg.v} />
-      </div>
+      {seg.v.scene ? <FilmScene v={seg.v} t={tt * PACE} cam={cam} /> : (
+        <div className="ef-cam" style={camStyle(cam)}>
+          <div className="ef-sky" style={{ background: fills.sky }} />
+          <div className="ef-ground" style={{ background: fills.ground }} />
+          <VillageLayer key={idx} v={seg.v} />
+        </div>
+      )}
       {tint && <div className="ef-tint" style={{ background: `rgba(${tint.join(',')},0.38)` }} />}
+      {shade && seg.v.scene && <div className="ef-topshade" />}
       {extra}
     </div>
   );
@@ -311,7 +312,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     let raf;
     let last = performance.now();
     const step = (now) => {
-      const dt = Math.min(100, now - last);
+      const dt = Math.min(100, now - last) / PACE;
       last = now;
       const nt = Math.min(film.dur, tRef.current + dt);
       tRef.current = nt;
@@ -431,7 +432,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     const pa = prev.kind === 'title' ? 0 : prev.f.a;
     const pp = 1 + b / (prev.t1 - prev.t0);
     shots.push(
-      <Shot key={u - 1} idx={u - 1} seg={prev} op={into ?? 1}
+      <Shot key={u - 1} idx={u - 1} seg={prev} op={into ?? 1} tt={(prev.t1 - prev.t0 + b) * (prev.kind === 'moment' ? SPEED : 1)}
         cam={prev.kind === 'title' ? camOf('rise', 1) : camOf(prev.cam, pp, prev.dir)}
         tint={tintOf(film.hap[pa])} arch={archOf(D, pa)} fills={fillsOf(prev.v.countryCode)} />,
     );
@@ -443,31 +444,31 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     shots.push(<div key="map" className="ef-shot"><MapCanvas b={b} K={K} home={home} /></div>);
     over = (
       <>
-        <T y={250} size={26} w={600} color={C.d} op={F(4600)} shadow>
+        <T y={250} size={26} w={600} color={C.d} op={F(3300)} shadow>
           {film.countryName}{film.histName ? ` (당시 ${film.histName})` : ''}
         </T>
         <T y={580} size={30} op={F(400)} max={1100} lh={46} shadow>그해 지구에서는 약 1억 3천만 명의 아기가 태어났습니다.</T>
-        <T y={640} size={30} op={F(2700)} max={1100} lh={46} shadow>이것은 그중 한 사람의 이야기입니다.</T>
+        <T y={640} size={30} op={F(2100)} max={1100} lh={46} shadow>이것은 그중 한 사람의 이야기입니다.</T>
       </>
     );
   } else if (m.kind === 'title') {
     const g = 1 - fa(b, K - 600, K);
     shots.push(
-      <Shot key={u} idx={u} seg={m} op={P(0)} cam={camOf('rise', p)}
+      <Shot key={u} idx={u} seg={m} tt={b} op={P(0)} cam={camOf('rise', p)}
         tint={tintOf(film.hap[0])} arch={archOf(D, 0)} fills={fillsOf(m.v.countryCode)} />,
     );
     over = (
       <>
-        <T y={200} size={72} w={700} font="d" op={P(900) * g} max={1100} lh={84} shadow>{film.name}</T>
-        <T y={256} size={26} w={600} font="m" op={P(1500) * g} shadow>{`${film.by} – ${film.by + D}`}</T>
-        <Sub f={m.f} op={P(2600) * g} />
+        <T y={200} size={72} w={700} font="d" op={P(500) * g} max={1100} lh={84} shadow>{film.name}</T>
+        <T y={256} size={26} w={600} font="m" op={P(1000) * g} shadow>{`${film.by} – ${film.by + D}`}</T>
+        <Sub f={m.f} op={P(1500) * g} top={292} />
       </>
     );
   } else if (m.kind === 'moment') {
     const v = prevShot();
     const a = m.f.a;
     shots.push(
-      <Shot key={u} idx={u} seg={m} op={v < 1 && prev && (prev.kind === 'moment' || prev.kind === 'title') ? v : P(0)}
+      <Shot key={u} idx={u} seg={m} tt={b * SPEED} op={v < 1 && prev && (prev.kind === 'moment' || prev.kind === 'title') ? v : P(0)}
         cam={camOf(m.cam, p, m.dir)} tint={tintOf(film.hap[a])} arch={archOf(D, a)} fills={fillsOf(m.v.countryCode)} />,
     );
     const s = 500;
@@ -485,7 +486,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     const v = prevShot(y);
     const T0 = prev && prev.kind === 'moment' ? v : P(0);
     shots.push(
-      <Shot key={u} idx={u} seg={m} op={T0 * y} cam={camOf('drift', p)} tint={[80, 84, 110]} arch={0}
+      <Shot key={u} idx={u} seg={m} tt={b} op={T0 * y} cam={camOf('drift', p)} tint={[80, 84, 110]} arch={0}
         fills={fillsOf(m.v.countryCode)}
         extra={(
           <>
@@ -496,23 +497,23 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     );
     over = (
       <>
-        <Stack bottom={670}>
+        <Stack top={70}>
           <T inline size={40} w={700} font="d" op={F(700)} shadow>{film.head}</T>
-          <T inline gap={10} size={28} color={C.r} op={F(1500)} max={620} lh={42} shadow>{film.died}</T>
+          <T inline gap={10} size={28} color={C.r} op={F(1100)} max={620} lh={42} shadow>{film.died}</T>
         </Stack>
       </>
     );
   } else if (m.kind === 'funeral') {
     shots.push(
-      <Shot key={u} idx={u} seg={m} op={P(0) * y} cam={camOf('funeral', p)} tint={[58, 72, 104]} arch={0}
-        fills={fillsOf(m.v.countryCode)} cls="funeral"
+      <Shot key={u} idx={u} seg={m} tt={b} op={P(0) * y} cam={camOf('funeral', p)} tint={[58, 72, 104]} arch={0}
+        fills={fillsOf(m.v.countryCode)} cls="funeral" shade={false}
         extra={<div className="ef-dark" style={{ opacity: 0.25 }} />} />,
     );
     over = (
       <>
         <Stack bottom={670}>
-          <T inline size={29} w={500} op={F(900)} max={620} lh={44} shadow>{film.funeral}</T>
-          <T inline gap={14} size={24} color={C.r} op={F(2600)} max={620} lh={38} shadow>{film.attend}</T>
+          <T inline size={29} w={500} op={F(600)} max={620} lh={44} shadow>{film.funeral}</T>
+          <T inline gap={14} size={24} color={C.r} op={F(1800)} max={620} lh={38} shadow>{film.attend}</T>
         </Stack>
       </>
     );
@@ -523,12 +524,12 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
         <T inline gap={4} size={24} color={C.c} font="m" op={F(300)}>{`${film.by} – ${film.by + D}`}</T>
         <div className="ef-rule" style={{ opacity: F(500) }} />
         {film.epi.map((l, i) => (
-          <T key={i} inline gap={i ? 16 : 0} size={28} op={F(900 + i * 700)} max={600} lh={42}>{l}</T>
+          <T key={i} inline gap={i ? 16 : 0} size={28} op={F(600 + i * 450)} max={600} lh={42}>{l}</T>
         ))}
         {film.quote && (
           <>
-            <T inline gap={34} size={30} w={600} font="d" color={C.d} op={F(1200 + film.epi.length * 700)} max={900} lh={44}>{`“${film.quote.t}”`}</T>
-            <T inline gap={8} size={19} color={C.c} op={F(1500 + film.epi.length * 700)}>{film.quote.will ? '유언장에 남긴 말' : '마지막으로 남긴 말'}</T>
+            <T inline gap={34} size={30} w={600} font="d" color={C.d} op={F(900 + film.epi.length * 450)} max={900} lh={44}>{`“${film.quote.t}”`}</T>
+            <T inline gap={8} size={19} color={C.c} op={F(1200 + film.epi.length * 450)}>{film.quote.will ? '유언장에 남긴 말' : '마지막으로 남긴 말'}</T>
           </>
         )}
       </Stack>
@@ -560,7 +561,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     over = (
       <>
         <T y={330} size={36} w={600} font="d" op={P(0)} max={1100} lh={50}>80억 명 가운데, 단 한 번뿐인 삶이었습니다.</T>
-        <T y={410} size={30} w={700} font="d" color={C.r} op={P(900)}>환승인생</T>
+        <T y={410} size={30} w={700} font="d" color={C.r} op={P(700)}>환승인생</T>
       </>
     );
   }
@@ -606,7 +607,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
             }}>
             <i style={{ width: `${(t / film.dur) * 100}%` }} />
           </div>
-          <span className="ef-time">{fmt(t)} / {fmt(film.dur)}</span>
+          <span className="ef-time">{fmt(t * PACE)} / {fmt(film.dur * PACE)}</span>
           <button type="button" className={'ef-ic' + (muted ? ' off' : '')} onClick={() => setMuted((v) => !v)}
             aria-label={muted ? '음악 켜기' : '음악 끄기'}>♪</button>
         </div>
@@ -616,10 +617,11 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
 }
 
 // 아래 자막 (원작 filmSub)
-function Sub({ f, op }) {
+// 자막은 화면 위쪽 (장면 사람들이 화면 아래 78~88% 에 서 있어서 아래 자막이 얼굴을 가렸음, 11/24)
+function Sub({ f, op, top = 168 }) {
   if (!f || !f.t) return null;
   return (
-    <Stack bottom={672}>
+    <Stack top={top}>
       <T inline size={30} w={500} op={op} max={1000} lh={44} shadow>{f.t}</T>
     </Stack>
   );
