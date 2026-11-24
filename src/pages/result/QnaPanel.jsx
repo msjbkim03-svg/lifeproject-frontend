@@ -19,8 +19,9 @@ const SUGGESTIONS = [
   { value: '이 사람의 인생은 그 시대 평균과 비교하면 어땠어?', label: '시대 평균과 비교' },
 ];
 
-function guestToken() {
-  return localStorage.getItem('token') ? null : localStorage.getItem('guestToken');
+// link: 결과 링크(?guest=)로 받은 비회원 토큰 (없으면 이 브라우저 것)
+function guestToken(link) {
+  return link || (localStorage.getItem('token') ? null : localStorage.getItem('guestToken'));
 }
 
 // "…했다 [1]." 의 [1] 을 금색 작은 글자로
@@ -30,7 +31,7 @@ function withCites(text) {
   );
 }
 
-function QnaPanel({ lifeId }) {
+function QnaPanel({ lifeId, guestToken: linkToken }) {
   const [list, setList] = useState([]);
   const [question, setQuestion] = useState('');
   const [asking, setAsking] = useState(false);
@@ -39,10 +40,10 @@ function QnaPanel({ lifeId }) {
 
   // 지난 질문·답변 불러오기
   useEffect(() => {
-    client.get(`/api/qa/${lifeId}`, { params: { guestToken: guestToken() } })
+    client.get(`/api/qa/${lifeId}`, { params: { guestToken: guestToken(linkToken) } })
       .then((res) => setList(res.data))
       .catch(() => setError('지난 질문을 불러오지 못했어요.'));
-  }, [lifeId]);
+  }, [lifeId, linkToken]);
 
   // 새 답변이 오면 아래로 스크롤
   useEffect(() => {
@@ -54,7 +55,7 @@ function QnaPanel({ lifeId }) {
     if (!text || asking) return;
     setAsking(true);
     setError('');
-    client.post(`/api/qa/${lifeId}`, { question: text, guestToken: guestToken() }, { timeout: 60000 })
+    client.post(`/api/qa/${lifeId}`, { question: text, guestToken: guestToken(linkToken) }, { timeout: 60000 })
       .then((res) => {
         setList((old) => [...old, res.data]);
         setQuestion('');

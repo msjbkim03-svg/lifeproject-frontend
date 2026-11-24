@@ -315,9 +315,21 @@ export function villageAt(ctx, a, hint, opts = {}) {
 //   떠나보낸 해는 떠난 분을 빼고 / 일 시작 · 승진은 마을 일터 + 동료 두 명
 const COWORK = [{ gender: 'M', age: 34 }, { gender: 'F', age: 29 }];
 //   모든 장면을 장면 그림(FilmScene)으로: 일 시작 · 승진은 'work', 맞는 그림이 없으면 'village' (동네 산책)
+// 그 해에 시작한 일 이름: 인생 기록 문장('노점상·소상인 일을 시작했다')에서, 없으면 그 뒤 몇 해의 직업 이름
+//   (직업 · 산업 기록은 일을 시작한 해보다 한두 해 늦게 찍혀서 그 해만 보면 비어 있음)
+function jobAt(ctx, a, t) {
+  const m = /([^.]*?)\s*일을 시작/.exec(t || '');
+  if (m && m[1].trim()) return m[1].trim();
+  for (let d = 0; d <= 3; d++) { const y = ctx.years[a + d]; if (y && y.jobName) return y.jobName; }
+  return null;
+}
+function industryNear(ctx, a) {
+  for (let d = 0; d <= 3; d++) { const s = ctx.industryAt(a + d); if (s) return s; }
+  return null;
+}
 function sceneAt(ctx, m) {
   const v = villageAt(ctx, m.a, m.place);
-  if (m.arg === 'cowork') return { ...v, scene: 'work', text: m.t, year: ctx.by + m.a, extra: COWORK.map((p) => ({ ...p, age: Math.max(20, m.a + (p.age - 30)) })) };
+  if (m.arg === 'cowork') return { ...v, scene: 'work', text: m.t, year: ctx.by + m.a, job: jobAt(ctx, m.a, m.t), industry: v.industry || industryNear(ctx, m.a), extra: COWORK.map((p) => ({ ...p, age: Math.max(20, m.a + (p.age - 30)) })) };
   if (!m.scene) return { ...v, scene: 'village', text: m.t, year: ctx.by + m.a };
   let family = familyAt(ctx, m.a, { all: true }).list;
   if (m.scene === 'loss' && m.arg === 'par') {
@@ -325,7 +337,7 @@ function sceneAt(ctx, m) {
     const goneDad = ctx.dadAt === m.a;
     family = family.filter((f) => !(f.id === 'mom' && goneMom) && !(f.id === 'dad' && goneDad));
   }
-  return { ...v, scene: m.scene, arg: m.arg, family, text: m.t, year: ctx.by + m.a };
+  return { ...v, scene: m.scene, arg: m.arg, family, text: m.t, year: ctx.by + m.a, married: ctx.married(m.a) };
 }
 
 // 원작 filmTint: 그해 행복(0~100) → 차가운 파랑 ~ 따뜻한 호박색
@@ -449,8 +461,9 @@ export function buildFilm(r, data) {
   const by = r.birthYear;
   const events = r.events || [];
 
-  // 제목 장면: 태어난 해 첫 줄
-  const first = events.find((e) => e.age === 0 && !SKIP.some((re) => re.test(e.logText || '')));
+  // 제목 장면: 태어난 집 소개 줄 ('아버지는 … 어머니는 …') - 장면이 태어난 방이라 병·역사 사건 줄은 쓰지 않음
+  //   (11/24 동현님: 첫 장면 자막이 '홍역 진단을 받았다'인데 그림은 태어나는 장면)
+  const first = events.find((e) => e.age === 0 && !e.eventId && /^(아버지|어머니)는|집이었다/.test(e.logText || ''));
   const titleF = { a: 0, t: first ? cleanText(first.logText, r.name) : `${r.countryName}에서 태어났다.`, place: 'home' };
   const moms = pickMoments(events, D, r.name);
 
@@ -485,8 +498,11 @@ export function buildFilm(r, data) {
   });
 
   // 마지막 장면: 사고 · 재해 · 폭력 등 갑작스러운 죽음이면 침대 대신 '빈자리' (FilmScene last · sudden)
-  const sudden = /사고|손상|재해|재난|살해|폭력|전쟁|분쟁|익사|추락|화재|자살/.test(r.deathCause || '');
-  add('death', 3800, { v: { ...villageAt(ctx, D, 'home'), scene: 'last', arg: sudden ? 'sudden' : null, family: familyAt(ctx, D, { all: true }).list } });
+  //   병이면 병실 침대, 그 밖(노환 등)은 집 침대 (11/24 동현님: 마지막 장면이 사망 원인과 안 어울림)
+  const cause = r.deathCause || '';
+  const sudden = /사고|손상|재해|재난|피해|살해|폭력|전쟁|분쟁|익사|추락|화재|자살/.test(cause);
+  const sick = !sudden && D >= 1 && /암|심장|뇌졸중|폐렴|결핵|말라리아|홍역|감염|질환|간염|당뇨|고혈압|병/.test(cause);
+  add('death', 3800, { v: { ...villageAt(ctx, D, 'home'), scene: 'last', arg: sudden ? 'sudden' : sick ? 'sick' : null, cause, family: familyAt(ctx, D, { all: true }).list } });
   add('funeral', 4600, { v: { ...villageAt(ctx, D, 'home', { all: true }), pet: null, scene: 'funeral' } });
   add('epi', 6400); // 묘비 + 마지막으로 남긴 말
   add('credits', creditsDur, { cast, src });

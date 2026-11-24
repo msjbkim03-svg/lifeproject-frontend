@@ -14,14 +14,15 @@ function withCites(text) {
   );
 }
 
-function StoryPanel({ lifeId }) {
+// guestToken: 결과 링크(?guest=)로 받은 비회원 토큰 (없으면 이 브라우저 것)
+function StoryPanel({ lifeId, guestToken: linkToken }) {
   const [story, setStory] = useState(null);
   const [error, setError] = useState('');
   const [tryNo, setTryNo] = useState(0); // 다시 시도 버튼용
 
   useEffect(() => {
     const isLogin = !!localStorage.getItem('token');
-    const guestToken = isLogin ? null : localStorage.getItem('guestToken');
+    const guestToken = linkToken || (isLogin ? null : localStorage.getItem('guestToken'));
     let alive = true;
 
     // 오류 문구 지우기는 [다시 시도] 단추에서 (effect 안에서 바로 상태를 바꾸지 않게)
@@ -33,7 +34,7 @@ function StoryPanel({ lifeId }) {
         setError(typeof msg === 'string' && msg ? msg : 'AI 이야기를 불러오지 못했어요.');
       });
     return () => { alive = false; };
-  }, [lifeId, tryNo]);
+  }, [lifeId, tryNo, linkToken]);
 
   if (error) {
     return (

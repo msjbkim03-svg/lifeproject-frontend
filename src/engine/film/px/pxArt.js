@@ -174,31 +174,48 @@ export function lieIn(px, t, p, x, G, w = 56, o = {}) {
     px.px(X, Y, col);
   }
   if (o.cry) { const ex = headX + (f.eyes[0][1] - f.head); px.px(ex, cy + 2, '#5fb4ee'); }
-  // 이불
+  // 이불: 몸 모양을 따라 (가슴 · 배 · 무릎 · 발끝) 부드럽게 솟고, 침대 옆으로 자락이 늘어짐
   const breath = o.breath ?? (Math.sin(t / 650) + 1) / 2;
-  const a = headX + 15 * k;
-  const R2 = L + w + 1;
+  const a = Math.round(headX + 13 * k);
+  const R2 = Math.round(L + w);
   const col = o.quilt || '#e9b8a8';
-  const top = G - 21 - Math.round(breath);
+  const hi = lt(col, 0.32);
+  const mid = lt(col, 0.12);
+  const lo = dk(col, 0.1);
+  const g2 = (q, m, s2) => Math.exp(-(((q - m) / s2) ** 2));
+  const hem = G - 5; // 자락 끝 (매트리스 아래로 조금)
+  const tops = [];
   for (let X = a; X <= R2; X++) {
-    const q = (X - a) / (R2 - a);
-    const bump = Math.round(Math.sin(q * Math.PI * 1.6) * 2 * k);
-    const yTop = top - bump + (q > 0.85 ? Math.round((q - 0.85) * 20) : 0);
-    for (let Y = yTop; Y < G - 6; Y++) {
-      const checker = ((Math.floor((X - a) / 3) + Math.floor((Y - yTop) / 3)) % 2) === 0;
-      let c = o.pattern === 'plain' ? col : checker ? col : lt(col, 0.14);
-      if (o.pattern === 'flower' && (X + Y * 3) % 7 === 0) c = '#ffffff';
-      if (Y === yTop) c = lt(col, 0.3);
-      if (Y >= G - 9) c = dk(col, 0.15);
+    const q = (X - a) / Math.max(1, R2 - a);
+    const h = (5 + 2.2 * g2(q, 0.12, 0.14) - 0.8 * g2(q, 0.4, 0.12) + 1.8 * g2(q, 0.64, 0.1) + 1.4 * g2(q, 0.92, 0.06)) * k;
+    const fall = q > 0.95 ? (q - 0.95) * 60 : 0; // 발끝에서 둥글게 떨어짐
+    const yTop = Math.round(G - 17 - h - (q < 0.4 ? breath * k : 0) + fall);
+    tops.push(yTop);
+    const yBot = hem + ((X >> 2) % 2); // 자락 끝 물결
+    for (let Y = yTop; Y <= yBot; Y++) {
+      const d = Y - yTop;
+      let c = d === 0 ? hi : d < 3 ? mid : Y > G - 9 ? lo : col;
+      if (o.pattern === 'flower' && d > 1 && Y < G - 9 && (X * 5 + Y * 3) % 11 === 0) c = '#ffffff';
+      if (o.pattern === 'check' && d > 1 && ((X >> 2) + (Y >> 2)) % 2) c = mix(c, '#ffffff', 0.12);
+      if (Y === yBot) c = dk(col, 0.28);
       px.px(X, Y, c);
     }
-    px.px(X, yTop - 1, dk(col, 0.45));
-    if (X % 9 === 0) px.vl(X, yTop + 2, G - 10, dk(col, 0.12));
+    px.px(X, yTop - 1, dk(col, 0.42)); // 윗선
   }
-  px.rect(R2, top + 2, 1, G - 4 - top, dk(col, 0.45));
-  // 접힌 홑청 · 바느질
-  px.rect(a - 1, top - 1, 5, G - 9 - top, '#fffdf8'); px.vl(a + 1, top, G - 10, '#e6dccd'); px.vl(a - 2, top, G - 9, dk(col, 0.45));
-  for (let X = a + 4; X < R2 - 2; X += 2) px.px(X, top + 4, lt(col, 0.45));
+  // 무릎 · 배 주름 (비스듬히 몇 줄)
+  [[0.5, 5], [0.58, 4], [0.76, 4]].forEach(([q, n]) => {
+    const X0 = Math.round(a + q * (R2 - a));
+    for (let j = 0; j < n; j++) px.px(X0 + j, (tops[X0 - a] ?? G - 20) + 3 + j, dk(col, 0.12));
+  });
+  // 발끝 · 머리맡 쪽 옆선
+  px.vl(R2 + 1, (tops[tops.length - 1] ?? G - 18), hem, dk(col, 0.42));
+  // 접어 내린 하얀 홑청 (가슴 위, 이불 윗선을 따라)
+  for (let i = 0; i < 4; i++) {
+    const X = a + i;
+    const y0 = (tops[i] ?? G - 22) - 1;
+    for (let Y = y0; Y <= G - 9; Y++) px.px(X, Y, i === 3 ? '#e6dccd' : Y === y0 ? '#ffffff' : '#fbf8f2');
+  }
+  px.vl(a - 1, (tops[0] ?? G - 22), G - 9, dk(col, 0.42));
 }
 
 // ───────── 바깥 ─────────
