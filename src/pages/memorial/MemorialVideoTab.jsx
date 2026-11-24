@@ -17,25 +17,29 @@ function MemorialVideoTab() {
   // 엔딩 영상에 넘길 재료 (입은 옷 포함)
   const filmData = useMemo(() => (film ? { ...film.film, wear: film.wear } : null), [film]);
   const poster = film ? posterScene(plan, film.wear) : null;
+  // 영상 순서표(plan)를 못 만들었으면 영상 버튼을 숨김
+  // (엔딩 영상도 안에서 같은 순서표를 만들다 멈춰서 화면 전체가 하얗게 되는 것을 막음)
+  const canPlay = !!film && !!plan;
+  const slotLabel = film === null ? "영상을 불러오는 중…" : film === false ? "영상을 불러오지 못했어요" : "이 삶의 영상을 만들지 못했어요";
 
   return (
     <div className={s.videoCard}>
-      {film ? (
+      {canPlay ? (
         <button type="button" className={s.poster} onClick={() => setOpen(true)} aria-label="영상 보기">
           {poster && <MemorialScene v={poster} className={s.fill} />}
           <span className={s.play}>▶ 영상 보기</span>
         </button>
       ) : (
-        <MemorialSlot label={film === null ? "영상을 불러오는 중…" : "영상을 불러오지 못했어요"} className={s.videoSlot} />
+        <MemorialSlot label={slotLabel} className={s.videoSlot} />
       )}
       <div className={s.videoText}>
         <Badge color="gold">영상</Badge>
-        <h3 className={s.videoTitle}>마지막 순간</h3>
+        <h3 className={s.videoTitle}>이 삶의 영상</h3>
         <p className={s.muted}>{room.name} · {room.birthYear} – {room.deathYear}</p>
         <p className={s.muted}>삶이 끝날 때 스쳐 간 장면들과 마지막 길이에요.</p>
       </div>
 
-      {open && (
+      {open && canPlay && (
         <EndingFilm lifeId={room.lifeId} result={film.result} filmData={filmData} onClose={() => setOpen(false)} />
       )}
     </div>

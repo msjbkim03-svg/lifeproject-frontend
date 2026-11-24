@@ -16,6 +16,7 @@ function LoginPage() {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false); // 로그인 중 (연타로 요청 여러 번 막기)
 
   // 이미 로그인한 상태로 들어오면 메인으로
   useEffect(() => {
@@ -24,12 +25,14 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setError("");
 
     if (!loginId || !password) {
       return setError("아이디와 비밀번호를 입력해 주세요.");
     }
 
+    setBusy(true);
     try {
       // 비회원으로 하던 인생이 있으면 그 임시 토큰도 같이 보냄 (서버가 회원 인생으로 전환)
       const guestToken = localStorage.getItem("guestToken");
@@ -44,9 +47,13 @@ function LoginPage() {
         localStorage.removeItem("guestToken");
       }
 
-      navi("/");
+      // 팝업으로 로그인했으면 뒤에 깔려 있던 화면(추모관·플레이 등)으로 돌아감, 아니면 메인
+      if (background) navi(background.pathname + background.search, { replace: true });
+      else navi("/");
     } catch (err) {
       setError(err.response?.data?.message || "아이디 또는 비밀번호가 맞지 않아요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -71,7 +78,9 @@ function LoginPage() {
 
           {/* 엔터로 로그인되게 하는 숨은 버튼 (공통 Button 은 type="button" 이라 엔터 제출이 안 됨) */}
           <button type="submit" hidden />
-          <Button type="primary" size="lg" block className={styles.mainBtn} onClick={handleSubmit}>로그인</Button>
+          <Button type="primary" size="lg" block className={styles.mainBtn} disabled={busy} onClick={handleSubmit}>
+            {busy ? "로그인 중…" : "로그인"}
+          </Button>
 
           <div className={styles.links}>
             <Link to="/find" state={{ background }}>아이디·비밀번호 찾기</Link>

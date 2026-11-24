@@ -43,7 +43,17 @@ function MemorialRoomPage() {
   }, [lifeId]);
 
   // 1-3. 영상 순서표 (장면 목록) - 팀원 buildFilm 을 한 번만 돌려서 초상 · 방 · 사진첩 · 영상 탭이 같이 씀
-  const plan = useMemo(() => (film ? buildFilm(film.result, { ...film.film, wear: film.wear }) : null), [film]);
+  //   영상 재료가 조금 이상해서 buildFilm 이 에러를 내도 방 전체가 하얀 화면이 되지 않게
+  //   → 실패하면 null (장면 칸만 비고 방 · 방명록 · 마지막 순간은 그대로 보임)
+  const plan = useMemo(() => {
+    if (!film?.result || !film?.film) return null;
+    try {
+      return buildFilm(film.result, { ...film.film, wear: film.wear });
+    } catch (e) {
+      console.warn("추모관 영상 순서표를 만들지 못했어요.", e);
+      return null;
+    }
+  }, [film]);
 
   // 401 이면 로그인 화면으로
   const goLogin = () => navi("/login", { state: { message: "로그인하고 다시 해 주세요." } });
@@ -113,7 +123,7 @@ function MemorialRoomPage() {
     <main className={`page ${s.page}`}>
       {/* 위 길 표시 */}
       <div className={s.crumb}>
-        <span className={s.house}>🏠</span>
+        <span className={s.house}>⚰️</span>
         <Link to="/memorial">전생의 집</Link>
         <span>›</span>
         <b>{room.name}의 방</b>

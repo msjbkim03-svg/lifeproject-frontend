@@ -220,6 +220,29 @@
 
 /* 마지막 순간 탭 */
 .lastSlot { aspect-ratio: 3 / 1; }
+
+/* 마지막 순간: 빈소 그림 (테마와 상관없이 같은 색) */
+.funeral { background: #2b2530; }
+.funeralArt { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+/* 영정 액자 안쪽 칸 (256 × 144 그림에서 x 110~146, y 26~66) */
+.funeralPortrait {
+  position: absolute;
+  left: 42.97%;
+  top: 18.06%;
+  width: 14.06%;
+  height: 27.78%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+.funeralPortrait svg { width: auto; height: 88%; image-rendering: pixelated; filter: grayscale(0.35); }
+/* 촛불은 살짝 흔들리고, 향 연기는 천천히 올라가며 사라짐 */
+.flame { animation: flame-flick 0.5s steps(2) infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.smoke { animation: smoke-rise 3.2s linear infinite; }
+@keyframes flame-flick { 0% { transform: scaleY(1); } 100% { transform: scaleY(0.8); } }
+@keyframes smoke-rise { 0% { transform: translateY(4px); opacity: 0.9; } 100% { transform: translateY(-8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .flame, .smoke { animation: none; } }
 .lastText { font-size: var(--fs-sm); margin: var(--sp-2) 0 0; }
 
 /* 묘비판 (청동 — 테마와 상관없이 같은 색) */

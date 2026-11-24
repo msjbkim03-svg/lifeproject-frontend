@@ -115,7 +115,7 @@ function useChat(countryCode, me) {
     if (p.walking && lastMove.current.walking && t - lastMove.current.at < MOVE_MS) return;
     lastMove.current = { at: t, walking: p.walking };
     stomp.publish({ destination: `/app/chat/${countryCode}/move`, body: JSON.stringify(myPos.current) });
-  }, [token, countryCode]);
+  }, [countryCode]);
 
   const bubbleOf = (id) => {
     const live = messages.filter((m) => m.memberId === id && m.at + BUBBLE_MS > now);
