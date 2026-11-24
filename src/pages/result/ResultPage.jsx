@@ -3,6 +3,7 @@
 // 회원은 api.js 가 로그인 토큰을 자동으로 붙이고, 비회원은 localStorage 의 guestToken 을 같이 보냄
 // C22 (11/23 동현님): 이 주소는 이제 엔딩 크레딧(EndingFilm)이 바로 틀어짐. 예전 결과 화면은 ?detail=1 (끝난 뒤 '인생 기록 보기')
 //   비회원 인생을 다른 브라우저에서 볼 땐 &guest=토큰
+// /result/test = 엔딩 크레딧 테스트 화면 (FilmTest, 작업용 - C22 끝나면 지울 것)
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import client from '../../api/api';
@@ -17,6 +18,7 @@ import StatChart from './StatChart';
 import StoryPanel from './StoryPanel';
 import QnaPanel from './QnaPanel';
 import EndingFilm from '../../engine/film/EndingFilm';
+import FilmTest from '../../engine/film/FilmTest';
 import styles from './ResultPage.module.css';
 
 // 학력 코드 → 화면 글자
@@ -44,6 +46,12 @@ function marriedText(r) {
 }
 
 function ResultPage() {
+  const { lifeId } = useParams();
+  if (lifeId === 'test') return <FilmTest />;
+  return <ResultView />;
+}
+
+function ResultView() {
   const { lifeId } = useParams();
   const [query] = useSearchParams();
   const guestParam = query.get('guest');   // 링크로 받은 비회원 토큰 (없으면 이 브라우저 것)
