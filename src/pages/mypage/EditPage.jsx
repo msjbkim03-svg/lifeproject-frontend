@@ -39,6 +39,9 @@ function EditPage() {
   const [withdrawError, setWithdrawError] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false); // 탈퇴 확인 창
 
+  // 저장·탈퇴 요청을 보내는 중인지 (연타 막기)
+  const [busy, setBusy] = useState(false);
+
   // 이메일을 바꿨는지 (공백·대소문자는 무시 → 서버와 같은 기준)
   const emailChanged = email.trim().toLowerCase() !== (my.email || "").toLowerCase();
 
@@ -85,6 +88,7 @@ function EditPage() {
 
   // 4. 저장하기 → PUT /api/members/me
   const save = async () => {
+    if (busy) return;
     setMessage("");
     setError("");
     if (!currentPassword) return setError("현재 비밀번호를 입력해 주세요.");
@@ -92,6 +96,7 @@ function EditPage() {
     if (emailChanged && !emailCode) return setError("이메일을 바꾸려면 새 이메일로 받은 인증번호를 입력해 주세요.");
     if (!/^01[0-9]{8,9}$/.test(phone.replace(/-/g, ""))) return setError("전화번호를 올바르게 입력해 주세요. (예: 010-1234-5678)");
 
+    setBusy(true);
     try {
       const resp = await client.put("/api/members/me", {
         nickname, email, phone, currentPassword, newPassword, newPasswordCheck, emailCode,
@@ -116,6 +121,8 @@ function EditPage() {
       setMessage("저장했어요.");
     } catch (err) {
       setError(err.response?.data?.message || "저장하지 못했어요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -128,6 +135,8 @@ function EditPage() {
 
   // 6. 확인 창에서 "탈퇴하기" → POST /api/members/me/withdraw
   const withdraw = async () => {
+    if (busy) return;
+    setBusy(true);
     try {
       await client.post("/api/members/me/withdraw", { currentPassword: withdrawPw });
       // 로그인 토큰 지우고 메인으로 (비회원 guestToken 은 그대로)
@@ -138,6 +147,8 @@ function EditPage() {
     } catch (err) {
       setConfirmOpen(false);
       setWithdrawError(err.response?.data?.message || "탈퇴하지 못했어요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -215,7 +226,7 @@ function EditPage() {
 
           <div className={styles.actions}>
             <Button onClick={() => navi("/mypage")}>취소</Button>
-            <Button type="primary" onClick={save}>저장하기</Button>
+            <Button type="primary" disabled={busy} onClick={save}>{busy ? "저장하는 중…" : "저장하기"}</Button>
           </div>
         </section>
 
@@ -239,7 +250,7 @@ function EditPage() {
         <p className={common.desc}>탈퇴하면 이 계정으로 다시 로그인할 수 없어요.</p>
         <div className={styles.actions}>
           <Button onClick={() => setConfirmOpen(false)}>취소</Button>
-          <Button type="danger" onClick={withdraw}>탈퇴하기</Button>
+          <Button type="danger" disabled={busy} onClick={withdraw}>{busy ? "처리하는 중…" : "탈퇴하기"}</Button>
         </div>
       </Modal>
     </>

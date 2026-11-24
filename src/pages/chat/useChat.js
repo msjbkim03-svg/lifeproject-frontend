@@ -36,9 +36,9 @@ function useChat(countryCode, me) {
   const myPos = useRef({ place: me.place, x: 50, dir: "right", walking: false });
   const lastMove = useRef({ at: 0, walking: false });
 
-  const [geustId] = useState(()=> -1 - Math.floor(Math.random() * 1000000000));
+  const [guestId] = useState(()=> -1 - Math.floor(Math.random() * 1000000000));
   const token = localStorage.getItem("token");
-  const myId = token ? myIdOf(token) : geustId;
+  const myId = token ? myIdOf(token) : guestId;
 
   useEffect(() => {
     if (!countryCode) return;
@@ -52,15 +52,19 @@ function useChat(countryCode, me) {
       brokerURL: WS_URL,
       reconnectDelay: 3000,
       onConnect: () => {
+        // 듣기(구독) 때 내가 누군지 같이 보냄 → 서버가 "지금 이 나라에 사는 사람"인지 확인
+        const t = localStorage.getItem("token");
+        const g = localStorage.getItem("guestToken");
+        const who = t ? { token: t } : g ? { guestToken: g } : {};
         stomp.subscribe(`/topic/chat/${countryCode}`, (msg) => {
           const m = { ...JSON.parse(msg.body), at: Date.now() };
           setMessages((prev) => [...prev, m].slice(-30));
-        });
-        stomp.subscribe(`/topic/chat/${countryCode}/players`, (msg) => setPlayers(JSON.parse(msg.body)));
+        }, who);
+        stomp.subscribe(`/topic/chat/${countryCode}/players`, (msg) => setPlayers(JSON.parse(msg.body)), who);
         stomp.subscribe(`/topic/chat/${countryCode}/move`, (msg) => {
           const p = JSON.parse(msg.body);
           setPlayers((prev) => prev.map((x) => (x.memberId === p.memberId ? { ...x, ...p } : x)));
-        });
+        }, who);
         stomp.subscribe("/user/queue/chatError", (msg) => setError(JSON.parse(msg.body).message));
         setConnected(true);
       },
@@ -83,7 +87,10 @@ function useChat(countryCode, me) {
     if (!connected || !stompRef.current) return;
     stompRef.current.publish({
       destination: `/app/chat/${countryCode}/join`,
-      body: JSON.stringify({ token, memberId: myId, age: me.age, gender: me.gender, ...myPos.current }),
+      body: JSON.stringify({
+        token, memberId: myId, guestToken: token ? null : localStorage.getItem("guestToken"),
+        age: me.age, gender: me.gender, ...myPos.current,
+      }),
     });
   }, [connected, token, myId ,countryCode, me.age, me.gender]);
 
