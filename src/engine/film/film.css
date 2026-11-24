@@ -144,47 +144,71 @@
 }
 @keyframes ef-blink { 50% { opacity: 0.55; } }
 
-/* 전용 장면 그림 (FilmScene.jsx): 결혼식 · 아이가 태어난 날 · 장례식 - 마을과 같은 크기 규칙 */
-.fs { position: relative; width: 100%; aspect-ratio: 32 / 13; overflow: hidden; }
-.fs-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.fs-art.top { z-index: 3; }
-.fs-p { position: absolute; width: 0; height: 0; display: flex; flex-direction: column; align-items: center; z-index: 2; --s: 1; }
-.fs-p > * { flex: none; }
-.fs-p .v-fig { display: block; transform: translateY(-41px) scale(var(--s)); transform-origin: 50% 100%; }
-.fs-p.dim .v-fig { filter: brightness(0.75); }
-.fs-petals i {
-  position: absolute; top: -4%; width: 4px; height: 4px; border-radius: 50% 0;
-  background: #f6a5bd; opacity: 0.85; z-index: 4; animation: fs-fall 6s linear infinite;
-}
-.fs-petals i:nth-child(3n) { background: #ffffff; }
-@keyframes fs-fall { to { transform: translate(-30px, 140px) rotate(320deg); } }
-.fs-mobile { transform-origin: 160px 30px; animation: fs-swing 4s ease-in-out infinite; }
-@keyframes fs-swing { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
-.fs-flame { animation: fs-flick 0.9s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
-@keyframes fs-flick { from { transform: scale(1, 1); opacity: 0.9; } to { transform: scale(0.85, 1.15); opacity: 1; } }
-.fs-smoke { animation: fs-smoke 4s ease-in-out infinite; }
-@keyframes fs-smoke { 0%, 100% { opacity: 0.2; transform: translateX(0); } 50% { opacity: 0.55; transform: translateX(2px); } }
-.fs-portrait {
-  position: absolute; left: 50%; top: 25.4%; width: 8.1%; height: 21.5%; transform: translateX(-50%);
-  display: flex; justify-content: center; overflow: hidden; z-index: 1; filter: sepia(0.35) saturate(0.7);
-}
-.fs-portrait .v-fig { width: 80%; height: auto; margin-top: 6%; }
+/* 장면 그림 (FilmScene.jsx): 320×180 SVG 한 장, 겹마다 카메라 시차 · 움직임은 장면 시간으로 계산 */
+.fs2 { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.fs-px { image-rendering: pixelated; object-fit: cover; transform-origin: 50% 62%; } /* 픽셀 장면: 칸이 번지지 않게 */
+.fs2 .v-fig { overflow: visible; }
+.fs-a .v-fig g { transition: none; }
+/* 걷기: 다리 · 팔 번갈아 (s1 / s2) */
+.fs-a.s1 .v-fig .fa.leg { transform: translate(1px, -1px); }
+.fs-a.s1 .v-fig .fb.leg { transform: translate(-0.5px, 0); }
+.fs-a.s2 .v-fig .fa.leg { transform: translate(0.5px, 0); }
+.fs-a.s2 .v-fig .fb.leg { transform: translate(-1px, -1px); }
+.fs-a.s1 .v-fig .fb.arm { transform: translate(0, -1px); }
+.fs-a.s2 .v-fig .fa.arm { transform: translate(0, -1px); }
+/* 팔: 오른팔 흔들기 / 두 팔 번쩍 / 박수 / 아기 안기 (Figure 칸 좌표: 왼 어깨 3,14 · 오른 어깨 15,14) */
+.fs-a .v-fig .arm { transform-box: view-box; }
+.fs-a .v-fig .fa.arm { transform-origin: 3px 14px; }
+.fs-a .v-fig .fb.arm { transform-origin: 15px 14px; }
+.fs-a.aw.w1 .v-fig .fb.arm { transform: rotate(-150deg); }
+.fs-a.aw.w2 .v-fig .fb.arm { transform: rotate(-120deg); }
+.fs-a.au .v-fig .fa.arm { transform: rotate(160deg); }
+.fs-a.au .v-fig .fb.arm { transform: rotate(-160deg); }
+.fs-a.au.w1 .v-fig .fa.arm { transform: rotate(140deg); }
+.fs-a.au.w2 .v-fig .fb.arm { transform: rotate(-140deg); }
+.fs-a.ac.c1 .v-fig .fa.arm { transform: rotate(-55deg); }
+.fs-a.ac.c1 .v-fig .fb.arm { transform: rotate(55deg); }
+.fs-a.ac.c2 .v-fig .fa.arm { transform: rotate(-35deg); }
+.fs-a.ac.c2 .v-fig .fb.arm { transform: rotate(35deg); }
+.fs-a.ah .v-fig .fa.arm { transform: rotate(-60deg); }
+.fs-a.ah .v-fig .fb.arm { transform: rotate(60deg); }
+.fs-a.dim .v-fig { filter: brightness(0.62) saturate(0.8); }
 
-/* 장면 그림 효과 (FilmScene) */
-.fs-crowd { position: absolute; inset: 0; pointer-events: none; }
-.fs-p.flip .v-fig { transform: translateY(-41px) scale(calc(var(--s) * -1), var(--s)); }
-.fs-confetti i, .fs-rain i { position: absolute; top: -6%; z-index: 4; pointer-events: none; }
-.fs-confetti i { width: 4px; height: 6px; animation: fs-fall 4s linear infinite; }
-.fs-rain i { width: 1px; height: 14px; background: rgba(220, 230, 255, 0.55); animation: fs-drop 0.9s linear infinite; }
-@keyframes fs-drop { to { transform: translate(-12px, 330px); } }
-.fs-heart { animation: fs-beat 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
-@keyframes fs-beat { 50% { transform: scale(1.25); } }
-.fs-pulse { stroke-dasharray: 40; animation: fs-dash 1.6s linear infinite; }
-@keyframes fs-dash { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
-.fs-tv { animation: fs-tv 0.5s steps(2) infinite; }
-@keyframes fs-tv { 50% { fill: #cfe3f0; } }
-.fs-plane { animation: fs-plane 9s linear infinite; }
-@keyframes fs-plane { from { transform: translateX(80px); } to { transform: translateX(-260px); } }
-.fs-cap { animation: fs-toss 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
-@keyframes fs-toss { 50% { transform: translateY(-8px) rotate(160deg); } }
-.fs-smokecol { animation: fs-smoke 5s ease-in-out infinite; }
+/* 엔딩 크레딧 테스트 화면 (FilmTest.jsx, /result/test) - 작업이 끝나면 지워도 됨 */
+.ft { min-height: 100vh; background: #0f1118; color: #ece6da; font-family: var(--font-body, system-ui); padding: 20px 24px 40px; }
+.ft h1 { margin: 0; font-size: 26px; }
+.ft h2 { margin: 14px 0 8px; font-size: 14px; color: #a39d92; font-weight: 600; }
+.ft p { margin: 4px 0 0; color: #a39d92; font-size: 14px; }
+.ft-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.ft-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; }
+@media (max-width: 900px) { .ft-body { grid-template-columns: 1fr; } }
+.ft-side { background: #171a24; border-radius: 14px; padding: 4px 14px 16px; align-self: start; }
+.ft-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ft-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; }
+.ft-row.wrap { flex-wrap: wrap; }
+.ft-chip, .ft-btn { font: inherit; font-size: 13px; color: #ece6da; background: #232736; border: 1px solid #2f3446; border-radius: 999px; padding: 7px 12px; cursor: pointer; text-align: center; }
+.ft-chip:hover, .ft-btn:hover { background: #2c3142; }
+.ft-chip.on { background: #f2d49b; color: #1a1610; border-color: #f2d49b; font-weight: 700; }
+.ft-btn { background: #f2d49b; color: #1a1610; border: 0; font-weight: 700; padding: 8px 16px; }
+.ft-lab { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #a39d92; flex: 1; }
+.ft-lab.grow { flex: 3; }
+.ft-lab input, .ft-lab select { font: inherit; font-size: 14px; color: #ece6da; background: #0f1118; border: 1px solid #2f3446; border-radius: 8px; padding: 7px 8px; }
+.ft-check { display: flex; gap: 6px; align-items: center; font-size: 13px; margin-top: 10px; color: #cfc8bb; }
+.ft-stage { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5); }
+.ft-bar { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.ft-bar input[type=range] { flex: 1; min-width: 200px; accent-color: #f2d49b; }
+.ft-time { font-variant-numeric: tabular-nums; width: 48px; color: #a39d92; font-size: 13px; }
+.ft-all { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.ft-cell { background: none; border: 0; padding: 0; color: #cfc8bb; font: inherit; font-size: 13px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+.ft-thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: #000; }
+.ft-cell:hover .ft-thumb { outline: 2px solid #f2d49b; }
+.ft-lives { margin-top: 22px; }
+.ft-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.ft-life { display: grid; gap: 2px; text-align: left; background: #171a24; border: 1px solid #262a38; border-radius: 12px; padding: 10px 12px; color: #ece6da; font: inherit; cursor: pointer; }
+.ft-life:hover { border-color: #f2d49b; }
+.ft-life span { font-size: 12px; color: #a39d92; }
+.ft-life i { font-style: normal; font-size: 11px; color: #6f6a62; }
+
+/* 위쪽 자막이 밝은 벽 · 하늘 위에서도 읽히게 (11/24) */
+.ef-topshade { position: absolute; left: 0; right: 0; top: 0; height: 58%; pointer-events: none;
+  background: linear-gradient(rgba(20, 16, 30, 0.62), rgba(20, 16, 30, 0.42) 62%, rgba(20, 16, 30, 0)); }
