@@ -9,6 +9,7 @@
 //   result 가 아직 null 이면 '필름을 감는 중…'
 //   guestToken: 링크로 받은 비회원 토큰 (없으면 이 브라우저 것)
 //   actions: 끝난 뒤 '다시 보기' 옆에 놓을 버튼들
+//   filmData: 필름 재료를 밖에서 이미 받았으면 넘김 (추모관 B01 - 다른 사람 인생이라 /api/engine/film 대신 추모관 API 로 받음)
 //   바로 재생됨. 브라우저가 소리를 막고 있으면 '화면을 누르면 소리가 나요' → 한 번 누르면 소리만 켜짐
 //   result = GET /api/result/{lifeId} 응답 (ResultPage 가 이미 받은 것), 필름 재료는 여기서 GET /api/engine/film
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -228,8 +229,8 @@ const fmt = (ms) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, actions = [] }) {
-  const [data, setData] = useState(null);
+function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, actions = [], filmData = null }) {
+  const [data, setData] = useState(filmData);
   const [error, setError] = useState('');
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -246,6 +247,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
 
   // 필름 재료 + 입은 옷 (C21)
   useEffect(() => {
+    if (filmData) return;
     const isLogin = !!localStorage.getItem('token');
     const guestToken = guestParam || (isLogin ? null : localStorage.getItem('guestToken'));
     Promise.all([
@@ -257,7 +259,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
         const msg = err.response?.data;
         setError(typeof msg === 'string' && msg ? msg : '엔딩 크레딧을 불러오지 못했어요.');
       });
-  }, [lifeId, guestParam]);
+  }, [lifeId, guestParam, filmData]);
 
   const film = useMemo(() => {
     if (!data || !result) return null;

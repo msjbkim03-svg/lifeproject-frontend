@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
 import Badge from "../../common/ui/Badge";
-import MemorialSlot from "./MemorialSlot";
+import MemorialPortrait from "./MemorialPortrait";
 import s from "./MemorialRoom.module.css";
 
 // 추모관 목록 (B01)  주소: /memorial
@@ -48,7 +48,8 @@ function MemorialListPage() {
         <div className={s.cardGrid}>
           {list.map((c) => (
             <button key={c.lifeId} className={`panel ${s.card}`} onClick={() => navi(`/memorial/${c.lifeId}`)}>
-              <MemorialSlot label="초상" className={s.cardSlot} />
+              <MemorialPortrait gender={c.gender} age={c.deathAge} costume={{ hair: c.hair, top: c.top, hat: c.hat }}
+                className={s.cardPortrait} />
               <b className={s.cardName}>{c.name}</b>
               <span className={s.mono}>{c.birthYear} – {c.deathYear} · {c.deathAge}세</span>
               <span className={s.cardCountry}>{c.birthCountryName}</span>

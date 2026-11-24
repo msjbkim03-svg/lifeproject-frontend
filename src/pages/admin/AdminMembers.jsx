@@ -27,6 +27,7 @@ function AdminMembers() {
   const [target, setTarget] = useState(null);   // 탈퇴 확인 창에 띄울 회원 (null 이면 창 닫힘)
   const [message, setMessage] = useState("");
   const [reload, setReload] = useState(0);      // 숫자를 바꾸면 목록을 다시 불러옴
+  const [busy, setBusy] = useState(false);      // 탈퇴 요청 보내는 중 (연타 막기)
 
   // 1. 검색 조건·페이지가 바뀌거나 탈퇴 처리 뒤에 목록 다시 불러오기
   useEffect(() => {
@@ -52,6 +53,8 @@ function AdminMembers() {
 
   // 3. 확인 창의 [탈퇴시키기]
   const withdraw = async () => {
+    if (busy) return;
+    setBusy(true);
     try {
       await client.post(`/api/admin/members/${target.memberId}/withdraw`);
       setMessage(`${target.nickname} 님을 탈퇴 처리했어요.`);
@@ -60,6 +63,7 @@ function AdminMembers() {
       setMessage(err.response?.data?.message || "탈퇴 처리하지 못했어요.");
     } finally {
       setTarget(null);
+      setBusy(false);
     }
   };
 
@@ -153,7 +157,7 @@ function AdminMembers() {
             <p className="sub">탈퇴하면 이 회원은 바로 로그인할 수 없고 전화번호는 지워져요. 인생 기록과 추모관 글은 남아요.</p>
             <div className={styles.actions}>
               <Button onClick={() => setTarget(null)}>취소</Button>
-              <Button type="danger" onClick={withdraw}>탈퇴시키기</Button>
+              <Button type="danger" disabled={busy} onClick={withdraw}>{busy ? "처리하는 중…" : "탈퇴시키기"}</Button>
             </div>
           </>
         )}
