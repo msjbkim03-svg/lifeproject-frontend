@@ -7,7 +7,7 @@
 // 장면 목록은 scenes.js 가 처음 장면(pxScenes) 위에 덮어씀
 import { W, H, mix, dk, lt, rng, seg, ease, lerp, wave } from './pxCore';
 import { figure, lookOf } from './pxFigure';
-import { actor, room, frame, clock, plant, rug, shelf, lamp, bed, lieIn, hills, ground, bricks, bwin, roof, door, treeAt, bush, bench, lampPost } from './pxArt';
+import { actor, room, frame, clock, plant, rug, shelf, lamp, bed, lieIn, hills, skyline, ground, bricks, bwin, roof, door, treeAt, bush, bench, lampPost } from './pxArt';
 import {
   bubble, draw, skyBands, sun, cloud, birds, tree, grass, bloom, lights, heartPop, floatHeart,
   castOf, extra, paletteOf, dressed, mourn, other, bub, sparkle, roomSky, skyCols, bundleAt, smoke,
@@ -255,7 +255,7 @@ export function last(px, t, v) {
     const r = actor(px, t, 2 + i, p, xs[i], G + 12 + (i % 2) * 2, {
       gaze: -1, pose: closed ? (i % 2 ? 'bow' : 'hold') : 'stand', face: closed && i % 2 ? 'closed' : undefined, cry: t > 3000 + i * 300,
     });
-    if (i === 0 && t > 1000 && t < 2600) bub(px, 'heart', r);
+    if (i === 0 && t > 1000 && t < 2600) bub(px, 'dots', r);
   });
   if (!stand.length && !pt) {
     // 혼자 떠나는 밤: 고양이가 침대 끝에서 지켜봄
@@ -263,7 +263,7 @@ export function last(px, t, v) {
     px.rect(cx - 4, G - 14, 8, 4, '#3a3440'); px.rect(cx + 2, G - 17, 4, 4, '#3a3440'); px.px(cx + 2, G - 18, '#3a3440'); px.px(cx + 5, G - 18, '#3a3440');
     px.px(cx + 4, G - 16, Math.floor(t / 900) % 5 ? '#ffd37a' : '#3a3440'); px.vl(cx - 5, G - 16 + Math.round(wave(t, 1200, 1)), G - 12, '#3a3440');
   }
-  if (t > 600 && t < 2400) bubble(px, 'heart', bx - 24, G - 26);
+  if (t > 600 && t < 2400) bubble(px, 'dots', bx - 24, G - 26);
   // 간호사 (병실 · 문가에서 고개 숙임)
   if (sick) actor(px, t, 9, dressed(extra(2, { gender: 'F', age: 32 }), { style: 'tee', color: '#ffffff' }), 246, G + 6, { gaze: -1, pose: t > 3800 ? 'bow' : 'hold' });
   // 작은 빛이 피어올라 창밖으로
@@ -791,7 +791,7 @@ export function hosp(px, t, v) {
   const smile = t > 3600;
   lieIn(px, t, who, bx, G, 60, { quilt: '#cfe3f0', pattern: 'plain', face: smile || t < 600 ? 'open' : 'closed' });
   if (t > 600 && t < 2400) bubble(px, 'dots', bx - 24, G - 26);
-  if (smile) bubble(px, 'heart', bx - 24, G - 26);
+  if (smile) bubble(px, 'note', bx - 24, G - 26);
   // 협탁 (과일 바구니 · 꽃병 · 물컵)
   px.rect(146, G - 16, 18, 16, '#c8d0d6'); px.rect(146, G - 16, 18, 1, '#e0e6ea');
   if (t > 1400) { px.rect(148, G - 21, 10, 5, '#c9a06a'); px.disc(150, G - 22, 2, '#e8584c'); px.disc(154, G - 23, 2, '#f2c230'); px.disc(157, G - 22, 2, '#7ab65a'); }
@@ -805,7 +805,7 @@ export function hosp(px, t, v) {
     if (w.walk && i === 0) { px.rect(w.x - 6, G - 4, 8, 5, '#c9a06a'); px.disc(w.x - 4, G - 5, 2, '#e8584c'); }
     if (w.walk && i === 1) bouquet(px, w.x - 4, G - 2);
     if (i === 0 && t > 2400 && t < 3600) bub(px, 'sweat', r);
-    if (i === 0 && t > 3800) bub(px, 'heart', r);
+    if (i === 0 && t > 3800) bub(px, 'dots', r);
   });
   // 의사 (차트 · 설명)
   const dw = walkX(t, 1600, 2400, -10, 34);
@@ -845,21 +845,40 @@ export function loss(px, t, v) {
   // 사람들: 언덕길을 올라와 → 꽃 내려놓고 → 절 · 눈물
   const who = v.arg === 'pt' ? [k.me, ...k.kids.slice(0, 2)] : v.arg === 'fr' ? [k.me] : [k.me, k.pt, ...k.sib.slice(0, 1), ...k.kids.slice(0, 1)];
   const ppl = who.filter(Boolean).slice(0, 4);
+  // 가랑비 (3.2초부터) → 둘씩 짝지어 우산을 펴서 같이 씀 (홀수면 마지막 사람은 혼자), 아무도 비를 맞지 않게
+  const rainA = seg(t, 3200, 4200);
+  const umb = t > 3600;
+  const holder = (i) => (i % 2 === 1) || (i === ppl.length - 1); // 짝의 뒷사람 · 혼자 남은 사람이 우산을 듦
+  const rs = [];
   ppl.forEach((p, i) => {
     const w = walkX(t, i * 250, 2000 + i * 250, -20 - i * 18, 120 - i * 20);
     const bow = t > 2600 && t < 4600;
-    const r = actor(px, t, i, mourn(p), w.x, G + 12 + (i % 2) * 2, { walk: w.walk, gaze: 1, pose: bow ? 'bow' : i === 0 && t < 2200 ? 'hold' : 'stand', face: bow ? 'closed' : undefined, cry: t > 2800 });
+    const holdU = umb && holder(i);
+    const r = actor(px, t, i, mourn(p), w.x, G + 12 + (i % 2) * 2, { walk: w.walk, gaze: 1, pose: holdU ? 'wave1' : bow ? 'bow' : i === 0 && t < 2200 ? 'hold' : 'stand', face: bow ? 'closed' : undefined, cry: t > 2800 });
+    rs.push(r);
     if (i === 0 && t < 2200) bouquet(px, w.x + 3, G - 2);
-    if (i === 0 && t > 3000) bub(px, 'dots', r);
+    if (i === 0 && t > 3000 && !umb) bub(px, 'dots', r);
   });
-  // 가랑비 · 우산 (3.4초부터)
-  const rainA = seg(t, 3200, 4200);
-  if (rainA > 0) {
-    px.alpha(0.6 * rainA, () => { for (let i = 0; i < 50; i++) { const x = (i * 37.3) % 270 - 8; const y = ((t * 0.22 + i * 47) % 160) - 16; px.line(x, y, x - 1, y + 4, '#d6dae6'); } });
-    if (ppl.length > 1) {
-      const ux = 104;
-      for (let j = 0; j < 6; j++) px.hl(ux - 4 - j * 2, ux + 4 + j * 2, G - 36 + j, j === 5 ? '#2a2e3a' : '#3a3e4a');
-      px.vl(ux, G - 36, G - 14, '#2a2e3a');
+  if (rainA > 0) px.alpha(0.6 * rainA, () => { for (let i = 0; i < 50; i++) { const x = (i * 37.3) % 270 - 8; const y = ((t * 0.22 + i * 47) % 160) - 16; px.line(x, y, x - 1, y + 4, '#d6dae6'); } });
+  if (umb) {
+    const open = seg(t, 3600, 3900);
+    const cols = [['#5a5664', '#3e3a48', '#34303c'], ['#5a6478', '#3e4858', '#343c4c']];
+    for (let i = 0; i < rs.length; i++) {
+      if (!holder(i)) continue;
+      const pair = i % 2 === 1 ? [rs[i - 1], rs[i]] : [rs[i]];
+      const hx = rs[i].x + 6;
+      const hy = rs[i].headY + 2;
+      const cx = Math.round(pair.reduce((s2, q) => s2 + q.x, 0) / pair.length) + (pair.length === 2 ? 3 : 1);
+      const top = Math.min(...pair.map((q) => q.headY)) - 12;
+      const R = Math.round(3 + (pair.length === 2 ? 12 : 8) * open);
+      const [c0, c1, c2] = cols[(i >> 1) % 2];
+      px.line(hx, hy, cx, top + 5, '#3a3036');
+      px.px(hx, hy + 1, '#3a3036'); px.px(hx - 1, hy + 2, '#3a3036');
+      for (let j = 0; j <= 5; j++) { const ww = Math.round(R * Math.sqrt(1 - ((5 - j) / 5.6) ** 2)); px.hl(cx - ww, cx + ww, top + j, j === 0 ? c0 : j < 3 ? c1 : c2); }
+      for (let x = cx - R; x <= cx + R; x++) if (((x - cx + 40) % 5) < 3) px.px(x, top + 6, c2);
+      [-0.5, 0, 0.5].forEach((f) => px.line(cx, top, Math.round(cx + f * R), top + 5, c0));
+      px.vl(cx, top - 2, top - 1, '#3a3036');
+      for (let d = 0; d < 3; d++) { const q = ((t + d * 260 + i * 100) % 700) / 700; px.px(cx - R + 1 + d * R, top + 7 + Math.round(q * 6), '#d6dae6'); }
     }
   }
   // 까마귀 두 마리가 날아감
@@ -897,16 +916,16 @@ export function fly(px, t, v) {
   px.rect(214, 52, 40, 33, '#3f6aa8'); px.rect(218, 58, 32, 27, '#1e2430'); px.rect(222, 46, 24, 6, '#f2c230'); px.hl(225, 243, 48, '#3a3440');
   // 수속대 · 짐 수레 (왼쪽 뒤)
   px.rect(10, 70, 60, 14, '#b8bec8'); px.rect(10, 70, 60, 2, '#d8dce4'); for (let i = 0; i < 3; i++) actor(px, t, 20 + i, extra(i * 2, { age: 30 + i * 5 }), 20 + i * 20, 86, { gaze: -1, back: true, noShadow: true });
-  // 남는 부모님 (안고 → 울며 손 흔듦)
-  const stay = k.par.length ? k.par.slice(0, 2) : [extra(9, { gender: 'F', age: 60 })];
-  stay.forEach((p, i) => { const r = actor(px, t, 5 + i, p, 40 - i * 18, G + 16, { pose: t < 1400 ? 'hold' : Math.floor((t + i * 140) / 260) % 2 ? 'wave1' : 'wave2', gaze: 1, cry: t > 1000 }); if (i === 0 && t > 1600) bub(px, 'heart', r); });
+  // 배웅하는 친척 · 이웃 (안고 → 울며 손 흔듦) - 가족은 다 같이 떠남
+  const stay = [extra(9, { age: 66 }), extra(2, { age: 40 })];
+  stay.forEach((p, i) => { const r = actor(px, t, 5 + i, p, 40 - i * 18, G + 16, { pose: t < 1400 ? 'hold' : Math.floor((t + i * 140) / 260) % 2 ? 'wave1' : 'wave2', gaze: 1, cry: t > 1000 }); if (i === 0 && t > 1600) bub(px, 'dots', r); });
   // 떠나는 나와 가족 (가방 끌고)
   const go = seg(t, 1400, 4200);
   const fade = 1 - seg(t, 4000, 4600);
-  const fam = [k.me, k.pt, ...k.kids.slice(0, 2)].filter(Boolean);
+  const fam = [k.me, k.pt, ...k.kids, ...k.par, ...k.sib].filter(Boolean).slice(0, 6);
+  const gap = fam.length > 4 ? 14 : 18;
   fam.forEach((p, i) => {
-    const x0 = 64 + i * 0 - i * 18 + 18 * (fam.length - 1);
-    const x = Math.round(lerp(64 - i * 18, 226 - i * 18, ease(go)));
+    const x = Math.round(lerp(64 + (fam.length - 1) * gap * 0.5 - i * gap + 20, 228 - i * gap, ease(go)));
     px.alpha(fade, () => {
       const r = actor(px, t, i, p, x, G + 18 - (i % 2) * 2, { walk: go > 0 && go < 1, gaze: go < 0.05 ? -1 : 1, pose: t < 1400 && i === 0 ? 'hold' : undefined });
       if ((p.age ?? 30) >= 13) { px.rect(x + 6, G + 8, 7, 9, ['#e8584c', '#3f6aa8', '#f2c230'][i % 3]); px.hl(x + 7, x + 11, G + 7, OUT); px.vl(x + 7, G + 2, G + 7, OUT); px.px(x + 7, G + 17, OUT); px.px(x + 12, G + 17, OUT); }
@@ -968,7 +987,7 @@ export function flee(px, t, v) {
 export function rain(px, t, v) {
   const c = paletteOf(v);
   const k = castOf(v);
-  const alone = /각자의 길|이혼/.test(v.text || '');
+  const alone = /각자의 길|이혼|헤어/.test(v.text || '') || v.divorced === true;
   const G = 108;
   px.bands(0, 100, ['#2e3646', '#3a4252', '#4a5262']);
   // 건물 · 불 켜진 가게
@@ -1007,12 +1026,12 @@ export function rain(px, t, v) {
   }
   // 실직이면 가족이 우산 들고 와 곁에 앉음
   if (!alone && t > 3600) {
-    const mate = k.pt || k.par[0] || extra(2, { gender: 'F', age: 50 });
+    const mate = (v.married !== false && k.pt) || k.par[0] || k.sib[0] || extra(2, { gender: 'F', age: 50 });
     const m = walkX(t, 3600, 4600, 270, sx + 4);
     const sat = t > 4600;
     const r = actor(px, t, 1, mate, m.x, sat ? G - 4 : G + 6, { walk: m.walk, gaze: -1, pose: sat ? 'sit' : 'hold', noShadow: sat });
     if (!sat) { const ux = m.x - 3; const uy = r.headY - 12; for (let j = 0; j < 7; j++) px.hl(ux - 3 - j * 2, ux + 3 + j * 2, uy + j, j === 6 ? '#a83a34' : '#c9544a'); px.vl(ux, uy, uy + 18, OUT); }
-    if (sat) { bub(px, 'heart', r); [0, 1].forEach((i) => floatHeart(px, sx - 6 + i * 6, G - 30, t, 4800 + i * 500, '#f6a5bd')); }
+    if (sat) { const ux = Math.round((m.x + me.x) / 2); const uy = r.headY - 10; for (let j = 0; j < 6; j++) px.hl(ux - 4 - j * 2, ux + 4 + j * 2, uy + j, j === 5 ? '#a83a34' : '#c9544a'); px.vl(ux, uy, uy + 14, OUT); }
   }
   if (alone && t > 4000) { // 버스가 와서 불빛만 비추고 떠남
     const bq = seg(t, 4000, 6500); const bx = lerp(300, -100, bq);
@@ -1069,10 +1088,10 @@ export function news(px, t, v) {
     if (toWin) x = Math.round(lerp(x, 30, ease(seg(t, 2600, 3600))));
     const r = actor(px, t, i, p, x, st ? G + 12 : G - 6, {
       pose: st ? (toWin && t > 3600 ? 'stand' : 'hold') : 'sit', gaze: toWin && t > 2600 ? -1 : 1, noShadow: !st,
-      walk: toWin && t > 2600 && t < 3600, cry: kid && t > 2000, bob: kid && alert ? -1 : 0,
+      walk: toWin && t > 2600 && t < 3600, face: alert && t > 1500 ? 'shock' : undefined, bob: kid && alert ? -1 : 0,
     });
     if (alert && i === 0 && t < 2600) bub(px, 'bang', r);
-    if (alert && kid) bub(px, 'sweat', r);
+    if (alert && kid && t > 1600 && t < 3000) bub(px, 'bang', r);
     if (t > 3000 && i === 0) bub(px, 'dots', r);
   };
   fam.forEach((p, i) => { if (!standing(p, i)) drawOne(p, i); });
@@ -1126,7 +1145,7 @@ export function home(px, t, v) {
   const cheer = t > 2000 && t < 3000;
   const me = actor(px, t, 0, k.me, mx, G + 12, { walk: w1.walk || (box && carry.walk), gaze: box ? 1 : 1, pose: cheer ? cheerPose(t, 0) : box ? 'hold' : t > 1000 && t < 1500 ? 'hold' : undefined, bob: cheer ? hop(t, 0) : 0 });
   if (t > 1000 && t < 1600) { px.rect(mx + 3, G - 6, 3, 2, '#f2c230'); px.px(mx + 6, G - 6, '#f2c230'); sparkle(px, mx + 6, G - 9, t); }
-  if (box) { px.rect(mx - 4, G - 10, 9, 7, '#c9a06a'); px.hl(mx - 4, mx + 4, G - 8, '#a8804a'); }
+  if (box) { const by = me.headY + 15; px.rect(mx - 4, by, 9, 6, '#c9a06a'); px.hl(mx - 4, mx + 4, by + 2, '#a8804a'); px.vl(mx, by, by + 2, '#e8d0a0'); }
   if (cheer) bub(px, 'star', me);
   // 가족: 같이 만세 → 상자 · 아이들은 마당을 뛰어다님
   const fam = [k.pt, ...k.kids, ...k.par].filter(Boolean).slice(0, 4);
@@ -1140,7 +1159,7 @@ export function home(px, t, v) {
     }
     const x0 = 136 - i * 18;
     const r = actor(px, t, 1 + i, p, x0, G + 14 + (i % 2) * 2, { gaze: 1, pose: cheer ? cheerPose(t, i + 1) : t > 3000 ? 'hold' : 'stand', bob: cheer ? hop(t, i + 1) : 0 });
-    if (t > 3000) { px.rect(x0 - 4, G - 8 + (i % 2) * 2, 9, 7, '#c9a06a'); }
+    if (t > 3000) { const by = r.headY + 15; px.rect(x0 - 4, by, 9, 6, '#c9a06a'); px.hl(x0 - 4, x0 + 4, by + 2, '#a8804a'); px.vl(x0, by, by + 2, '#e8d0a0'); }
     if (i === 0 && t > 2200) bub(px, 'heart', r);
   });
   // 강아지 · 옆집 이웃 (화분 들고 인사)
@@ -1183,7 +1202,7 @@ export function award(px, t, v) {
   const r = actor(px, t, 0, k.me, mx, G, { walk: up > 0 && up < 1, pose: bow ? 'bow' : raise ? 'up' : got ? 'hold' : undefined, gaze: up >= 1 ? 0 : 1, bob: raise ? hop(t, 0, 2) : 0 });
   if (got && !raise) { px.rect(mx - 3, G - 13, 7, 5, '#f2c230'); px.rect(mx - 1, G - 8, 3, 2, '#d8a020'); }
   if (raise) { const ty = r.headY - 7 + Math.round(wave(t, 700, 1)); px.rect(mx - 3, ty, 7, 5, '#f2c230'); px.rect(mx - 1, ty + 5, 3, 2, '#d8a020'); px.rect(mx - 3, ty + 7, 7, 1, '#b88a20'); px.px(mx - 4, ty + 1, '#f2c230'); px.px(mx + 4, ty + 1, '#f2c230'); px.px(mx - 1, ty + 1, '#fff4b0'); sparkle(px, mx + 6, ty - 2, t); sparkle(px, mx - 6, ty, t + 300); }
-  if (t > 3400) bub(px, 'star', r);
+  if (t > 3400) bubble(px, 'star', r.x + 14, r.headY + 4);
   // 객석 (앉은 뒷모습 · 박수 · 일어나 환호) + 의자 등받이
   const fam = ((v.age ?? 30) < 20 ? k.par : [k.pt, ...k.kids]).filter(Boolean);
   const crowd = [...fam, extra(0), extra(3), extra(5), extra(9), extra(1), extra(6), extra(2)].slice(0, 8);
@@ -1214,9 +1233,9 @@ function lottery(px, t, v) {
   const hit = t > 2700;
   const shake = t > 2400 && t < 2900 ? (Math.floor(t / 50) % 2 ? 1 : -1) : 0;
   const me = actor(px, t, 0, k.me, 124 + shake, G + 14, { gaze: hit ? 0 : t % 1000 < 500 ? -1 : 1, pose: hit ? cheerPose(t, 0) : 'hold', bob: hit ? hop(t, 0, 4) : 0 });
-  if (!hit) { px.rect(124 + shake - 3, G - 4, 7, 5, '#fffaf0'); px.hl(124 + shake - 2, 124 + shake + 2, G - 2, '#e8584c'); }
+  if (!hit) { const ty = me.headY + 15; px.rect(124 + shake - 3, ty, 7, 4, '#fffaf0'); px.hl(124 + shake - 2, 124 + shake + 2, ty + 2, '#e8584c'); }
   if (t > 2400 && t < 2900) bub(px, 'bang', me);
-  if (hit) bub(px, 'star', me);
+  if (hit) bubble(px, 'star', me.x + 14, me.headY + 4);
   // 가족 · 행인이 달려옴
   const fam = [k.pt, ...k.kids].filter(Boolean).slice(0, 2);
   [...fam, extra(5, { age: 50 })].forEach((p, i) => {
@@ -1291,13 +1310,14 @@ export function prison(px, t, v) {
   const writing = t > 2400 && t < 5200;
   // 나: 침상에 앉아 고개 숙임 → 책상으로 가 편지 → 창의 새를 올려다봄
   const w = walkX(t, 2000, 2400, 50, 190);
-  const me = actor(px, t, 0, k.me, t < 2000 ? 50 : w.x, t < 2000 ? G - 12 : G + 4, {
+  const inmate = dressed({ ...k.me, costume: undefined }, { style: 'stripe', color: '#8a96a6' }, { hat: null });
+  const me = actor(px, t, 0, inmate, t < 2000 ? 50 : w.x, t < 2000 ? G - 12 : G + 4, {
     pose: t < 2000 ? 'bow' : writing ? 'hold' : 'stand', walk: w.walk, gaze: writing ? 1 : t >= 5200 ? -1 : 1, face: t < 2000 ? 'closed' : undefined, noShadow: t < 2000,
   });
   if (t < 2000 && t > 600) bub(px, 'dots', me);
   if (writing || t >= 5200) { px.rect(200, G - 19, 8, 3, '#fffaf0'); px.hl(201, 206, G - 18, '#8a8478'); }
   if (writing) px.px(204 + Math.round(wave(t, 300, 2)), G - 20, '#3a3440');
-  if (t > 5600) bub(px, 'heart', me);
+  if (t > 5600) bub(px, 'dots', me);
   // 새 (창 쇠창살에 앉았다 감)
   const bq = seg(t, 4600, 7400);
   if (bq > 0 && bq < 1) { const sit = bq > 0.25 && bq < 0.7; const bx = sit ? wx + 12 : lerp(wx + 40, wx + 12, Math.min(1, bq * 4)) + (bq > 0.7 ? (bq - 0.7) * 120 : 0); const by = sit ? 16 : 10 - (bq > 0.7 ? (bq - 0.7) * 30 : 0); const f = Math.floor(t / 120) % 2; px.rect(bx, by, 3, 2, '#8a6a4f'); px.px(bx + 3, by, '#f2a030'); if (!sit) { px.px(bx - 1, by - f, '#8a6a4f'); px.px(bx + 2, by - f, '#8a6a4f'); } }
@@ -1312,12 +1332,28 @@ export function prison(px, t, v) {
 // ───────── 일터 (일 시작 · 승진) ─────────
 // 산업에 따라: 사무실(서비스) · 공장(공업) · 논밭(농업). 첫 출근: 문으로 들어서자 동료들이 돌아보며 박수 →
 // 팀장이 악수 · 자리 안내 → 일하는 모습 (자판 두드리기 / 컨베이어 · 불꽃 / 모내기) · 동료가 커피(새참)를 건넴
+// 직업 이름 → 일터 종류 (filmPlan 이 v.job 에 '노점상·소상인' 같은 이름을 넘김, 없으면 산업으로)
+const JOB_KINDS = [
+  ['sea', /어부|선원|어업|해녀|항해|양식/],
+  ['farm', /농|목축|목장|축산|과수|원예|임업|양봉/],
+  ['road', /배달|택배|운전|기사|택시|버스|트럭/],
+  ['factory', /공장|조립|생산|물류|정비|수공업|재봉|기계|창고|건설|목수|용접|배관|광부|광산|노동자|미장/],
+  ['shop', /노점|상인|가게|판매|점원|요리|식당|미용|이발|청소|미화|시장|카페|제빵|행상/],
+];
+export function jobKind(v) {
+  const j = v.job || '';
+  const hit = JOB_KINDS.find(([, re]) => re.test(j));
+  if (hit) return hit[0];
+  return v.industry === 'AGRI' ? 'farm' : v.industry === 'INDUSTRY' ? 'factory' : 'office';
+}
 export function work(px, t, v) {
   const c = paletteOf(v);
   const k = castOf(v);
-  const ind = v.industry || 'SERVICE';
+  const kind = jobKind(v);
+  const ind = { office: 'SERVICE', factory: 'INDUSTRY', farm: 'AGRI' }[kind] || kind.toUpperCase();
+  const herd = /목축|목장|축산/.test(v.job || '');
   const G = 112;
-  const hat = ind === 'INDUSTRY' ? { style: 'cap', color: '#f2b22e' } : ind === 'AGRI' ? { style: 'straw', color: '#e2c27a' } : null;
+  const hat = ind === 'INDUSTRY' ? { style: 'cap', color: '#f2b22e' } : ind === 'AGRI' ? { style: 'straw', color: '#e2c27a' } : ind === 'SEA' ? { style: 'beanie', color: '#e8584c' } : ind === 'ROAD' ? { style: 'cap', color: '#3f6aa8' } : null;
   const wear = (p) => { const l = p.look || lookOf({ gender: p.gender, age: p.age, costume: p.costume, soft: p.soft }); return { ...p, look: { ...l, ...(hat ? { hat } : {}), ...(ind === 'SERVICE' ? { top: { style: 'suit', color: p.gender === 'F' ? '#5a6a8a' : '#3a4a64' } } : {}) } }; };
   const mates = (v.extra && v.extra.length ? v.extra : [{ gender: 'M', age: 34 }, { gender: 'F', age: 29 }]).map((p, i) => wear(extra(i + 3, p)));
   const more = [wear(extra(0, { age: 41 })), wear(extra(7, { age: 26 }))];
@@ -1355,13 +1391,62 @@ export function work(px, t, v) {
     px.rect(236, 30, 18, 4, '#e8584c'); px.rect(240, 34, 2, G - 34, '#3a3e46');
     door(px, 236, G, 16, 30, '#7a8490', seg(t, 0, 400) - seg(t, 1400, 1800), '#e6e8ee');
     mates.slice(0, 2).concat(more).slice(0, 3).forEach((p, i) => actor(px, t, 3 + i, p, [30, 66, 102][i], G + 4, { pose: greet ? clapPose(t, i) : Math.floor((t + i * 200) / 400) % 2 ? 'hold' : 'stand', gaze: greet ? 1 : -1 }));
+  } else if (ind === 'SHOP') {
+    // 시장 골목: 뒤 가게들 · 줄무늬 차양 노점 셋 (가운데가 내 가게) · 과일 바구니 · 매단 등 · 손님
+    outdoor(px, t, c, { hillY: 88 });
+    ground(px, c, false, G - 6, 'mk', true);
+    [[0, 64, 50], [66, 60, 54], [192, 64, 50]].forEach(([x, w, y], i) => { bricks(px, x, y, w, G - 6 - y, lt(c.wall, 0.03 * i)); px.rect(x, y - 3, w, 3, c.roofC); bwin(px, x + 8, y + 8, 10, 9, true, true); bwin(px, x + w - 20, y + 8, 10, 9, false, true); });
+    for (let i = 0; i < 16; i++) { const x = i * 17; const y = 44 + Math.round(Math.sin(i / 2.5) * 2); px.rect(x, y, 2, 2, ['#f05a7e', '#ffd37a', '#9fc7e0'][i % 3]); } // 골목 위 줄 장식
+    const stall = (x, awn, goods) => {
+      for (let i = 0; i < 36; i += 4) { px.rect(x - 18 + i, G - 42, 4, 7, (i / 4) % 2 ? '#fbf8f2' : awn); px.rect(x - 18 + i, G - 35, 4, 1, (i / 4) % 2 ? '#e6dccd' : dk(awn, 0.2)); if ((i / 4) % 2 === 0) px.px(x - 17 + i, G - 34, dk(awn, 0.2)); }
+      px.vl(x - 17, G - 35, G, '#6a4a32'); px.vl(x + 17, G - 35, G, '#6a4a32');
+      px.rect(x - 18, G - 16, 36, 3, '#b88a5a'); px.rect(x - 18, G - 13, 36, 13, '#8a5a3b'); for (let j = 0; j < 3; j++) px.hl(x - 17, x + 17, G - 10 + j * 3, '#7a4a2f');
+      goods.forEach((g, i) => { const gx = x - 14 + i * 8; px.rect(gx - 1, G - 20, 7, 4, '#c9a06a'); px.hl(gx - 1, gx + 5, G - 18, '#a87a48'); for (let q = 0; q < 3; q++) px.disc(gx + 1 + q * 2, G - 21, 1, g); px.px(gx + 1, G - 22, lt(g, 0.5)); });
+      px.vl(x, G - 35, G - 31, '#3a3440'); px.rect(x - 1, G - 31, 3, 3, '#ffd37a'); px.alpha(0.18, () => px.disc(x, G - 30, 6, '#ffd37a'));
+    };
+    stall(40, '#3f8a6a', ['#e8584c', '#f2c230', '#7ab65a', '#f29a3a']);
+    stall(128, '#c9544a', ['#7ab65a', '#e8584c', '#f2c230', '#9b6fd0']);
+    stall(216, '#3f6aa8', ['#f2c230', '#f29a3a', '#e8584c', '#7ab65a']);
+    px.rect(146, G - 24, 10, 6, '#fbf8f2'); px.hl(147, 154, G - 22, '#c9544a'); // 가격표
+    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [62, 238][i], G + 8, { pose: greet ? clapPose(t, i) : Math.floor((t + i * 300) / 600) % 2 ? 'wave1' : 'stand', gaze: i ? -1 : 1 }));
+    // 손님 (장바구니) 이 다가와 삼
+    if (working) [0, 1].forEach((i) => { const cw = walkX(t, 3000 + i * 900, 4200 + i * 900, i ? -20 : 280, i ? 104 : 168); const r = actor(px, t, 6 + i, extra(i ? 1 : 6, { age: i ? 52 : 33 }), cw.x, G + 16, { walk: cw.walk, gaze: i ? 1 : -1, pose: cw.walk ? undefined : 'hold' }); px.rect(cw.x + (i ? 4 : -8), G + 2, 5, 5, '#c9a06a'); if (!cw.walk && i === 0) bub(px, 'note', r); });
+  } else if (ind === 'SEA') {
+    // 항구: 바다 (반짝 물결) · 출렁이는 고깃배 (돛대 · 그물 · 선실) · 나무 부두 · 생선 상자 · 갈매기
+    outdoor(px, t, c, { hillY: 84, sunX: 60 });
+    const sw = c.water || '#9fc7e0';
+    px.rect(0, 90, W, G - 88, sw); for (let y = 91; y < G; y += 3) for (let x = ((y * 7) % 11) - ((t * 0.01) % 11); x < W; x += 11) px.hl(x, x + 3, y, lt(sw, 0.35));
+    const by = G - 16 + Math.round(wave(t, 1600, 1.2));
+    for (let j = 0; j < 8; j++) px.hl(52 + j * 2, 150 - j * 3, by + j, j < 2 ? '#f2ece0' : j === 2 ? '#c9544a' : '#3f6aa8');
+    px.rect(118, by - 12, 20, 12, '#f2f2f2'); px.rect(121, by - 9, 5, 4, '#9fc7e0'); px.rect(129, by - 9, 5, 4, '#9fc7e0'); px.rect(116, by - 13, 24, 2, '#c9544a');
+    px.vl(86, by - 36, by, '#6a4a32'); px.rect(87, by - 36, 7, 4, '#f2c230'); px.line(86, by - 34, 60, by - 2, '#8a8478'); px.line(86, by - 34, 112, by - 2, '#8a8478');
+    for (let j = 0; j < 8; j++) for (let i = 0; i < 6; i++) px.px(62 + i * 4 + j, by - 2 - j * 3 + (i % 2), '#c8c0a8'); // 걸린 그물
+    px.rect(0, G - 2, W, H - G + 2, '#a87650'); for (let x = 0; x < W; x += 9) px.vl(x, G - 2, H, '#8a5a3b'); px.hl(0, W, G - 2, '#c99a6a');
+    [30, 200].forEach((x) => { px.rect(x, G - 10, 4, 10, '#6a4a32'); px.rect(x - 1, G - 11, 6, 2, '#8a6a4f'); });
+    [[176, '#9fb4c8'], [214, '#c8d4e0']].forEach(([x, f]) => { px.rect(x - 8, G - 8, 16, 8, '#5a8aa8'); px.hl(x - 8, x + 7, G - 8, '#7aaac8'); for (let q = 0; q < 4; q++) { px.rect(x - 7 + q * 4, G - 10, 3, 2, f); px.px(x - 5 + q * 4, G - 10, '#2e2a33'); } });
+    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [158, 236][i], G + 8, { pose: greet ? clapPose(t, i) : Math.floor((t + i * 250) / 450) % 2 ? 'up' : 'hold', gaze: -1 }));
+  } else if (ind === 'ROAD') {
+    // 길 위: 도시 · 차도 (차선이 흘러감) · 영업소 앞 상자 더미 → 오토바이(차)를 타고 출발
+    outdoor(px, t, c, { hillY: 90 });
+    skyline(px, c, false, 100, 'rd' + v.countryCode, t);
+    ground(px, c, false, G - 6, 'rd', true);
+    px.rect(0, G + 4, W, 16, '#6a6e76'); for (let x = -((t * 0.08) % 24); x < W; x += 24) px.rect(x, G + 11, 12, 2, '#f2f2f2');
+    bricks(px, 150, 58, 100, G - 64, lt(c.wall, 0.04)); px.rect(150, 54, 100, 6, '#3f6aa8'); px.rect(170, 55, 60, 4, '#ffffff'); door(px, 226, G - 6, 16, 22, '#6a7a8a', 0.6, '#e6e8ee');
+    for (let i = 0; i < 6; i++) { const x = 160 + (i % 3) * 11; const y = G - 13 - Math.floor(i / 3) * 7; px.rect(x, y, 10, 7, '#c9a06a'); px.hl(x, x + 9, y + 3, '#a07a48'); px.vl(x + 5, y, y + 6, '#a07a48'); }
+    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [200, 216][i], G + 6, { pose: greet ? clapPose(t, i) : 'hold', gaze: -1 }));
   } else {
     // 논밭: 하늘 · 산 · 물 댄 논 줄 · 초가 · 허수아비 · 물소
     outdoor(px, t, c, { sunX: 200, hillY: 86 });
+    if (herd) {
+      grass(px, 96, H, '#9ac070', '#86ae60', '#aed084', 'hd');
+      for (let x = 4; x < 150; x += 12) { px.rect(x, 92, 2, 12, '#8a6a4f'); } px.hl(0, 150, 95, '#8a6a4f'); px.hl(0, 150, 100, '#8a6a4f');
+      [[40, 104, 0], [96, 100, 1], [132, 108, 2]].forEach(([x0, y, i]) => { const x = x0 + Math.round(wave(t + i * 900, 5000, 3)); const eat = Math.floor((t + i * 700) / 900) % 2; px.rect(x - 9, y - 7, 18, 8, '#f6f2ea'); px.rect(x - 4, y - 6, 5, 4, '#3a3440'); px.rect(x + 3, y - 3, 4, 3, '#3a3440'); px.rect(x + 9, y - 8 + eat * 3, 5, 5, '#f6f2ea'); px.px(x + 12, y - 7 + eat * 3, '#2e2a33'); px.rect(x + 12, y - 4 + eat * 3, 3, 2, '#f2b8a8'); [x - 8, x - 4, x + 3, x + 7].forEach((lx) => px.vl(lx, y + 1, y + 4, '#5a5460')); px.vl(x - 10, y - 6, y - 1, '#5a5460'); });
+    } else {
     const paddy = mix(c.water || '#9fc7e0', '#9ac080', 0.35);
     px.rect(0, 96, W, H - 96, paddy);
     for (let j = 0; j < 9; j++) for (let x = (j % 2) * 6 - ((t * 0.002) % 12); x < W; x += 12) { const y = 100 + j * 5; px.rect(x, y, 2, 3, c.leaf); px.px(x + 1, y - 1, lt(c.leaf, 0.3)); }
     px.alpha(0.3, () => { for (let y = 98; y < H; y += 3) px.hl(0, W, y, '#ffffff'); });
+    }
     px.rect(200, 62, 44, 32, '#c9a07a'); roof(px, 196, 248, 62, 46, '#d8b870'); door(px, 216, 94, 12, 18, '#6a4a32', 0.4, '#3a2a20');
     px.vl(170, 72, 100, '#8a6a4f'); px.rect(162, 76, 17, 2, '#8a6a4f'); px.disc(170, 70, 3, '#e2c27a'); px.rect(166, 78, 8, 8, '#d84a4a');
     const bx = 30 + Math.round(wave(t, 4000, 6));
@@ -1373,17 +1458,26 @@ export function work(px, t, v) {
   const lr = actor(px, t, 8, lead, 192, G + 12, { gaze: 1, pose: greet ? 'hold' : 'stand' });
   if (greet) bub(px, 'note', lr);
   // 나: 문으로 들어와 → 인사 · 악수 → 자리에서 일함
-  const sx = ind === 'SERVICE' ? 150 : ind === 'INDUSTRY' ? 130 : 160;
+  const sx = { SERVICE: 150, INDUSTRY: 130, AGRI: 160, SHOP: 150, SEA: 120, ROAD: 140 }[ind] || 150;
   const w2 = walkX(t, 2600, 3000, in1.x, sx);
-  const mx = t < 2600 ? in1.x : w2.x;
-  const me = actor(px, t, 0, wear(k.me), mx, working && ind === 'SERVICE' ? G - 4 : G + 14, {
-    walk: in1.walk || w2.walk, gaze: t < 2600 ? -1 : -1, pose: greet ? 'hold' : working ? (ind === 'SERVICE' ? 'sit' : Math.floor(t / 400) % 2 ? 'hold' : ind === 'AGRI' ? 'bow' : 'stand') : undefined, noShadow: working && ind === 'SERVICE',
+  const roadGo = ind === 'ROAD' ? seg(t, 3600, 6000) : 0;
+  const mx = roadGo > 0 ? Math.round(lerp(sx + 8, 300, ease(roadGo))) - 2 : t < 2600 ? in1.x : w2.x;
+  const riding = roadGo > 0;
+  const me = actor(px, t, 0, wear(k.me), mx, working && ind === 'SERVICE' ? G - 4 : riding ? G + 8 : G + 14, {
+    walk: in1.walk || w2.walk, gaze: riding ? 1 : -1, pose: greet ? 'hold' : working ? (ind === 'SERVICE' ? 'sit' : ind === 'SHOP' ? (Math.floor(t / 500) % 2 ? 'wave1' : 'hold') : ind === 'SEA' ? (Math.floor(t / 450) % 2 ? 'up' : 'hold') : ind === 'ROAD' ? (riding ? 'sit' : 'hold') : Math.floor(t / 400) % 2 ? 'hold' : ind === 'AGRI' && !herd ? 'bow' : 'stand') : undefined, noShadow: working && ind === 'SERVICE',
   });
+  if (ind === 'ROAD' && working) { // 상자를 싣고 오토바이로 출발 (화면 밖으로)
+    const go = seg(t, 3600, 6000);
+    const ox = Math.round(lerp(sx + 8, 300, ease(go)));
+    px.rect(ox - 12, G + 8, 22, 4, '#c9544a'); px.rect(ox + 6, G + 2, 3, 7, '#3a3440'); px.rect(ox - 14, G + 2, 9, 7, '#c9a06a'); px.hl(ox - 14, ox - 6, G + 5, '#a07a48');
+    [ox - 9, ox + 7].forEach((wx) => { px.disc(wx, G + 13, 3, '#2e2a33'); px.px(wx, G + 13, '#9aa6b2'); });
+    if (go > 0) px.alpha(0.4, () => [0, 1, 2].forEach((i) => px.disc(ox - 18 - i * 5, G + 11 - i, 1 + i, '#e6e8ee')));
+  }
   if (working && ind === 'SERVICE') { chair(px, mx, G + 2, '#3a4450', -1); px.px(mx - 6 + (Math.floor(t / 90) % 3), G - 15, '#ffffff'); }
   if (greet) bub(px, 'sweat', me);
-  if (t > 3600) bub(px, 'star', me);
+  if (t > 3600 && !riding) bub(px, 'star', me);
   // 동료가 커피(새참)를 건넴
-  if (t > 4000) { const cw = walkX(t, 4000, 4800, 60, mx - 18); const p = more[0]; actor(px, t, 7, p, cw.x, G + 16, { walk: cw.walk, gaze: 1, pose: 'hold' }); px.rect(cw.x + 3, G + 2, 3, 4, ind === 'AGRI' ? '#c9a07a' : '#ffffff'); steam(px, cw.x + 4, G, t); if (!cw.walk) bubble(px, 'heart', cw.x + 3, G - 14); }
+  if (t > 4000 && ind !== 'ROAD') { const cw = walkX(t, 4000, 4800, 60, mx - 18); const p = more[0]; actor(px, t, 7, p, cw.x, G + 16, { walk: cw.walk, gaze: 1, pose: 'hold' }); px.rect(cw.x + 3, G + 2, 3, 4, ind === 'AGRI' ? '#c9a07a' : '#ffffff'); steam(px, cw.x + 4, G, t); if (!cw.walk) bubble(px, 'heart', cw.x + 3, G - 14); }
 }
 
 // ───────── 장례 ─────────

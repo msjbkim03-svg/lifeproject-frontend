@@ -315,9 +315,21 @@ export function villageAt(ctx, a, hint, opts = {}) {
 //   떠나보낸 해는 떠난 분을 빼고 / 일 시작 · 승진은 마을 일터 + 동료 두 명
 const COWORK = [{ gender: 'M', age: 34 }, { gender: 'F', age: 29 }];
 //   모든 장면을 장면 그림(FilmScene)으로: 일 시작 · 승진은 'work', 맞는 그림이 없으면 'village' (동네 산책)
+// 그 해에 시작한 일 이름: 인생 기록 문장('노점상·소상인 일을 시작했다')에서, 없으면 그 뒤 몇 해의 직업 이름
+//   (직업 · 산업 기록은 일을 시작한 해보다 한두 해 늦게 찍혀서 그 해만 보면 비어 있음)
+function jobAt(ctx, a, t) {
+  const m = /([^.]*?)\s*일을 시작/.exec(t || '');
+  if (m && m[1].trim()) return m[1].trim();
+  for (let d = 0; d <= 3; d++) { const y = ctx.years[a + d]; if (y && y.jobName) return y.jobName; }
+  return null;
+}
+function industryNear(ctx, a) {
+  for (let d = 0; d <= 3; d++) { const s = ctx.industryAt(a + d); if (s) return s; }
+  return null;
+}
 function sceneAt(ctx, m) {
   const v = villageAt(ctx, m.a, m.place);
-  if (m.arg === 'cowork') return { ...v, scene: 'work', text: m.t, year: ctx.by + m.a, extra: COWORK.map((p) => ({ ...p, age: Math.max(20, m.a + (p.age - 30)) })) };
+  if (m.arg === 'cowork') return { ...v, scene: 'work', text: m.t, year: ctx.by + m.a, job: jobAt(ctx, m.a, m.t), industry: v.industry || industryNear(ctx, m.a), extra: COWORK.map((p) => ({ ...p, age: Math.max(20, m.a + (p.age - 30)) })) };
   if (!m.scene) return { ...v, scene: 'village', text: m.t, year: ctx.by + m.a };
   let family = familyAt(ctx, m.a, { all: true }).list;
   if (m.scene === 'loss' && m.arg === 'par') {
@@ -325,7 +337,7 @@ function sceneAt(ctx, m) {
     const goneDad = ctx.dadAt === m.a;
     family = family.filter((f) => !(f.id === 'mom' && goneMom) && !(f.id === 'dad' && goneDad));
   }
-  return { ...v, scene: m.scene, arg: m.arg, family, text: m.t, year: ctx.by + m.a };
+  return { ...v, scene: m.scene, arg: m.arg, family, text: m.t, year: ctx.by + m.a, married: ctx.married(m.a) };
 }
 
 // 원작 filmTint: 그해 행복(0~100) → 차가운 파랑 ~ 따뜻한 호박색
