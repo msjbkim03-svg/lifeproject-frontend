@@ -199,7 +199,7 @@ function PxBarWin({ x, y, w, h, fill, out }) {
 // 교도소 (시안 7: 회색 콘크리트 + 줄무늬): 뒤에 화면 끝까지 이어진 담장, 앞에 수감동과 철문
 const PRISON_C = {
   light: { wall: '#a9adb2', seam: '#9a9ea4', stripe: '#8a8e96', block: '#cfd2d6', tower: '#9aa0a8', cap: '#8a7e78', glass: '#2c3d47', win: '#3d4a56', lit: '#3d4a56', gate: '#8a8e96', gateTop: '#6a6e76' },
-  dark: { wall: '#4a4e5a', seam: '#40444f', stripe: '#3a3e48', block: '#5c606c', tower: '#50545f', cap: '#3e3a44', glass: '#ffe7a8', win: '#1c2230', lit: '#ffd98a', gate: '#454a55', gateTop: '#353942' },
+  dark: { wall: '#666b7c', seam: '#5b6171', stripe: '#555b6a', block: '#797e8d', tower: '#6c7180', cap: '#5c5665', glass: '#ffe7a8', win: '#1c2230', lit: '#ffd98a', gate: '#606777', gateTop: '#505664' },
 };
 const PRISON_ROWS = [36, 48, 60, 72];                                  // 수감동 창문 줄 (위 y)
 const PRISON_COLS = Array.from({ length: 10 }, (_, k) => 96 + k * 14); // 수감동 창문 칸 (왼쪽 x)
@@ -281,7 +281,7 @@ function AptScene({ c, dark }) {
 // 군 부대 (시안 8: 울타리 너머 전차): 전차 → 철조망 울타리 → 별 마크 위병소 · 차단기 · 보초병
 const MIL_C = {
   light: { olive: '#5a6a3a', oliveD: '#4a5530', helm: '#4a5a30', fence: '#7a7e86', post: '#d8d2b0', roof: '#6a7a4a', door: '#e8e4cc', glass: '#7fb0d8', star: '#3d4a28', gold: '#f2c230', bar: '#e8584c', skin: '#f2c9a0' },
-  dark: { olive: '#3a4628', oliveD: '#2e3820', helm: '#334020', fence: '#4e525c', post: '#6a6650', roof: '#3e4a2c', door: '#7a7660', glass: '#ffe7a8', star: '#262e1a', gold: '#e0b028', bar: '#a8443c', skin: '#c9a07e' },
+  dark: { olive: '#5a6d3e', oliveD: '#4e5f36', helm: '#546934', fence: '#6a707d', post: '#8d886a', roof: '#5e7043', door: '#99957e', glass: '#ffe7a8', star: '#465530', gold: '#e0b028', bar: '#a8443c', skin: '#c9a07e' },
 };
 // 별 마크 칸 [x, y] (12 × 9 판 안)
 const STAR = [[5, 0], [5, 1], [4, 2], [5, 2], [6, 2], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3],
@@ -449,7 +449,7 @@ function PxDeco({ kind, x, c, out }) {
 // 1단계 판잣집 색 (양철 지붕 · 덧댄 판자)
 const SHACK_C = {
   light: { wall: '#c9b08a', plank: '#a88e6a', patchA: '#b89a72', patchB: '#d8c098', tin: '#9aa0a8', ridge: '#7a8088', door: '#7a5a44', soil: '#7a5a44', sprout: '#5a8a4a' },
-  dark: { wall: '#5a4e48', plank: '#4a403a', patchA: '#524640', patchB: '#665a50', tin: '#4e525e', ridge: '#3e424c', door: '#3a2c28', soil: '#3a2c28', sprout: '#3a6a3a' },
+  dark: { wall: '#7c6b63', plank: '#6c5e55', patchA: '#74635b', patchB: '#88786b', tin: '#6a6f7f', ridge: '#595f6e', door: '#5e4741', soil: '#5e4741', sprout: '#509250' },
 };
 const TIN = Array.from({ length: 56 }, (_, i) => [132 + i, 72 - Math.floor((i * 8) / 56)]); // 기운 양철 지붕 [x, 아래 y]
 
@@ -549,8 +549,8 @@ function HomeScene({ tier, c, roof, deco, dark }) {
         <PxDoor x={152} y={72} w={16} out={out} />
         {/* 차고 */}
         <PxBox x={214} y={66} w={40} h={26} fill={c.wall} out={out} />
-        <PxBox x={218} y={72} w={32} h={20} fill={dark ? '#4e525e' : '#9aa0a8'} out={out} />
-        {[0, 1, 2, 3].map((k) => <rect key={'gl' + k} x={218} y={75 + k * 4} width={32} height={1} fill={dark ? '#3e424c' : '#7a8088'} />)}
+        <PxBox x={218} y={72} w={32} h={20} fill={dark ? '#6a6f7f' : '#9aa0a8'} out={out} />
+        {[0, 1, 2, 3].map((k) => <rect key={'gl' + k} x={218} y={75 + k * 4} width={32} height={1} fill={dark ? '#595f6e' : '#7a8088'} />)}
         <PxBox x={212} y={62} w={44} h={4} fill={c.roofC} out={out} />
         <PxBox x={90} y={82} w={18} h={10} fill={c.leaf} out={out} />
       </g>
@@ -558,7 +558,7 @@ function HomeScene({ tier, c, roof, deco, dark }) {
   }
 
   // 5 다이아수저: 양 날개 저택 + 기둥 현관 + 담장 · 대문
-  const stone = dark ? '#4a4660' : '#e8e0d8';
+  const stone = dark ? '#6a6489' : '#e8e0d8';
   return (
     <g shapeRendering="crispEdges">
       <PxDeco kind={deco} x={26} c={c} out={out} />
@@ -694,7 +694,7 @@ function UnivScene({ c, roof, deco, dark }) {
 }
 
 // 보건소 (시안 10: 2층 · 응급실 차양 · 구급차 · 화단)
-const CLINIC_C = { light: { wall: '#ffffff', amb: '#ffffff' }, dark: { wall: '#6a6e7e', amb: '#c8ccd8' } };
+const CLINIC_C = { light: { wall: '#ffffff', amb: '#ffffff' }, dark: { wall: '#848897', amb: '#c8ccd8' } };
 const FLOWERS = ['#e8584c', '#f2c230', '#ffffff', '#e8584c'];
 
 function ClinicScene({ c, roof, deco, dark }) {
@@ -779,7 +779,7 @@ function Vehicle({ kind, x }) {
 // industry 가 없으면 (일하지 않을 때) 도시는 사무 빌딩 + 공장, 시골은 농장
 const WORK_C = {
   light: { barn: '#c9544a', barnD: '#8a3a32', crop: '#7bb35a', cow: '#ffffff', smoke: '#e8e0dc', steel: '#9aa0a8', steelD: '#7a8088', red: '#c9544a', blue: '#4a7bd0', orange: '#f2a23a', basket: '#c99a6a', stop: '#4a9a7a' },
-  dark: { barn: '#6a3a3e', barnD: '#4a2a2e', crop: '#3a6a3a', cow: '#c8ccd8', smoke: '#5a5e6e', steel: '#4e525e', steelD: '#3e424c', red: '#7a3a36', blue: '#2e4a7a', orange: '#8a6030', basket: '#6a5040', stop: '#2e5a4a' },
+  dark: { barn: '#925055', barnD: '#714046', crop: '#509250', cow: '#c8ccd8', smoke: '#767b8f', steel: '#6a6f7f', steelD: '#595f6e', red: '#a44e49', blue: '#3f65a6', orange: '#b78040', basket: '#906d57', stop: '#43836b' },
 };
 
 // 논밭 줄: 5줄, 4칸마다 싹 하나 (가운데 헛간 자리 120~200 은 비움) → [x, y]

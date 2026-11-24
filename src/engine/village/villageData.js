@@ -32,27 +32,27 @@ export const THEMES = {
   EAST: {
     name: '동아시아', land: 'hills', deco: 'blossom', roof: 'tile',
     light: { sky: 'linear-gradient(180deg, #ffb59a 0%, #ffd7c2 55%, #ffeadf 100%)', far: '#f2a48f', near: '#e9927e', ground: '#f6d9c6', road: '#ecc4ad', wall: '#fff8f2', roofC: '#c9544a', trunk: '#8a5a4a', leaf: '#f39ab0', water: '#9fc7e0' },
-    dark: { sky: 'linear-gradient(180deg, #0b1230 0%, #1b2a62 100%)', far: '#1d2a55', near: '#24305e', ground: '#141f38', road: '#222c4b', wall: '#2a3462', roofC: '#3d2f5f', trunk: '#3b2f3f', leaf: '#6b4a7a', water: '#2a3d70' },
+    dark: { sky: 'linear-gradient(180deg, #0b1230 0%, #1b2a62 100%)', far: '#1d2a55', near: '#24305e', ground: '#141f38', road: '#222c4b', wall: '#4656a2', roofC: '#5c478f', trunk: '#614e68', leaf: '#9168a3', water: '#2a3d70' },
   },
   SOUTHEAST: {
     name: '동남아시아', land: 'paddy', deco: 'palm', roof: 'stilt',
     light: { sky: 'linear-gradient(180deg, #ffad8a 0%, #ffd2b0 55%, #ffeedd 100%)', far: '#e6a07c', near: '#b9c78a', ground: '#e9dcb6', road: '#e2c7a0', wall: '#fff3e2', roofC: '#b8673e', trunk: '#8a6244', leaf: '#5f9a6a', water: '#8fc2c9' },
-    dark: { sky: 'linear-gradient(180deg, #091530 0%, #183a5a 100%)', far: '#16344a', near: '#1b3d3a', ground: '#11292b', road: '#252f44', wall: '#243b4f', roofC: '#3a3a52', trunk: '#3b2f3f', leaf: '#1f3a3a', water: '#1f3b55' },
+    dark: { sky: 'linear-gradient(180deg, #091530 0%, #183a5a 100%)', far: '#16344a', near: '#1b3d3a', ground: '#11292b', road: '#252f44', wall: '#416a8e', roofC: '#58587c', trunk: '#614e68', leaf: '#386969', water: '#1f3b55' },
   },
   SOUTH: {
     name: '남아시아', land: 'river', deco: 'tree', roof: 'flat',
     light: { sky: 'linear-gradient(180deg, #ff9f8c 0%, #ffc9a8 55%, #ffe8d6 100%)', far: '#e59a86', near: '#d9a27e', ground: '#f2d7b8', road: '#e6c09e', wall: '#fff0e0', roofC: '#d07a52', trunk: '#80553f', leaf: '#6f9e5e', water: '#9cc0d6' },
-    dark: { sky: 'linear-gradient(180deg, #110f30 0%, #3a2552 100%)', far: '#2c2148', near: '#2a3550', ground: '#241f33', road: '#352c45', wall: '#3a2f52', roofC: '#4a3560', trunk: '#3b2f3f', leaf: '#1f3a34', water: '#2c3460' },
+    dark: { sky: 'linear-gradient(180deg, #110f30 0%, #3a2552 100%)', far: '#2c2148', near: '#2a3550', ground: '#241f33', road: '#352c45', wall: '#63508c', roofC: '#6d4e8e', trunk: '#614e68', leaf: '#38695e', water: '#2c3460' },
   },
   CENTRAL: {
     name: '중앙아시아', land: 'steppe', deco: 'grass', roof: 'yurt',
     light: { sky: 'linear-gradient(180deg, #ffb39e 0%, #ffd9c4 55%, #fff0e6 100%)', far: '#d99b93', near: '#c9b083', ground: '#eee0c0', road: '#e2caa6', wall: '#fffaf0', roofC: '#c25b4e', trunk: '#7c5a44', leaf: '#8aa25a', water: '#a6c8db' },
-    dark: { sky: 'linear-gradient(180deg, #0a1030 0%, #23306a 100%)', far: '#2c3560', near: '#22304a', ground: '#1b2638', road: '#2b3350', wall: '#2e3a60', roofC: '#3f3a66', trunk: '#3b2f3f', leaf: '#3f5a46', water: '#26386a' },
+    dark: { sky: 'linear-gradient(180deg, #0a1030 0%, #23306a 100%)', far: '#2c3560', near: '#22304a', ground: '#1b2638', road: '#2b3350', wall: '#4c5f9e', roofC: '#5b5494', trunk: '#614e68', leaf: '#5c8467', water: '#26386a' },
   },
   WEST: {
     name: '서아시아', land: 'dunes', deco: 'palm', roof: 'dome',
     light: { sky: 'linear-gradient(180deg, #ff9c84 0%, #ffc8a2 55%, #ffe9d2 100%)', far: '#eba783', near: '#f0bd8d', ground: '#f6dfbc', road: '#ebc89d', wall: '#fff3e0', roofC: '#3f8f95', trunk: '#8a6244', leaf: '#6c9a6a', water: '#9cc6cf' },
-    dark: { sky: 'linear-gradient(180deg, #0e0f2e 0%, #3b2a55 100%)', far: '#3a2c4e', near: '#46364f', ground: '#2a2436', road: '#3a3147', wall: '#3e3352', roofC: '#2f4a60', trunk: '#3b2f3f', leaf: '#1f3a3a', water: '#2a3858' },
+    dark: { sky: 'linear-gradient(180deg, #0e0f2e 0%, #3b2a55 100%)', far: '#3a2c4e', near: '#46364f', ground: '#2a2436', road: '#3a3147', wall: '#69568b', roofC: '#466f90', trunk: '#614e68', leaf: '#386969', water: '#2a3858' },
   },
 };
 
