@@ -26,7 +26,7 @@ import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
 import Spoon from '../../common/ui/Spoon.jsx';
 import { SPOONS } from '../../common/ui/spoon';
-import Village from '../village/Village';
+import ChatVillage from '../../pages/chat/ChatVillage';
 import Figure from '../village/Figure';
 import { lookOf } from '../village/costumeData';
 import { placeOf, THEMES, COUNTRIES, houseOf, vehicleOf, homeFamily, petOf } from '../village/villageData';
@@ -861,7 +861,7 @@ function PlayPage() {
         {/* ───── 가운데: 마을 · 올해의 초점 · 인생 기록 ───── */}
         <div className="pp-col">
           <section className="pp-panel pp-scene">
-            <Village countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
+            <ChatVillage countryCode={life.currentCountry} age={life.currentAge} gender={life.gender}
               place={placeOf(life)} urban={life.isUrban === 'Y'} family={homeFamily(life)}
               house={houseOf(life)} vehicle={vehicleOf(life)} costume={life.costume || wear}
               industry={life.jobIndustry} pet={petOf(life)} happiness={life.happiness} />
