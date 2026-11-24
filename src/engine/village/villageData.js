@@ -102,7 +102,6 @@ export function placeOf(life) {
   if (life.schoolStatus === 'ENROLLED') return life.eduLevel === 'UNI' || life.eduLevel === 'GRAD' ? 'univ' : 'school';
   if (life.jobStatus === 'EMPLOYED') return workPlaceOf(life); // 교사 → 학교, 의사·간호사 → 보건소 …
   if (life.jobStatus === 'RETIRED' || life.currentAge >= 60) return 'park'; // 은퇴·어르신: 공원 (예전 마을회관)
-  if (life.currentAge < 6) return 'park';
   return 'home';
 }
 
