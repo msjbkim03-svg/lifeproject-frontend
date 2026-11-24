@@ -1008,8 +1008,8 @@ function FamilyPerson({ m, i }) {
     <div className={'v-person fam ' + size} style={{ left: FAMILY_SLOTS[i % FAMILY_SLOTS.length] + '%', top: GROUND_Y + '%' }}>
       <div className="v-wander" style={{ animationDuration: 9 + (i % 4) * 2.5 + 's', animationDelay: -i * 1.7 + 's' }}>
         <Figure look={lookOf({ gender: m.gender, age: m.age, soft: true })} />
+        <div className="v-name">{m.label}{m.age != null ? ' ' + m.age + '세' : ''}</div>
       </div>
-      <div className="v-name">{m.label}{m.age != null ? ' ' + m.age + '세' : ''}</div>
     </div>
   );
 }
@@ -1051,6 +1051,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
   const [x, setX] = useState(DOOR_X);
   const [dir, setDir] = useState('right');
   const [walking, setWalking] = useState(false);
+  const [walkId, setWalkId] = useState(0); // 걷기 명령 번호: 새로 걸으라고 할 때마다 +1 → 걷기 반복을 확실히 다시 시작
   const pos = useRef(DOOR_X);
   const sceneRef = useRef(start);
   const target = useRef({ scene: start, x: DOOR_X }); // 가려는 곳 (장소 화면, 그 안 위치)
@@ -1062,7 +1063,9 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       || (target.current.scene === sceneRef.current && target.current.x > pos.current);
     setDir(right ? 'right' : 'left');
     setWalking(true);
+    setWalkId((n) => n + 1); // 막 멈춘 순간에 다시 걸으라고 해도 effect 가 새로 돌게 함
   };
+
 
   // 인생 상황이 바뀌면 (입학·취업·은퇴 …) 그 장소 앞으로 걸어감
   //   나라가 바뀌면(이민) 맨 아래 Village 가 key 로 이 화면을 새로 만들어서, 새 마을 올해 장소에서 시작
@@ -1107,7 +1110,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [walking]);
+  }, [walking, walkId]);
 
   // 방향키 (C08): ←·→ 누르고 있으면 계속 걷고, 화면 끝에서 옆 장소로 넘어감. 떼면 그 자리에 멈춤
   //   마을 밖으로는 못 나감 (첫 장소 왼쪽 끝·마지막 장소 오른쪽 끝에서 멈춤)
