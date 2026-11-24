@@ -5,7 +5,7 @@
 // 사용: <FilmScene v={장면 정보 (filmPlan sceneAt)} t={장면 시작부터 ms} cam={[가로 %, 세로 %, 확대]} />
 import { useEffect, useRef } from 'react';
 import { Px, W, H } from './px/pxCore';
-import { SCENES } from './px/pxScenes';
+import { SCENES } from './px/scenes';
 
 const ALIAS = { cowork: 'work' };
 const Z0 = 1.06; // 기본으로 조금 다가가 가장자리가 비지 않게

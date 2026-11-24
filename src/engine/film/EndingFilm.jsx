@@ -365,8 +365,9 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
         e.stopPropagation();
         if (e.repeat && e.key === ' ') return;
         if (e.key === ' ') setPlaying((p) => !p);
-        if (e.key === 'ArrowLeft') seek(tRef.current - 5000);
-        if (e.key === 'ArrowRight') seek(tRef.current + 5000);
+        // 화면 시계는 PACE 배라서, 화면 기준 5초 = 필름 시간 5000 / PACE
+        if (e.key === 'ArrowLeft') seek(tRef.current - 5000 / PACE);
+        if (e.key === 'ArrowRight') seek(tRef.current + 5000 / PACE);
       }
     };
     const block = (e) => {

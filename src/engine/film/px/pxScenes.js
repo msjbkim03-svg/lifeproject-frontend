@@ -203,7 +203,7 @@ export function paletteOf(v) {
   const info = COUNTRIES[v.countryCode] || ['', 'EAST'];
   return (THEMES[info[1]] || THEMES.EAST).light;
 }
-const skyCols = (c) => { const [a, b, d] = (c.sky.match(/#[0-9a-f]{6}/gi) || ['#ffb59a', '#ffd7c2', '#ffeadf']); return [mix(a, '#a8789a', 0.18), a, mix(a, b, 0.5), b, mix(b, d, 0.5), d]; };
+export const skyCols = (c) => { const [a, b, d] = (c.sky.match(/#[0-9a-f]{6}/gi) || ['#ffb59a', '#ffd7c2', '#ffeadf']); return [mix(a, '#a8789a', 0.18), a, mix(a, b, 0.5), b, mix(b, d, 0.5), d]; };
 
 // ───────── 장면: 결혼식 ─────────
 // 노을 정원 (마을 권역 색). 하얀 나무 아치(덩굴 · 꽃 · 쉬폰) 아래 신랑 신부가 서로 바라봄 → 다가가 뽀뽀 → 하트 · 꽃잎 · 하객 박수 · 아이들 폴짝
@@ -348,25 +348,25 @@ export function wedding(px, t, v) {
 
 
 // ───────── 장면 공용 ─────────
-const dressed = (p, top, extraLook = {}) => {
+export const dressed = (p, top, extraLook = {}) => {
   const l = p.look || lookOf({ gender: p.gender, age: p.age, costume: p.costume, soft: p.soft });
   return { ...p, look: { ...l, top: { ...l.top, ...top }, ...extraLook } };
 };
-const mourn = (p) => dressed(p, { style: 'tee', color: '#4c4858' });
-const other = (me) => ({ gender: me.gender === 'F' ? 'M' : 'F', age: Math.max(18, (me.age || 30) + 1), soft: true });
-const bub = (px, kind, r, s = 1) => r && bubble(px, kind, r.x + 3, r.headY, s);
-const sparkle = (px, x, y, t, col = '#fff4b0') => { const f = Math.floor(t / 120) % 4; if (f < 3) { px.px(x, y, col); if (f === 1) { px.px(x - 1, y, col); px.px(x + 1, y, col); px.px(x, y - 1, col); px.px(x, y + 1, col); } } };
-function smoke(px, x, y, t, n = 4, col = '#ffffff', a = 0.5) {
+export const mourn = (p) => dressed(p, { style: 'tee', color: '#4c4858' });
+export const other = (me) => ({ gender: me.gender === 'F' ? 'M' : 'F', age: Math.max(18, (me.age || 30) + 1), soft: true });
+export const bub = (px, kind, r, s = 1) => r && bubble(px, kind, r.x + 3, r.headY, s);
+export const sparkle = (px, x, y, t, col = '#fff4b0') => { const f = Math.floor(t / 120) % 4; if (f < 3) { px.px(x, y, col); if (f === 1) { px.px(x - 1, y, col); px.px(x + 1, y, col); px.px(x, y - 1, col); px.px(x, y + 1, col); } } };
+export function smoke(px, x, y, t, n = 4, col = '#ffffff', a = 0.5) {
   for (let i = 0; i < n; i++) { const q = ((t * 0.0006 + i / n) % 1); px.alpha(a * (1 - q), () => px.disc(x + Math.round(wave(t + i * 400, 1800, 3)), y - q * 30, 2 + Math.round(q * 4), col)); }
 }
-function bundleAt(px, x, y, col = '#f6a5bd', t = 0) {
+export function bundleAt(px, x, y, col = '#f6a5bd', t = 0) {
   const b = y + Math.round(wave(t, 1400, 0.6));
   px.rect(x - 5, b - 2, 10, 5, '#fbf7f2'); px.rect(x - 4, b - 3, 8, 1, '#fbf7f2'); px.rect(x - 4, b + 3, 8, 1, '#fbf7f2');
   px.rect(x, b - 2, 4, 5, col); px.px(x + 1, b, lt(col, 0.4));
   px.rect(x - 5, b - 2, 4, 4, '#f2c9a0'); px.px(x - 4, b - 1, '#2e2a33'); px.px(x - 2, b - 1, '#2e2a33'); px.px(x - 5, b, '#f29a9a');
   px.hl(x - 6, x + 5, b - 4, '#2e2a33'); px.hl(x - 6, x + 5, b + 4, '#2e2a33'); px.vl(x - 7, b - 3, b + 3, '#2e2a33'); px.vl(x + 6, b - 3, b + 3, '#2e2a33');
 }
-const roomSky = (c) => (c.sky.match(/#[0-9a-f]{6}/gi) || ['#ffb59a', '#ffeadf']).filter((_, i) => i !== 1);
+export const roomSky = (c) => (c.sky.match(/#[0-9a-f]{6}/gi) || ['#ffb59a', '#ffeadf']).filter((_, i) => i !== 1);
 
 // ───────── 태어남 (제목 장면) ─────────
 // 엄마가 침대에서 진통(땀 · 몸 떨림) → 1.5초 의사(산파)가 아기를 받아 반짝 · 울음 → 2.1초 엄마 품에 → 아빠가 문을 열고 뛰어 들어와 만세 → 하트

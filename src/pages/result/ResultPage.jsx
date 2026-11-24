@@ -118,7 +118,7 @@ function ResultView() {
           {r.currentCountry !== r.birthCountry && <Badge color="blue">{r.currentCountryName}에서 생을 마침</Badge>}
           <Badge>{r.birthYear} ~ {r.deathYear}</Badge>
         </div>
-        {/* C22 엔딩 크레딧: 이 삶을 2분 안쪽 세로 영상처럼 */}
+        {/* C22 엔딩 크레딧 다시 보기 (가로 16:9, 약 1분 30초) */}
         <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}>
           <Button type="primary" pill onClick={() => navigate(`/result/${lifeId}${guestParam ? `?guest=${encodeURIComponent(guestParam)}` : ''}`)}>▶ 엔딩 크레딧 다시 보기</Button>
         </div>
@@ -196,10 +196,10 @@ function ResultView() {
       </div>
 
       {/* 8. C19 AI 인생 이야기 (버튼을 누르면 펼쳐짐) */}
-      {showStory && <StoryPanel lifeId={lifeId} />}
+      {showStory && <StoryPanel lifeId={lifeId} guestToken={guestParam} />}
 
       {/* 9. C20 인생 Q&A 챗봇 */}
-      {showQna && <QnaPanel lifeId={lifeId} />}
+      {showQna && <QnaPanel lifeId={lifeId} guestToken={guestParam} />}
     </div>
   );
 }

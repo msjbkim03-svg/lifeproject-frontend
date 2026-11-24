@@ -840,6 +840,12 @@ function PlayPage() {
                     <b>{q.questName}{(q.achieved === 'Y' || q.live === 'Y') && <em className="pp-qdone"> 달성</em>}
                       {q.achieved == null && q.live === 'NOW' && <em className="pp-qnow" title="끝날 때 상태로 판정해요. 지금은 조건을 채우고 있어요."> 지금 달성 중</em>}</b>
                     {q.description && <small>{q.description}</small>}
+                    {/* 기대수명 퀘스트: 태어난 해 기대수명 기준이라 화면 오른쪽 나라 칸(지금 해 기대수명)과 헷갈리지 않게 목표 나이를 바로 보여 줌 (11/24) */}
+                    {q.questType === 'AGE_EXP' && life.lifeExpectancy != null && Number.isFinite(Number(q.targetValue)) && (
+                      <small className="pp-qgoal">
+                        목표 {Math.ceil(life.lifeExpectancy + Number(q.targetValue))}세까지 (태어난 해 기대수명 {Math.round(life.lifeExpectancy)}세 + {Number(q.targetValue)}년)
+                      </small>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -1496,7 +1502,7 @@ function Portrait({ gender, age, costume }) {
       <div className="pp-photo"><Figure look={lookOf({ gender, age, costume })} /></div>
       <span className="pp-polaroid-cap">{age}세</span>
     </div>
-  );
+``  );
 }
 
 // 생존 곡선 그림 (원작 '생존 곡선' 패널)

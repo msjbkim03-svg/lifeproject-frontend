@@ -4,7 +4,7 @@
 // - 엔딩용으로 여기서만 더하는 것: 자세(팔 · 다리), 고개 숙임, 눈 감기 · 바라보는 쪽, 나이에 따라 키 줄이기, 눕기
 // 사용: const f = figure({ look, age, pose, face, gaze })  →  px.blit(f.spr, x - f.fx, y - f.fy)  (발 가운데가 x, y)
 //   pose: stand · walk1 · walk2 · up · wave1 · wave2 · clap1 · clap2 · hold · bow · sit
-//   face: open · closed (눈 감음, 울 때도) / gaze: -1 왼쪽 · 0 앞 · 1 오른쪽 보기
+//   face: open · closed (눈 감음, 울 때도) · shock (놀람: 눈이 커지고 입이 동그랗게) / gaze: -1 왼쪽 · 0 앞 · 1 오른쪽 보기
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import Figure from '../../village/Figure';
@@ -89,8 +89,11 @@ export function figure({ look, gender = 'F', age = 30, costume, soft = false, po
       if (r.part !== 'eye') return [r];
       const dx = gaze;
       if (face === 'closed' || bow) return [{ ...r, x: r.x - 1 + dx, y: r.y + 1, w: 2, h: 1 }];
+      if (face === 'shock') return [{ ...r, x: r.x + dx, y: r.y - 1, h: r.h + 1 }];
       return [move(r, dx, 0)];
     });
+    // 놀란 입 (동그랗게 벌림) - 눈과 같은 얼굴 칸이라 뒷모습이면 같이 빠짐
+    if (face === 'shock' && !bow) rs.push({ part: 'eye', x: 8 + gaze, y: 10, w: 2, h: 2, c: OUT, o: 1 });
     if (back) {
       const hc = (lk.hair && lk.hair.color) || '#3a2c26';
       rs = rs.filter((r) => r.part !== 'eye').map((r) => (r.part === 'head' && r.c !== OUT ? { ...r, c: hc } : r));

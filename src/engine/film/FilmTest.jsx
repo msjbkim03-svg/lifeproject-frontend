@@ -8,6 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import FilmScene from './FilmScene';
 import './film.css';
 
+// 일터 고르기 (직업 이름 → 장면: 사무실 · 시장 · 공장 · 논밭 · 목장 · 항구 · 길 위)
+const JOBS = [['회사원', '사무실 (회사원)'], ['노점상·소상인', '시장 노점'], ['용접공·배관공', '공장 · 건설'], ['농장 일꾼', '논밭'], ['목축업', '목장'], ['어부', '항구 (어부)'], ['배달 기사', '배달 (오토바이)']];
+const JOB_IND = { '회사원': 'SERVICE', '노점상·소상인': 'SERVICE', '용접공·배관공': 'INDUSTRY', '농장 일꾼': 'AGRI', '목축업': 'AGRI', '어부': 'AGRI', '배달 기사': 'SERVICE' };
 const SCENES = [
   ['born', '태어남 (제목)'], ['school', '입학'], ['grad', '졸업'], ['date', '만남 · 청혼'], ['wedding', '결혼식'],
   ['newborn', '아이가 태어남'], ['hosp', '병원'], ['loss', '떠나보냄'], ['fly', '이민'], ['flee', '피란'],
@@ -50,7 +53,7 @@ function FilmTest() {
   const [famKey, setFamKey] = useState('family');
   const [age, setAge] = useState(34);
   const [arg, setArg] = useState('me');
-  const [ind, setInd] = useState('SERVICE');
+  const [ind, setInd] = useState('회사원');
   const [urban, setUrban] = useState(true);
   const [cam, setCam] = useState('none');
   const [t, setT] = useState(2500);
@@ -77,7 +80,7 @@ function FilmTest() {
   const pickFam = (k) => { setFamKey(k); setAge(FAMS[k].age); };
   const v = (sc) => ({
     scene: sc, arg: sc === 'grad' ? 'uni' : arg, countryCode: cc, gender, age, urban,
-    family: FAMS[famKey].fam(gender), industry: ind, year: 1974 + age, text: sc === 'date' ? '청혼을 받았다' : '테스트 장면',
+    family: FAMS[famKey].fam(gender), industry: JOB_IND[ind] || 'SERVICE', job: ind, year: 1974 + age, text: sc === 'date' ? '청혼을 받았다' : '테스트 장면',
     extra: [{ gender: 'M', age: Math.max(20, age + 4) }, { gender: 'F', age: Math.max(20, age - 1) }],
   });
   const seek = (ms) => { tRef.current = ms; setT(ms); };
@@ -112,10 +115,10 @@ function FilmTest() {
             <label className="ft-lab">나이<input type="number" min={0} max={100} value={age} onChange={(e) => setAge(Math.max(0, Math.min(100, Number(e.target.value) || 0)))} /></label>
           </div>
           <div className="ft-row">
-            <label className="ft-lab">누가 (병원 · 떠나보냄)<select value={arg} onChange={(e) => setArg(e.target.value)}><option value="me">나</option><option value="kid">아이</option><option value="pt">배우자</option><option value="par">부모님</option><option value="sudden">마지막: 사고 (빈자리)</option></select></label>
+            <label className="ft-lab">누가 (병원 · 떠나보냄)<select value={arg} onChange={(e) => setArg(e.target.value)}><option value="me">나</option><option value="kid">아이</option><option value="pt">배우자</option><option value="par">부모님</option><option value="sick">마지막: 병 (병실)</option><option value="sudden">마지막: 사고 (기다리던 저녁)</option></select></label>
           </div>
           <div className="ft-row">
-            <label className="ft-lab">일터<select value={ind} onChange={(e) => setInd(e.target.value)}><option value="SERVICE">가게 · 사무실</option><option value="INDUSTRY">공장</option><option value="AGRI">농사</option></select></label>
+            <label className="ft-lab">일터<select value={ind} onChange={(e) => setInd(e.target.value)}>{JOBS.map(([j, name]) => <option key={j} value={j}>{name}</option>)}</select></label>
             <label className="ft-lab">카메라<select value={cam} onChange={(e) => setCam(e.target.value)}>{Object.keys(CAMS).map((k) => <option key={k} value={k}>{k}</option>)}</select></label>
           </div>
           <label className="ft-check"><input type="checkbox" checked={urban} onChange={(e) => setUrban(e.target.checked)} /> 도시 (태어남: 병원 / 끄면 집)</label>
