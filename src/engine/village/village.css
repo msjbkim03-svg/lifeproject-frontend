@@ -183,9 +183,15 @@
 @keyframes v-spray { 0% { opacity: 1; } 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .v-spray .a, .v-spray .b { animation: none; } }
 
-/* 다른 접속자: 흐린 실루엣 */
-.v-person.other .v-fig { opacity: 0.4; filter: grayscale(1); }
-.village.dark .v-person.other .v-fig { filter: grayscale(1) brightness(1.8); }
+/* 다른 접속자 (C15 채팅, 김민승): 나처럼 색깔 있게, 받은 위치로 부드럽게 걷기 */
+.v-person.other { transition: left 0.2s linear; }
+.v-person.other.left .v-fig { transform: translateY(-41px) scale(calc(var(--s) * -1), var(--s)); }
+.v-person.other.walking .v-fig .fa.leg { animation: v-stride-a 0.56s steps(1) infinite; }
+.v-person.other.walking .v-fig .fb.leg { animation: v-stride-b 0.56s steps(1) infinite; }
+.v-person.other.walking .v-fig .fa.arm { animation: v-arm-a 0.56s steps(1) infinite; }
+.v-person.other.walking .v-fig .fb.arm { animation: v-arm-b 0.56s steps(1) infinite; }
+/* 채팅 말풍선은 기록이 없어서 잘리지 않게 줄바꿈 */
+.v-person.other .v-bubble, .v-bubble.mine { white-space: normal; width: max-content; max-width: 170px; overflow-wrap: anywhere; }
 
 /* 이름표 */
 .v-name {

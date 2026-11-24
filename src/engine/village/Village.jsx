@@ -1036,7 +1036,7 @@ function Land({ kind, c }) {
   return <><path d="M0 66 Q40 44 80 58 Q128 34 176 56 Q232 40 272 54 Q296 48 320 52 L320 100 L0 100 Z" fill={c.far} /><path d="M0 80 Q64 68 128 78 Q192 66 256 76 Q288 72 320 74 L320 100 L0 100 Z" fill={c.near} /></>;
 }
 
-function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null, industry = null, pet = null, happiness = null }) {
+function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = true, caption, myMessage, others = [], costume, family = [], house = { tier: 3, kind: 'parents' }, vehicle = null, industry = null, pet = null, happiness = null, onMove }) {
   const info = COUNTRIES[countryCode] || ['', 'EAST'];
   const flagCode = info[0];
   const t = THEMES[info[1]];
@@ -1149,6 +1149,11 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
     else go(sc, px);
   };
 
+  // C15 채팅(김민승): 내 위치를 바깥(useChat)에 알려 줌 → 같은 나라 사람 화면에서 나도 같이 움직임 (onMove 없으면 아무 일 없음)
+  useEffect(() => {
+    if (onMove) onMove({ place: PLACES[scene].id, x, dir, walking });
+  }, [onMove, scene, x, dir, walking]);
+
   const here = PLACES[scene];
   const prev = PLACES[scene - 1];
   const next = PLACES[scene + 1];
@@ -1184,9 +1189,10 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
 
         {/* 같은 나라 접속자 (흐린 실루엣, C15) - 같은 장소에 있는 사람만 */}
         {others.filter((o) => (o.place || 'home') === here.id).map((o) => (
-          <div key={o.id} className="v-person other" style={{ left: o.x + '%', top: GROUND_Y + '%' }}>
+          <div key={o.id} className={'v-person other ' + ageGroup(o.age) + ' ' + (o.dir || 'right') + (o.walking ? ' walking' : '')}
+            style={{ left: o.x + '%', top: GROUND_Y + '%' }}>
             {o.message && <div className="v-bubble">{o.message}</div>}
-            <Figure look={lookOf({ age: o.age })} />
+            <Figure look={lookOf({ gender: o.gender, age: o.age })} />
             <div className="v-name">{o.name}{o.age != null && ', ' + o.age + '세'}</div>
           </div>
         ))}
