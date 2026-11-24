@@ -352,7 +352,7 @@ const dressed = (p, top, extraLook = {}) => {
   const l = p.look || lookOf({ gender: p.gender, age: p.age, costume: p.costume, soft: p.soft });
   return { ...p, look: { ...l, top: { ...l.top, ...top }, ...extraLook } };
 };
-const mourn = (p) => dressed(p, { style: 'tee', color: '#2e2c36' });
+const mourn = (p) => dressed(p, { style: 'tee', color: '#4c4858' });
 const other = (me) => ({ gender: me.gender === 'F' ? 'M' : 'F', age: Math.max(18, (me.age || 30) + 1), soft: true });
 const bub = (px, kind, r, s = 1) => r && bubble(px, kind, r.x + 3, r.headY, s);
 const sparkle = (px, x, y, t, col = '#fff4b0') => { const f = Math.floor(t / 120) % 4; if (f < 3) { px.px(x, y, col); if (f === 1) { px.px(x - 1, y, col); px.px(x + 1, y, col); px.px(x, y - 1, col); px.px(x, y + 1, col); } } };
@@ -582,7 +582,7 @@ export function newborn(px, t, v) {
   const baby = k.baby[0] || { gender: 'F' };
   const sway = Math.round(wave(t, 1600, 1));
   const me = actor(px, t, 0, k.me, 112 + sway, G + 12, { pose: 'hold', gaze: 0, face: t > 1800 && t < 2600 ? 'closed' : undefined });
-  bundleAt(px, 112 + sway, G - 4, baby.gender === 'M' ? '#9fc7e0' : '#f6a5bd', t);
+  bundleAt(px, 112 + sway, G + 4, baby.gender === 'M' ? '#9fc7e0' : '#f6a5bd', t);
   if (t > 800) bub(px, 'heart', me);
   if (k.pt) { const q = seg(t, 400, 1300); const r = actor(px, t, 1, k.pt, lerp(170, 134, ease(q)), G + 12, { walk: q > 0 && q < 1, gaze: -1 }); if (t > 2000) bub(px, 'heart', r); }
   k.kids.filter((m) => m.age > 0).slice(0, 3).forEach((m, i) => { const r = actor(px, t, 2 + i, m, [86, 68, 50][i], G + 14, { pose: t > 1400 ? (Math.floor((t + i * 100) / 240) % 2 ? 'up' : 'wave1') : 'stand', gaze: 1, bob: t > 1400 ? -Math.abs(Math.round(wave(t + i * 150, 520, 3))) : 0 }); if (i === 0 && t > 2400) bub(px, 'note', r); });
@@ -685,13 +685,13 @@ export function fly(px, t, v) {
   const go = seg(t, 400, 2600);
   const fam = [k.pt, ...k.kids.slice(0, 2)].filter(Boolean);
   const stay = k.par.slice(0, 2);
-  stay.forEach((p, i) => actor(px, t, 5 + i, p, 40 - i * 18, G + 16, { pose: t > 600 ? (Math.floor((t + i * 140) / 260) % 2 ? 'wave1' : 'wave2') : 'stand', gaze: 1, cry: t > 1400 }));
+  stay.forEach((p, i) => actor(px, t, 5 + i, p, 30 - i * 18, G + 16, { pose: t > 600 ? (Math.floor((t + i * 140) / 260) % 2 ? 'wave1' : 'wave2') : 'stand', gaze: 1, cry: t > 1400 }));
   const fade = 1 - seg(t, 2500, 2900);
-  const mx = lerp(90, 196, ease(go));
+  const mx = lerp(104, 200, ease(go));
   px.alpha(fade, () => { px.rect(mx + 7, G + 6, 6, 8, '#e8584c'); px.hl(mx + 8, mx + 11, G + 5, '#2e2a33'); px.vl(mx + 8, G + 2, G + 5, '#2e2a33'); px.px(mx + 8, G + 14, '#2e2a33'); px.px(mx + 12, G + 14, '#2e2a33'); });
   const r = actor(px, t, 0, k.me, mx, G + 14, { walk: go > 0 && go < 1, gaze: go < 0.15 ? -1 : 1, alpha: fade });
   if (go > 0.05 && go < 0.5) bub(px, 'heart', r);
-  fam.forEach((p, i) => actor(px, t, 1 + i, p, lerp(72 - i * 14, 182 - i * 12, ease(go)), G + 14, { walk: go > 0 && go < 1, gaze: 1, alpha: fade }));
+  fam.forEach((p, i) => actor(px, t, 1 + i, p, lerp(104 - (i + 1) * 18, 200 - (i + 1) * 18, ease(go)), G + 14, { walk: go > 0 && go < 1, gaze: 1, alpha: fade }));
 }
 
 // ───────── 피란 ─────────
@@ -712,8 +712,17 @@ export function flee(px, t, v) {
     const x = ((i * 34 + t * 0.012) % 300) - 30;
     const y = G + 14 - (i % 2) * 4;
     const col = ['#8a6a4f', '#6a5a7a', '#7a6a4a'][i % 3];
-    px.rect(x - 11, y - 21, 8, 9, col); px.rect(x - 10, y - 22, 6, 1, lt(col, 0.2)); px.hl(x - 11, x - 4, y - 17, dk(col, 0.3));
+    const f = fig(p);
+    const sh = Math.round(y - f.fy + f.head) + 13; // 어깨 바로 위 (Figure 몸통은 머리 위에서 16칸 아래부터)
+    const bw = f.group === 'kid' || f.group === 'baby' ? 6 : 8;
+    const bx = Math.round(x) - 5 - bw;
+    const by = sh + (Math.floor((t + i * 90) / 170) % 2); // 걸음에 맞춰 들썩
+    px.rect(bx, by, bw, bw + 1, col); px.rect(bx + 1, by - 1, bw - 2, 1, col);
+    px.rect(bx + 1, by, bw - 2, 1, lt(col, 0.25)); px.rect(bx, by + bw, bw, 1, dk(col, 0.3)); px.vl(bx + bw - 1, by + 1, by + bw, dk(col, 0.18));
+    px.rect(bx + bw / 2 - 1, by - 2, 2, 2, dk(col, 0.25)); px.px(bx + bw / 2 - 2, by - 3, dk(col, 0.25)); px.px(bx + bw / 2 + 1, by - 3, dk(col, 0.25)); // 매듭
+    px.hl(bx - 1, bx + bw, by - 1, '#2e2a33'); px.hl(bx, bx + bw - 1, by + bw + 1, '#2e2a33'); px.vl(bx - 1, by, by + bw, '#2e2a33');
     const r = actor(px, t, i, p, x, y, { walk: true, gaze: 1 });
+    px.line(Math.round(x) - 5, by + 3, Math.round(x) + 2, by + 8, dk(col, 0.35)); // 어깨끈 (가슴을 비스듬히)
     if (p === k.me && t > 1500) bub(px, 'sweat', r);
   });
 }
@@ -725,20 +734,27 @@ export function rain(px, t, v) {
   const G = 112;
   px.bands(0, 100, ['#3a4252', '#4a5262', '#5c6474']);
   skyline(px, { ...c, far: '#3a4252' }, true, 104, 'rn', t);
+  px.alpha(0.35, () => px.rect(0, 40, W, 66, '#4a5262')); // 빗속 안개 → 도시는 멀리
   ground(px, { ...c, ground: '#3e434e', leaf: '#3e434e', road: '#353a46' }, true, G - 6, 'rn', true);
-  // 젖은 바닥에 비친 불빛
-  px.alpha(0.18, () => { px.rect(60, G + 14, 10, 20, '#ffd37a'); });
-  lampPost(px, 66, G + 12, true, t);
-  bench(px, 140, G + 14);
+  // 가로등 아래 둥근 빛 웅덩이 (사람이 빛 안에 → 눈에 띄게)
+  const bx = 150;
+  const B = G + 26; // 벤치 · 사람을 화면 앞쪽으로
+  lampPost(px, bx - 30, B, true, t);
+  px.alpha(0.16, () => { for (let j = -5; j <= 5; j++) { const w = Math.round(Math.sqrt(1 - (j / 6) ** 2) * 40); px.rect(bx - 22 - w, B + j, w * 2, 1, '#ffd37a'); } });
+  px.alpha(0.2, () => px.rect(bx - 34, B + 2, 8, 6, '#ffd37a')); // 젖은 바닥에 비친 불빛
+  bench(px, bx, B);
   const sit = seg(t, 400, 1600);
-  const mx = Math.round(lerp(20, 140, ease(sit)));
-  const y = sit >= 1 ? G + 10 : G + 16;
-  // 우산
+  const mx = Math.round(lerp(24, bx, ease(sit)));
+  const y = sit >= 1 ? B - 4 : B + 2;
+  // 우산 (크게)
   const ux = mx + 4;
-  const uy = y - 34;
+  const uy = y - 38;
   px.vl(ux, uy, y - 12, '#2e2a33');
-  for (let j = 0; j < 7; j++) px.hl(ux - 3 - j * 2, ux + 3 + j * 2, uy + j, j === 6 ? '#3a5a8a' : j % 2 ? '#5b86c9' : '#4f78b8');
-  px.px(ux, uy - 1, '#2e2a33');
+  for (let j = 0; j < 9; j++) px.hl(ux - 3 - j * 2, ux + 3 + j * 2, uy + j, j === 8 ? '#3a5a8a' : j % 2 ? '#5b86c9' : '#4f78b8');
+  for (let k2 = -2; k2 <= 2; k2++) px.line(ux, uy, ux + k2 * 8, uy + 8, '#3a5a8a');
+  px.px(ux, uy - 1, '#2e2a33'); px.px(ux, uy - 2, '#2e2a33');
+  // 우산에 튀는 빗방울
+  [0, 1, 2].forEach((i) => { const q = ((t + i * 260) % 780) / 780; if (q < 0.4) px.px(ux - 14 + i * 13 + Math.round(q * 4) * (i - 1), uy + 4 + i % 2 - Math.round(q * 5), '#c8d6e8'); });
   const r = actor(px, t, 0, k.me, mx, y, { walk: sit > 0 && sit < 1, pose: sit >= 1 ? 'bow' : undefined, gaze: 1 });
   if (t > 2000) bub(px, 'dots', r);
   // 비 · 웅덩이 물결
@@ -836,7 +852,10 @@ export function award(px, t, v) {
   // 객석 (뒷모습 · 박수)
   const fam = ((v.age ?? 30) < 20 ? k.par : [k.pt, ...k.kids]).filter(Boolean);
   const crowd = [...fam, extra(0), extra(3), extra(5), extra(9), extra(1), extra(6)].slice(0, 7);
-  crowd.forEach((p, i) => actor(px, t, 10 + i, p, 24 + i * 34, 148, { back: true, pose: t > 1600 ? (Math.floor((t + i * 70) / 180) % 2 ? 'up' : 'stand') : 'stand', noShadow: true }));
+  crowd.forEach((p, i) => actor(px, t, 10 + i, p, 24 + i * 34, 141 - (i % 2), { back: true, pose: t > 1600 ? (Math.floor((t + i * 70) / 180) % 2 ? 'up' : 'clap1') : 'stand', noShadow: true }));
+  // 의자 등받이 (몸 아래쪽을 가림 → 앉아 있는 객석)
+  for (let i = 0; i < 8; i++) { const x = 7 + i * 34; px.rect(x, 137, 34 - 2, 7, '#6a2a3e'); px.rect(x, 137, 32, 1, '#8a3a52'); px.rect(x + 1, 139, 30, 1, '#5a2234'); px.vl(x + 31, 138, H - 1, '#4a1a2a'); }
+  px.alpha(0.12, () => px.rect(0, 108, W, 29, '#fff6df')); // 무대 빛이 객석 머리에 살짝
   petals(px, t, 50, ['#f6a5bd', '#ffd37a', '#9fc7e0', '#ffffff', '#b7e0a0'], 'aw', 1600);
 }
 
@@ -1061,6 +1080,8 @@ export function funeral(px, t, v) {
   const rows = [...fam, extra(3), extra(0), extra(5), extra(9), extra(1), extra(6)].slice(0, 8);
   rows.slice(0, 4).forEach((p, i) => { const bowing = Math.sin(((t - i * 700) / 2600) * Math.PI * 2) > 0.2 && t > i * 700; actor(px, t, i, mourn(p), 86 + i * 28, G + 22, { back: true, pose: bowing ? 'bow' : 'stand' }); });
   rows.slice(4, 8).forEach((p, i) => actor(px, t, 4 + i, mourn(p), 72 + i * 38, G + 44, { back: true, pose: 'stand' }));
+  // 제단 촛불에서 내려오는 따뜻한 빛 (조문객 머리 · 어깨가 어둠에 묻히지 않게)
+  px.alpha(0.13, () => { for (let j = 0; j < H - G + 8; j++) { const w = 70 + j * 1.1; px.rect(128 - w, G - 8 + j, w * 2, 1, '#ffe2b0'); } });
 }
 
 export const SCENES = { born, school, grad, date, wedding, newborn, hosp, loss, fly, flee, rain, news, home, award, cert, party, prison, work, cowork: work, village, last, funeral };

@@ -1,5 +1,5 @@
 // C22 엔딩 크레딧 테스트 전용 화면 (주소: /result/test) - 엔딩 크레딧 작업이 끝날 때까지만 씀
-// - 장면 판: 장면 20종을 골라 시간 막대로 돌려 봄 (나라 권역 · 내 성별 · 나이 · 가족 · 누가 아픈지 · 일터 · 카메라)
+// - 장면 판: 장면 21종을 골라 시간 막대로 돌려 봄 (나라 권역 · 내 성별 · 나이 · 가족 · 누가 아픈지 · 일터 · 카메라)
 // - 한눈에: 모든 장면을 같은 시각으로 한 번에
 // - 실제 인생: 오늘 시뮬로 만든 인생들의 엔딩 크레딧 바로 열기 (+ 번호 · 토큰 직접 넣기)
 // ResultPage 가 lifeId === 'test' 일 때 이 화면을 보여 줌 (App.jsx 라우트는 건드리지 않음)
@@ -91,7 +91,7 @@ function FilmTest() {
         </div>
         <div className="ft-row">
           <button type="button" className={'ft-chip' + (!grid ? ' on' : '')} onClick={() => setGrid(false)}>장면 하나</button>
-          <button type="button" className={'ft-chip' + (grid ? ' on' : '')} onClick={() => setGrid(true)}>한눈에 (20종)</button>
+          <button type="button" className={'ft-chip' + (grid ? ' on' : '')} onClick={() => setGrid(true)}>한눈에 ({SCENES.length}종)</button>
         </div>
       </header>
 

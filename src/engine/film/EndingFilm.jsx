@@ -32,7 +32,8 @@ const Y = (px) => `${(px / FILM_H) * 100}%`;
 const SZ = (px) => `${(px / FILM_H) * 100}cqh`;
 const XW = (px) => `${(px / FILM_W) * 100}%`;
 
-const SPEED = 1.25; // 큰 사건 장면 안의 움직임 빠르기 (장면이 4초대라 동작이 다 끝나게, 11/24)
+const PACE = 1.5;  // 필름 전체 진행을 1.5배 느리게 (11/24 동현님: 너무 빠름). 글 · 화면 전환 · 카메라 모두 같이 느려짐
+const SPEED = 1;   // 장면 안 사람 움직임 빠르기 (PACE 로 느려진 만큼 장면 그림 시간은 FilmScene 에서 PACE 배 → 움직임은 실제 속도)
 const C = { i: '#f2ede4', r: '#d6d0c4', c: '#a49d92', d: '#f0dfb5' }; // 원작 글자색
 
 // 글 한 줄 (원작 ftext): y = 글자 아랫줄 자리(px, 1280×720 기준)
@@ -67,8 +68,8 @@ function T({ y, size, w = 400, font = 'b', color = C.i, op = 1, max = 0, lh, ali
 
 // 글 묶음: 아랫줄을 bottom(px) 에 맞춰 위로 쌓음 (원작 자막처럼 줄이 늘면 위로 올라감)
 //   bottom 대신 middle 을 주면 화면 가운데에 세로로 가운데 맞춤
-function Stack({ bottom, middle, children }) {
-  const style = middle ? { top: 0, bottom: 0, justifyContent: 'center' } : { bottom: Y(FILM_H - bottom) };
+function Stack({ bottom, top, middle, children }) {
+  const style = middle ? { top: 0, bottom: 0, justifyContent: 'center' } : top != null ? { top: Y(top) } : { bottom: Y(FILM_H - bottom) };
   return <div className="ef-stack" style={style}>{children}</div>;
 }
 
@@ -98,12 +99,12 @@ function camStyle([x, y, z]) {
 
 // 장면 한 장: 하늘·땅 채우기 + 마을 + 빛깔
 //   장면 그림(FilmScene)은 겹마다 카메라 시차를 스스로 줌 + 장면 시간 tt(ms)로 사람이 움직임
-function Shot({ seg, idx, cam, op, tint, arch, fills, extra, tt = 0, cls = '' }) {
+function Shot({ seg, idx, cam, op, tint, arch, fills, extra, tt = 0, cls = '', shade = true }) {
   if (op <= 0) return null;
   const filter = arch > 0.02 ? `sepia(${(arch * 0.55).toFixed(3)}) saturate(${(1 - 0.34 * arch).toFixed(3)})` : undefined;
   return (
     <div className={'ef-shot ' + cls} style={{ opacity: op, filter }}>
-      {seg.v.scene ? <FilmScene v={seg.v} t={tt} cam={cam} /> : (
+      {seg.v.scene ? <FilmScene v={seg.v} t={tt * PACE} cam={cam} /> : (
         <div className="ef-cam" style={camStyle(cam)}>
           <div className="ef-sky" style={{ background: fills.sky }} />
           <div className="ef-ground" style={{ background: fills.ground }} />
@@ -111,6 +112,7 @@ function Shot({ seg, idx, cam, op, tint, arch, fills, extra, tt = 0, cls = '' })
         </div>
       )}
       {tint && <div className="ef-tint" style={{ background: `rgba(${tint.join(',')},0.38)` }} />}
+      {shade && seg.v.scene && <div className="ef-topshade" />}
       {extra}
     </div>
   );
@@ -310,7 +312,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     let raf;
     let last = performance.now();
     const step = (now) => {
-      const dt = Math.min(100, now - last);
+      const dt = Math.min(100, now - last) / PACE;
       last = now;
       const nt = Math.min(film.dur, tRef.current + dt);
       tRef.current = nt;
@@ -459,7 +461,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
       <>
         <T y={200} size={72} w={700} font="d" op={P(500) * g} max={1100} lh={84} shadow>{film.name}</T>
         <T y={256} size={26} w={600} font="m" op={P(1000) * g} shadow>{`${film.by} – ${film.by + D}`}</T>
-        <Sub f={m.f} op={P(1500) * g} />
+        <Sub f={m.f} op={P(1500) * g} top={292} />
       </>
     );
   } else if (m.kind === 'moment') {
@@ -495,7 +497,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     );
     over = (
       <>
-        <Stack bottom={670}>
+        <Stack top={70}>
           <T inline size={40} w={700} font="d" op={F(700)} shadow>{film.head}</T>
           <T inline gap={10} size={28} color={C.r} op={F(1100)} max={620} lh={42} shadow>{film.died}</T>
         </Stack>
@@ -504,7 +506,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
   } else if (m.kind === 'funeral') {
     shots.push(
       <Shot key={u} idx={u} seg={m} tt={b} op={P(0) * y} cam={camOf('funeral', p)} tint={[58, 72, 104]} arch={0}
-        fills={fillsOf(m.v.countryCode)} cls="funeral"
+        fills={fillsOf(m.v.countryCode)} cls="funeral" shade={false}
         extra={<div className="ef-dark" style={{ opacity: 0.25 }} />} />,
     );
     over = (
@@ -605,7 +607,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
             }}>
             <i style={{ width: `${(t / film.dur) * 100}%` }} />
           </div>
-          <span className="ef-time">{fmt(t)} / {fmt(film.dur)}</span>
+          <span className="ef-time">{fmt(t * PACE)} / {fmt(film.dur * PACE)}</span>
           <button type="button" className={'ef-ic' + (muted ? ' off' : '')} onClick={() => setMuted((v) => !v)}
             aria-label={muted ? '음악 켜기' : '음악 끄기'}>♪</button>
         </div>
@@ -615,10 +617,11 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
 }
 
 // 아래 자막 (원작 filmSub)
-function Sub({ f, op }) {
+// 자막은 화면 위쪽 (장면 사람들이 화면 아래 78~88% 에 서 있어서 아래 자막이 얼굴을 가렸음, 11/24)
+function Sub({ f, op, top = 168 }) {
   if (!f || !f.t) return null;
   return (
-    <Stack bottom={672}>
+    <Stack top={top}>
       <T inline size={30} w={500} op={op} max={1000} lh={44} shadow>{f.t}</T>
     </Stack>
   );

@@ -208,3 +208,7 @@
 .ft-life:hover { border-color: #f2d49b; }
 .ft-life span { font-size: 12px; color: #a39d92; }
 .ft-life i { font-style: normal; font-size: 11px; color: #6f6a62; }
+
+/* 위쪽 자막이 밝은 벽 · 하늘 위에서도 읽히게 (11/24) */
+.ef-topshade { position: absolute; left: 0; right: 0; top: 0; height: 58%; pointer-events: none;
+  background: linear-gradient(rgba(20, 16, 30, 0.62), rgba(20, 16, 30, 0.42) 62%, rgba(20, 16, 30, 0)); }
