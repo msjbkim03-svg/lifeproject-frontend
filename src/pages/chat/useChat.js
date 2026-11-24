@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import client from "../../api/api";
 
-const WS_URL = "ws://localhost/ws";
+const WS_URL = `ws://${window.location.hostname}/ws`;
 const BUBBLE_MS = 6000;
 const ERROR_MS = 3000;
 const MAX_OTHERS = 8;
@@ -36,8 +36,9 @@ function useChat(countryCode, me) {
   const myPos = useRef({ place: me.place, x: 50, dir: "right", walking: false });
   const lastMove = useRef({ at: 0, walking: false });
 
+  const [guestId] = useState(()=> -1 - Math.floor(Math.random() * 1000000000));
   const token = localStorage.getItem("token");
-  const myId = token ? myIdOf(token) : null;
+  const myId = token ? myIdOf(token) : guestId;
 
   useEffect(() => {
     if (!countryCode) return;
@@ -51,15 +52,19 @@ function useChat(countryCode, me) {
       brokerURL: WS_URL,
       reconnectDelay: 3000,
       onConnect: () => {
+        // 듣기(구독) 때 내가 누군지 같이 보냄 → 서버가 "지금 이 나라에 사는 사람"인지 확인
+        const t = localStorage.getItem("token");
+        const g = localStorage.getItem("guestToken");
+        const who = t ? { token: t } : g ? { guestToken: g } : {};
         stomp.subscribe(`/topic/chat/${countryCode}`, (msg) => {
           const m = { ...JSON.parse(msg.body), at: Date.now() };
           setMessages((prev) => [...prev, m].slice(-30));
-        });
-        stomp.subscribe(`/topic/chat/${countryCode}/players`, (msg) => setPlayers(JSON.parse(msg.body)));
+        }, who);
+        stomp.subscribe(`/topic/chat/${countryCode}/players`, (msg) => setPlayers(JSON.parse(msg.body)), who);
         stomp.subscribe(`/topic/chat/${countryCode}/move`, (msg) => {
           const p = JSON.parse(msg.body);
           setPlayers((prev) => prev.map((x) => (x.memberId === p.memberId ? { ...x, ...p } : x)));
-        });
+        }, who);
         stomp.subscribe("/user/queue/chatError", (msg) => setError(JSON.parse(msg.body).message));
         setConnected(true);
       },
@@ -79,17 +84,20 @@ function useChat(countryCode, me) {
   }, [countryCode]);
 
   useEffect(() => {
-    if (!connected || !token || !stompRef.current) return;
+    if (!connected || !stompRef.current) return;
     stompRef.current.publish({
       destination: `/app/chat/${countryCode}/join`,
-      body: JSON.stringify({ token, age: me.age, gender: me.gender, ...myPos.current }),
+      body: JSON.stringify({
+        token, memberId: myId, guestToken: token ? null : localStorage.getItem("guestToken"),
+        age: me.age, gender: me.gender, ...myPos.current,
+      }),
     });
-  }, [connected, token, countryCode, me.age, me.gender]);
+  }, [connected, token, myId ,countryCode, me.age, me.gender]);
 
   useEffect(() => {
     const ends = messages.filter((m) => m.at + BUBBLE_MS > now).map((m) => m.at + BUBBLE_MS);
     if (ends.length === 0) return;
-    const timer = setTimeout(() => setNow(Date.now()), Math.min(...ends) - now + 50);
+    const timer = setTimeout(() => setNow(Date.now()), Math.min(...ends) - Date.now() + 50);
     return () => clearTimeout(timer);
   }, [messages, now]);
 
@@ -102,7 +110,7 @@ function useChat(countryCode, me) {
   const move = useCallback((p) => {
     myPos.current = { place: p.place, x: Math.round(p.x * 10) / 10, dir: p.dir, walking: p.walking };
     const stomp = stompRef.current;
-    if (!token || !stomp?.connected) return;
+    if (!stomp?.connected) return;
     const t = Date.now();
     if (p.walking && lastMove.current.walking && t - lastMove.current.at < MOVE_MS) return;
     lastMove.current = { at: t, walking: p.walking };
@@ -143,7 +151,7 @@ function useChat(countryCode, me) {
   return {
     others, count, error, connected, send, move,
     myMessage: myId ? bubbleOf(myId) : null,
-    canTalk: !!myId,
+    canTalk: !!token,
   };
 }
 

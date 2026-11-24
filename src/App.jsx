@@ -65,8 +65,7 @@ function App() {
         <Route path="/memorial" element={<MemorialListPage />} />
         <Route path="/memorial/:lifeId" element={<MemorialRoomPage />}>
           <Route index element={<MemorialRoomTab />} />
-          <Route path="video" element={<MemorialVideoTab kind="last" />} />
-          <Route path="cookie" element={<MemorialVideoTab kind="cookie" />} />
+          <Route path="video" element={<MemorialVideoTab />} />
           <Route path="album" element={<MemorialAlbumTab />} />
           <Route path="guest" element={<MemorialGuestTab />} />
           <Route path="last" element={<MemorialLastTab />} />

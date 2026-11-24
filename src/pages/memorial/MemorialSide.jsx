@@ -1,14 +1,16 @@
 import { useState } from "react";
 import Button from "../../common/ui/Button";
 import Panel from "../../common/ui/Panel";
+import MemorialPortrait from "./MemorialPortrait";
 import MemorialSlot from "./MemorialSlot";
 import s from "./MemorialRoom.module.css";
 
 const CANDLE_COUNT = 7;
 
-// 추모관 왼쪽 카드: 초상(빈 칸) · 이름 · 생몰년 · 나라 · 한 줄 요약 · 행복 막대 · 촛불 (안 열린 내 방이면 열기 칸)
-// 예: <MemorialSide room={room} onCandle={lightCandle} onOpen={openRoom} />
-function MemorialSide({ room, onCandle, onOpen }) {
+// 추모관 왼쪽 카드: 초상 · 이름 · 생몰년 · 나라 · 한 줄 요약 · 행복 막대 · 촛불 (안 열린 내 방이면 열기 칸)
+// 초상 = 마을 캐릭터 그림(Figure)을 세상을 떠난 나이의 모습 + 그 생에 입은 옷(C21)으로
+// 예: <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} />
+function MemorialSide({ room, film, onCandle, onOpen }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false); // 서버 처리 중 (연속 클릭 막기)
 
@@ -25,7 +27,11 @@ function MemorialSide({ room, onCandle, onOpen }) {
 
   return (
     <Panel className={s.side}>
-      <MemorialSlot label="초상 (픽셀 자리)" className={s.portrait} />
+      {film === null ? (
+        <MemorialSlot label="초상" className={s.portrait} />
+      ) : (
+        <MemorialPortrait gender={film?.film?.life?.gender} age={room.deathAge} costume={film?.wear} />
+      )}
 
       <h2 className={s.name}>{room.name}</h2>
       <p className={s.mono}>{room.birthYear} – {room.deathYear} · {room.deathAge}세</p>

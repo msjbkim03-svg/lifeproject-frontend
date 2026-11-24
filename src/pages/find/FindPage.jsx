@@ -32,6 +32,15 @@ function FindPage() {
   const [info, setInfo] = useState("");         // 안내 문구 (초록)
   const [error, setError] = useState("");       // 오류 문구 (빨강)
   const [foundId, setFoundId] = useState("");   // 찾은 아이디 (msj***)
+  const [busy, setBusy] = useState(false);      // 서버에 요청 보내는 중 (연타 막기)
+
+  // 인증번호를 받은 뒤 아이디·이메일을 고치면 → 인증을 처음부터 다시
+  const editInput = (setter) => (e) => {
+    setter(e.target.value);
+    if (sent) {
+      setSent(false); setVerified(false); setCode(""); setInfo("");
+    }
+  };
 
   // 탭 바꾸면 입력칸·문구 모두 비우기
   const changeTab = (t) => {
@@ -46,7 +55,9 @@ function FindPage() {
     setInfo(""); setError("");
     if (tab === "RESET_PW" && !loginId) return setError("아이디를 입력해 주세요.");
     if (!email) return setError("이메일을 입력해 주세요.");
+    if (busy) return;
 
+    setBusy(true);
     try {
       const resp = await client.post("/api/members/find/sendCode", {
         purpose: tab,
@@ -58,6 +69,8 @@ function FindPage() {
       setInfo(resp.data.message); // "입력한 정보가 맞다면 인증번호 메일을 보내 드려요."
     } catch (err) {
       setError(err.response?.data?.message || "인증번호를 보내지 못했어요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -65,7 +78,9 @@ function FindPage() {
   const checkCode = async () => {
     setInfo(""); setError("");
     if (!code) return setError("인증번호를 입력해 주세요.");
+    if (busy) return;
 
+    setBusy(true);
     try {
       const resp = await client.post("/api/members/find/checkCode", {
         purpose: tab,
@@ -77,6 +92,8 @@ function FindPage() {
       setInfo(resp.data.message); // "인증되었어요."
     } catch (err) {
       setError(err.response?.data?.message || "인증번호가 맞지 않거나 시간이 지났어요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -84,12 +101,16 @@ function FindPage() {
   const findId = async () => {
     setInfo(""); setError("");
     if (!code) return setError("인증번호를 입력해 주세요.");
+    if (busy) return;
 
+    setBusy(true);
     try {
       const resp = await client.post("/api/members/find/id", { email, code });
       setFoundId(resp.data.loginId); // 예: msj***
     } catch (err) {
       setError(err.response?.data?.message || "인증번호가 맞지 않거나 시간이 지났어요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -99,7 +120,9 @@ function FindPage() {
     if (!code) return setError("인증번호를 입력해 주세요.");
     if (!newPassword) return setError("새 비밀번호를 입력해 주세요.");
     if (newPassword !== newPasswordCheck) return setError("새 비밀번호 확인이 맞지 않아요.");
+    if (busy) return;
 
+    setBusy(true);
     try {
       await client.post("/api/members/find/resetPw", {
         loginId, email, code, newPassword, newPasswordCheck,
@@ -108,6 +131,8 @@ function FindPage() {
       navi("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요.", background } });
     } catch (err) {
       setError(err.response?.data?.message || "비밀번호를 바꾸지 못했어요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -144,16 +169,16 @@ function FindPage() {
               {tab === "RESET_PW" && (
                 <>
                   <label className={common.label}>아이디</label>
-                  <input className={common.input} value={loginId} disabled={sent}
-                    onChange={(e) => setLoginId(e.target.value)} />
+                  <input className={common.input} value={loginId}
+                    onChange={editInput(setLoginId)} />
                 </>
               )}
 
               <label className={common.label}>가입한 이메일</label>
               <div className={styles.row}>
-                <input className={common.input} value={email} disabled={sent}
-                  onChange={(e) => setEmail(e.target.value)} />
-                <Button className={styles.noWrap} onClick={sendCode}>
+                <input className={common.input} value={email}
+                  onChange={editInput(setEmail)} />
+                <Button className={styles.noWrap} disabled={busy} onClick={sendCode}>
                   {sent ? "다시 받기" : "인증번호 받기"}
                 </Button>
               </div>
@@ -166,7 +191,7 @@ function FindPage() {
                     <input className={common.input} value={code} maxLength={6} disabled={verified}
                       onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))} />
                     {/* 인증번호 확인 버튼 (두 탭 모두) */}
-                    <Button className={styles.noWrap} disabled={verified} onClick={checkCode}>
+                    <Button className={styles.noWrap} disabled={verified || busy} onClick={checkCode}>
                       {verified ? "인증 완료" : "인증번호 확인"}
                     </Button>
                   </div>
@@ -192,7 +217,7 @@ function FindPage() {
 
               {/* 인증된 뒤에만 [아이디 확인] / [비밀번호 변경] */}
               {verified && (
-                <Button type="primary" size="lg" block className={styles.mainBtn}
+                <Button type="primary" size="lg" block className={styles.mainBtn} disabled={busy}
                   onClick={tab === "FIND_ID" ? findId : resetPw}>
                   {tab === "FIND_ID" ? "아이디 확인" : "비밀번호 변경"}
                 </Button>

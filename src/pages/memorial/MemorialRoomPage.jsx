@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
 import Panel from "../../common/ui/Panel";
+import { buildFilm } from "../../engine/film/filmPlan";
 import MemorialSide from "./MemorialSide";
 import { TABS, toRoom } from "./memorialData";
 import s from "./MemorialRoom.module.css";
@@ -10,7 +11,7 @@ import s from "./MemorialRoom.module.css";
 // 추모관 방 틀 (B01)  주소가 /memorial/:lifeId 로 시작하면 항상 이 화면이 먼저 그려짐
 //   왼쪽: MemorialSide (사람 카드 + 촛불)
 //   오른쪽: 탭 줄 + <Outlet /> 자리에 주소에 맞는 탭 화면
-//     /memorial/1 → 방,  /video → 영상,  /cookie → 쿠키 영상,  /album → 사진첩,  /guest → 방명록,  /last → 마지막 순간
+//     /memorial/1 → 방,  /video → 영상,  /album → 사진첩,  /guest → 방명록,  /last → 마지막 순간
 // 방 정보(GET /api/memorials/{lifeId})는 여기서 한 번만 받아서 context 로 탭들에 넘겨 줌
 function MemorialRoomPage() {
   const { lifeId } = useParams();
@@ -20,6 +21,7 @@ function MemorialRoomPage() {
   const [room, setRoom] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [notice, setNotice] = useState(""); // 화면 안 안내 문구
+  const [film, setFilm] = useState(null);   // 엔딩 영상 재료 { result, film, wear } (못 받으면 false) → 영상·사진첩 탭
 
   // 1. 방 불러오기
   //    view: true 면 조회수 +1 (처음 들어올 때만, 방명록 쓰고 다시 불러올 때는 안 올림)
@@ -30,6 +32,18 @@ function MemorialRoomPage() {
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => load(true), [lifeId]);
+
+  // 1-2. 엔딩 영상 재료 (팀원 C22 엔딩 영상과 같은 재료) → 영상 탭은 영상 그대로, 사진첩은 영상 속 장면
+  useEffect(() => {
+    let alive = true;
+    client.get(`/api/memorials/${lifeId}/film`)
+      .then((resp) => { if (alive) setFilm(resp.data); })
+      .catch(() => { if (alive) setFilm(false); });
+    return () => { alive = false; };
+  }, [lifeId]);
+
+  // 1-3. 영상 순서표 (장면 목록) - 팀원 buildFilm 을 한 번만 돌려서 초상 · 방 · 사진첩 · 영상 탭이 같이 씀
+  const plan = useMemo(() => (film ? buildFilm(film.result, { ...film.film, wear: film.wear }) : null), [film]);
 
   // 401 이면 로그인 화면으로
   const goLogin = () => navi("/login", { state: { message: "로그인하고 다시 해 주세요." } });
@@ -106,7 +120,7 @@ function MemorialRoomPage() {
       </div>
 
       <div className={s.layout}>
-        <MemorialSide room={room} onCandle={lightCandle} onOpen={openRoom} />
+        <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} />
 
         <Panel className={s.main}>
           {/* 탭 줄: 지금 주소와 같은 탭이 강조됨 (NavLink 가 알아서 on) */}
@@ -123,7 +137,7 @@ function MemorialRoomPage() {
             ))}
           </nav>
           {/* 탭 화면들은 useOutletContext() 로 room 등을 꺼내 씀 */}
-          <Outlet context={{ room, base, isLogin, sendComment, deleteComment }} />
+          <Outlet context={{ room, base, isLogin, sendComment, deleteComment, film, plan }} />
         </Panel>
       </div>
 

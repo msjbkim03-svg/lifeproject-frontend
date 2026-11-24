@@ -7,7 +7,6 @@ export const QUICK = ["편히 쉬세요", "수고 많으셨어요", "멋진 삶�
 export const TABS = [
   { path: "", label: "방" },
   { path: "video", label: "영상" },
-  { path: "cookie", label: "쿠키 영상" },
   { path: "album", label: "사진첩" },
   { path: "guest", label: "방명록" },
   { path: "last", label: "마지막 순간" },

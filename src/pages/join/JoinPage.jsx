@@ -41,6 +41,9 @@ function JoinPage() {
   // 맨 아래 왼쪽에 보여 줄 오류 문구
   const [error, setError] = useState("");
 
+  // 가입 요청을 보내는 중인지 (연타 막기)
+  const [busy, setBusy] = useState(false);
+
   // 전화번호는 utils/phone.js 의 formatPhone 으로 하이픈 자동 넣기
 
   // ① 글자를 칠 때마다 실행
@@ -87,6 +90,7 @@ function JoinPage() {
   // ③ 가입하기 버튼
   const handleSubmit = async (e) => {
     e.preventDefault(); // 새로고침 막기
+    if (busy) return;
     setError("");
 
     // 화면에서 먼저 검사 (서버에서도 한 번 더 검사함)
@@ -115,6 +119,7 @@ function JoinPage() {
       return setError('"로봇이 아닙니다"에 체크해 주세요.');
     }
 
+    setBusy(true);
     try {
       // 서버로 보내기 (동의 여부는 DB 값에 맞춰 Y / N 으로)
       // captchaToken 도 같이 보내면 서버가 구글에 진짜인지 확인함
@@ -126,6 +131,8 @@ function JoinPage() {
       // 토큰은 한 번만 쓸 수 있어서, 실패하면 체크박스를 비우고 다시 체크하게 함
       window.grecaptcha?.reset();
       setCaptchaToken("");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -242,7 +249,7 @@ function JoinPage() {
           <div className={styles.footerBtns}>
             <button type="submit" hidden />
             <Button onClick={() => navi("/")}>취소</Button>
-            <Button type="primary" onClick={handleSubmit}>가입하기</Button>
+            <Button type="primary" disabled={busy} onClick={handleSubmit}>{busy ? "가입하는 중…" : "가입하기"}</Button>
           </div>
         </div>
       </form>

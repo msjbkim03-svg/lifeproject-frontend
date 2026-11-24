@@ -9,7 +9,8 @@ import styles from "./LoginPage.module.css";
 function LoginPage() {
   const navi = useNavigate();
   const location = useLocation();
-  const notice = location.state?.message;
+  const expired = new URLSearchParams(location.search).get("expired");
+  const notice = location.state?.message || (expired ? "로그인이 만료됐어요. 다시 로그인하면 이어서 살 수 있어요." : null);
   const background = location.state?.background;
 
   const [loginId, setLoginId] = useState("");
