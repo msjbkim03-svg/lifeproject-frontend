@@ -1502,7 +1502,7 @@ function Portrait({ gender, age, costume }) {
       <div className="pp-photo"><Figure look={lookOf({ gender, age, costume })} /></div>
       <span className="pp-polaroid-cap">{age}세</span>
     </div>
-``  );
+  );
 }
 
 // 생존 곡선 그림 (원작 '생존 곡선' 패널)
