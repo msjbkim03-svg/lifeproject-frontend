@@ -1,20 +1,15 @@
-// C15 채팅 테스트 화면 (주소: /chatTest) - 진행 화면에 붙이기 전에 마을 + 채팅만 따로 확인
-// 브라우저 두 개(하나는 시크릿 창)에서 서로 다른 회원으로 로그인하고 같은 나라를 고르면 서로 보여요
+// C15 채팅 테스트 화면 - 지금은 인생 진행 화면(PlayPage)에 붙어 있어서 주소 연결은 안 함 (필요할 때만 App.jsx 에 /chatTest)
 import { useState } from "react";
-import Village from "../../engine/village/Village";
 import Panel from "../../common/ui/Panel";
-import useChat from "./useChat";
-import ChatBox from "./ChatBox";
+import ChatVillage from "./ChatVillage";
 import "../../common/ui/ui.css";
 
 const TEST_COUNTRIES = ["KOR", "JPN", "CHN", "IND", "VNM"];
-const PLACE = "park";
 
 function ChatTestPage() {
   const [code, setCode] = useState("KOR");
   const [age, setAge] = useState(25);
   const [gender, setGender] = useState("M");
-  const chat = useChat(code, { age, gender, place: PLACE });
 
   return (
     <div className="page col">
@@ -37,12 +32,8 @@ function ChatTestPage() {
 
       <div style={{ maxWidth: 760 }}>
         <Panel title={code + " 마을"}>
-          <Village countryCode={code} age={age} gender={gender} place={PLACE}
-            caption={`${code} · 채팅 테스트 (${age}세)`}
-            myMessage={chat.myMessage} others={chat.others} onMove={chat.move} />
-          <div style={{ marginTop: 10 }}>
-            <ChatBox chat={chat} />
-          </div>
+          <ChatVillage countryCode={code} age={age} gender={gender} place="park"
+            caption={`${code} · 채팅 테스트 (${age}세)`} />
         </Panel>
       </div>
     </div>

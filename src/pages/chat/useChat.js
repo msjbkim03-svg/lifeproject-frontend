@@ -1,18 +1,17 @@
-// C15 마을 채팅 + C14 같은 나라 접속자
-//   GET  /api/chat/{나라}           → 최근 30개
-//   GET  /api/chat/{나라}/players   → 지금 접속한 회원 [{ memberId, nickname, age, gender }]
-//   보내기 /app/chat/{나라}          { token, content }
-//   보내기 /app/chat/{나라}/join     { token, age, gender, place, x, dir, walking }  (나이가 바뀔 때마다 다시 보냄)
-//   보내기 /app/chat/{나라}/move     { place, x, dir, walking }  (Village onMove, 걷는 중엔 0.15초에 한 번)
-//   듣기   /topic/chat/{나라}        새 말 / /players 접속자 / /move 누가 움직임 / /user/queue/chatError 내 안내
-// 사용법: const chat = useChat(life.currentCountry, { age, gender, place });
-//         <Village … myMessage={chat.myMessage} others={chat.others} onMove={chat.move} />  <ChatBox chat={chat} />
+// C15 마을 채팅 + C14 같은 나라 접속자 (채팅 기록은 안 보여 주고 말풍선으로만)
+//   GET    /api/chat/{나라}/players  → 지금 접속한 회원 [{ memberId, nickname, age, gender, place, x, dir, walking }]
+//   보내기 /app/chat/{나라}           { token, content }
+//   보내기 /app/chat/{나라}/join      { token, age, gender, place, x, dir, walking }  (나이가 바뀔 때마다 다시 보냄)
+//   보내기 /app/chat/{나라}/move      { place, x, dir, walking }  (Village onMove, 걷는 중엔 0.15초에 한 번)
+//   듣기   /topic/chat/{나라}         새 말 / /players 접속자 / /move 누가 움직임 / /user/queue/chatError 내 안내
+// 사용법: ChatVillage 안에서 씀
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import client from "../../api/api";
 
 const WS_URL = "ws://localhost/ws";
 const BUBBLE_MS = 6000;
+const ERROR_MS = 3000;
 const MAX_OTHERS = 8;
 const MOVE_MS = 150;
 
@@ -44,13 +43,6 @@ function useChat(countryCode, me) {
     if (!countryCode) return;
     let alive = true;
 
-    client.get(`/api/chat/${countryCode}`)
-      .then((resp) => {
-        if (!alive) return;
-        const ids = new Set(resp.data.map((m) => m.msgId));
-        setMessages((prev) => [...resp.data, ...prev.filter((m) => m.at && m.countryCode === countryCode && !ids.has(m.msgId))]);
-      })
-      .catch(() => {});
     client.get(`/api/chat/${countryCode}/players`)
       .then((resp) => { if (alive) setPlayers(resp.data); })
       .catch(() => {});
@@ -61,7 +53,7 @@ function useChat(countryCode, me) {
       onConnect: () => {
         stomp.subscribe(`/topic/chat/${countryCode}`, (msg) => {
           const m = { ...JSON.parse(msg.body), at: Date.now() };
-          setMessages((prev) => [...prev, m].slice(-50));
+          setMessages((prev) => [...prev, m].slice(-30));
         });
         stomp.subscribe(`/topic/chat/${countryCode}/players`, (msg) => setPlayers(JSON.parse(msg.body)));
         stomp.subscribe(`/topic/chat/${countryCode}/move`, (msg) => {
@@ -95,11 +87,17 @@ function useChat(countryCode, me) {
   }, [connected, token, countryCode, me.age, me.gender]);
 
   useEffect(() => {
-    const ends = messages.filter((m) => m.at && m.at + BUBBLE_MS > now).map((m) => m.at + BUBBLE_MS);
+    const ends = messages.filter((m) => m.at + BUBBLE_MS > now).map((m) => m.at + BUBBLE_MS);
     if (ends.length === 0) return;
     const timer = setTimeout(() => setNow(Date.now()), Math.min(...ends) - now + 50);
     return () => clearTimeout(timer);
   }, [messages, now]);
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(""), ERROR_MS);
+    return () => clearTimeout(timer);
+  }, [error]);
 
   const move = useCallback((p) => {
     myPos.current = { place: p.place, x: Math.round(p.x * 10) / 10, dir: p.dir, walking: p.walking };
@@ -112,7 +110,7 @@ function useChat(countryCode, me) {
   }, [token, countryCode]);
 
   const bubbleOf = (id) => {
-    const live = messages.filter((m) => m.at && m.memberId === id && m.at + BUBBLE_MS > now);
+    const live = messages.filter((m) => m.memberId === id && m.at + BUBBLE_MS > now);
     return live.length ? live[live.length - 1].content : null;
   };
 
@@ -143,7 +141,7 @@ function useChat(countryCode, me) {
   };
 
   return {
-    messages, others, count, error, connected, send, move, myId,
+    others, count, error, connected, send, move,
     myMessage: myId ? bubbleOf(myId) : null,
     canTalk: !!myId,
   };
