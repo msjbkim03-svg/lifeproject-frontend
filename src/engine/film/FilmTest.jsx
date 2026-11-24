@@ -112,7 +112,7 @@ function FilmTest() {
             <label className="ft-lab">나이<input type="number" min={0} max={100} value={age} onChange={(e) => setAge(Math.max(0, Math.min(100, Number(e.target.value) || 0)))} /></label>
           </div>
           <div className="ft-row">
-            <label className="ft-lab">누가 (병원 · 떠나보냄)<select value={arg} onChange={(e) => setArg(e.target.value)}><option value="me">나</option><option value="kid">아이</option><option value="pt">배우자</option><option value="par">부모님</option><option value="sudden">마지막: 사고 (빈자리)</option></select></label>
+            <label className="ft-lab">누가 (병원 · 떠나보냄)<select value={arg} onChange={(e) => setArg(e.target.value)}><option value="me">나</option><option value="kid">아이</option><option value="pt">배우자</option><option value="par">부모님</option><option value="sick">마지막: 병 (병실)</option><option value="sudden">마지막: 사고 (기다리던 저녁)</option></select></label>
           </div>
           <div className="ft-row">
             <label className="ft-lab">일터<select value={ind} onChange={(e) => setInd(e.target.value)}><option value="SERVICE">가게 · 사무실</option><option value="INDUSTRY">공장</option><option value="AGRI">농사</option></select></label>

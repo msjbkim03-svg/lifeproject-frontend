@@ -449,8 +449,9 @@ export function buildFilm(r, data) {
   const by = r.birthYear;
   const events = r.events || [];
 
-  // 제목 장면: 태어난 해 첫 줄
-  const first = events.find((e) => e.age === 0 && !SKIP.some((re) => re.test(e.logText || '')));
+  // 제목 장면: 태어난 집 소개 줄 ('아버지는 … 어머니는 …') - 장면이 태어난 방이라 병·역사 사건 줄은 쓰지 않음
+  //   (11/24 동현님: 첫 장면 자막이 '홍역 진단을 받았다'인데 그림은 태어나는 장면)
+  const first = events.find((e) => e.age === 0 && !e.eventId && /^(아버지|어머니)는|집이었다/.test(e.logText || ''));
   const titleF = { a: 0, t: first ? cleanText(first.logText, r.name) : `${r.countryName}에서 태어났다.`, place: 'home' };
   const moms = pickMoments(events, D, r.name);
 
@@ -485,8 +486,11 @@ export function buildFilm(r, data) {
   });
 
   // 마지막 장면: 사고 · 재해 · 폭력 등 갑작스러운 죽음이면 침대 대신 '빈자리' (FilmScene last · sudden)
-  const sudden = /사고|손상|재해|재난|살해|폭력|전쟁|분쟁|익사|추락|화재|자살/.test(r.deathCause || '');
-  add('death', 3800, { v: { ...villageAt(ctx, D, 'home'), scene: 'last', arg: sudden ? 'sudden' : null, family: familyAt(ctx, D, { all: true }).list } });
+  //   병이면 병실 침대, 그 밖(노환 등)은 집 침대 (11/24 동현님: 마지막 장면이 사망 원인과 안 어울림)
+  const cause = r.deathCause || '';
+  const sudden = /사고|손상|재해|재난|피해|살해|폭력|전쟁|분쟁|익사|추락|화재|자살/.test(cause);
+  const sick = !sudden && D >= 1 && /암|심장|뇌졸중|폐렴|결핵|말라리아|홍역|감염|질환|간염|당뇨|고혈압|병/.test(cause);
+  add('death', 3800, { v: { ...villageAt(ctx, D, 'home'), scene: 'last', arg: sudden ? 'sudden' : sick ? 'sick' : null, cause, family: familyAt(ctx, D, { all: true }).list } });
   add('funeral', 4600, { v: { ...villageAt(ctx, D, 'home', { all: true }), pet: null, scene: 'funeral' } });
   add('epi', 6400); // 묘비 + 마지막으로 남긴 말
   add('credits', creditsDur, { cast, src });
