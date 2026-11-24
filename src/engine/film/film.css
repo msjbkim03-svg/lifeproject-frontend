@@ -146,6 +146,7 @@
 
 /* 장면 그림 (FilmScene.jsx): 320×180 SVG 한 장, 겹마다 카메라 시차 · 움직임은 장면 시간으로 계산 */
 .fs2 { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.fs-px { image-rendering: pixelated; object-fit: cover; transform-origin: 50% 62%; } /* 픽셀 장면: 칸이 번지지 않게 */
 .fs2 .v-fig { overflow: visible; }
 .fs-a .v-fig g { transition: none; }
 /* 걷기: 다리 · 팔 번갈아 (s1 / s2) */

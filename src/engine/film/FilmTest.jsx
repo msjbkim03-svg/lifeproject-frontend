@@ -136,7 +136,7 @@ function FilmTest() {
             <div className="ft-all">
               {SCENES.map(([k, name]) => (
                 <button key={k} type="button" className="ft-cell" onClick={() => { setScene(k); setGrid(false); seek(0); setPlaying(true); }}>
-                  <div className="ft-thumb"><FilmScene v={v(k)} t={t % 5000} /></div>
+                  <div className="ft-thumb"><FilmScene v={v(k)} t={Math.floor((t % 5000) / 200) * 200} /></div>
                   <span>{name}</span>
                 </button>
               ))}
