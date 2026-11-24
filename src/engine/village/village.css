@@ -148,10 +148,9 @@
 .v-person.fam { z-index: 4; }
 .v-person.fam .v-wander {
   display: flex; flex-direction: column; align-items: center;
-  transform: translateY(-41px) scale(var(--s)); transform-origin: 50% 100%;
   animation: v-wander 11s ease-in-out infinite;
 }
-.v-person.fam .v-fig { transform: none; }
+.v-person.fam .v-wander > * { flex: none; }
 .v-person.fam .v-name { font-size: 10px; opacity: 0.85; }
 .v-person.fam.baby .v-wander { animation-name: v-bob; }
 @keyframes v-wander {

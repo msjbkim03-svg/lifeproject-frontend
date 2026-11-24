@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
@@ -15,6 +15,11 @@ function LoginPage() {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  // 이미 로그인한 상태로 들어오면 메인으로
+  useEffect(() => {
+    if (localStorage.getItem("token")) navi("/", { replace: true });
+  }, [navi]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

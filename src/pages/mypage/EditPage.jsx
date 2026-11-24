@@ -30,6 +30,7 @@ function EditPage() {
   // 이메일 변경 인증 (이메일을 바꿨을 때만 씀)
   const [emailCode, setEmailCode] = useState("");
   const [emailSent, setEmailSent] = useState(false); // 새 이메일로 인증번호를 보냈는지
+  const [sending, setSending] = useState(false);     // 메일 보내는 중 (서버 대답 기다리는 동안)
   const [message, setMessage] = useState(""); // 저장 결과
   const [error, setError] = useState("");     // 저장 오류
 
@@ -37,6 +38,9 @@ function EditPage() {
   const [withdrawPw, setWithdrawPw] = useState("");
   const [withdrawError, setWithdrawError] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false); // 탈퇴 확인 창
+
+  // 이메일을 바꿨는지 (공백·대소문자는 무시 → 서버와 같은 기준)
+  const emailChanged = email.trim().toLowerCase() !== (my.email || "").toLowerCase();
 
   // 2. 닉네임 중복 확인 (원래 닉네임 그대로면 확인 필요 없음)
   const checkNickname = async () => {
@@ -51,7 +55,7 @@ function EditPage() {
 
   // 3. 이메일 중복 확인
   const checkEmail = async () => {
-    if (email === my.email) return setEmailMsg("지금 쓰는 이메일이에요.");
+    if (!emailChanged) return setEmailMsg("지금 쓰는 이메일이에요.");
     try {
       const resp = await client.get("/api/members/checkEmail", { params: { email } });
       setEmailMsg(resp.data.available ? "사용할 수 있는 이메일이에요." : "이미 사용 중인 이메일이에요.");
@@ -61,14 +65,21 @@ function EditPage() {
   };
 
   // 3-1. 새 이메일로 인증번호 받기 → POST /api/members/me/emailCode
+  //   입력칸은 바로 열어 두고(기다리는 동안 메일함 확인 가능) → 실패하면 다시 닫고 이유를 보여 줌
   const sendEmailCode = async () => {
-    setEmailMsg("");
+    if (sending) return;
+    setSending(true);
+    setEmailSent(true);
+    setEmailMsg("새 이메일로 인증번호를 보내고 있어요…");
     try {
       const resp = await client.post("/api/members/me/emailCode", { email });
-      setEmailSent(true);
       setEmailMsg(resp.data.message);
     } catch (err) {
+      setEmailSent(false);
+      setEmailCode("");
       setEmailMsg(err.response?.data?.message || "인증번호를 보내지 못했어요.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -78,16 +89,24 @@ function EditPage() {
     setError("");
     if (!currentPassword) return setError("현재 비밀번호를 입력해 주세요.");
     if (newPassword && newPassword !== newPasswordCheck) return setError("새 비밀번호 확인이 맞지 않아요.");
-    if (email !== my.email && !emailCode) return setError("이메일을 바꾸려면 새 이메일로 받은 인증번호를 입력해 주세요.");
+    if (emailChanged && !emailCode) return setError("이메일을 바꾸려면 새 이메일로 받은 인증번호를 입력해 주세요.");
     if (!/^01[0-9]{8,9}$/.test(phone.replace(/-/g, ""))) return setError("전화번호를 올바르게 입력해 주세요. (예: 010-1234-5678)");
 
     try {
       const resp = await client.put("/api/members/me", {
         nickname, email, phone, currentPassword, newPassword, newPasswordCheck, emailCode,
       });
+      // 비밀번호를 바꿨으면 예전 토큰은 더 못 씀 → 로그아웃하고 새 비밀번호로 다시 로그인
+      if (newPassword) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("nickname");
+        localStorage.removeItem("memberRole");
+        navi("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 다시 로그인해 주세요." } });
+        return;
+      }
       // 헤더 닉네임도 바꾸기
       localStorage.setItem("nickname", resp.data.nickname);
-      setMy({ ...my, nickname, email, phone: phone.replace(/-/g, "") });
+      setMy({ ...my, nickname, email: email.trim().toLowerCase(), phone: phone.replace(/-/g, "") });
       setCurrentPassword("");
       setNewPassword("");
       setNewPasswordCheck("");
@@ -171,14 +190,16 @@ function EditPage() {
           </div>
 
           {/* 이메일을 바꿨을 때만: 새 이메일로 인증번호 받기 */}
-          {email !== my.email && (
+          {emailChanged && (
             <div className={styles.row}>
               <label>이메일 인증번호</label>
               <input className={styles.input} value={emailCode} maxLength={6}
                 placeholder={emailSent ? "메일로 받은 6자리" : "먼저 인증번호를 받아 주세요"}
                 disabled={!emailSent}
                 onChange={(e) => setEmailCode(e.target.value.replace(/[^0-9]/g, ""))} />
-              <Button onClick={sendEmailCode}>{emailSent ? "다시 받기" : "인증번호 받기"}</Button>
+              <Button disabled={sending} onClick={sendEmailCode}>
+                {sending ? "보내는 중…" : emailSent ? "다시 받기" : "인증번호 받기"}
+              </Button>
             </div>
           )}
           {emailMsg && <p className={styles.hint}>{emailMsg}</p>}
