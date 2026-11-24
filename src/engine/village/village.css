@@ -173,7 +173,7 @@
 /* 가는 쪽 바라보기 (v-wander 가 오른쪽 → 왼쪽 → 오른쪽으로 움직이는 때에 맞춤) + 종종걸음 */
 .v-person.pet .v-pet-fig { display: block; animation: v-pet-face 12s steps(1) infinite, v-bob 0.5s steps(2) infinite; }
 @keyframes v-pet-face { 0% { scale: 1 1; } 52% { scale: -1 1; } 90% { scale: 1 1; } }
-.v-person.pet .v-name { font-size: 10px; opacity: 0.85; }
+.v-person.pet .v-name { font-size: 10px; opacity: 0.85; transform: translateY(2px); } /* 사람 이름표와 같은 높이(발밑)로: 공통 -39px 대신 */
 @media (prefers-reduced-motion: reduce) { .v-person.pet .v-pet-walk, .v-person.pet .v-pet-fig { animation: none; } }
 
 
