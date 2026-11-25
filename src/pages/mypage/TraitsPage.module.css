@@ -119,7 +119,8 @@
   padding: 10px 12px;
   font-size: var(--fs-sm);
   color: var(--green);
-  border: 1px solid var(--green);
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+  border: 1px solid var(--green-line);
   border-radius: var(--radius);
 }
 

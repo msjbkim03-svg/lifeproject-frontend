@@ -7,13 +7,11 @@
   padding: var(--sp-6) var(--sp-3);
 }
 
-/* 가운데 상자 */
+/* 가운데 상자 = 공통 .panel (유리 카드) + 너비 · 안쪽 여백은 제목/본문이 따로 가짐 */
 .card {
+  composes: panel from global;
   width: 380px;
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  padding: 0;
   overflow: hidden;
 }
 
@@ -37,22 +35,10 @@
   margin: var(--sp-3) 0 6px;
 }
 
+/* 입력칸 = 공통 .input (design.css: 높이 44px · 테두리 · 포커스 빛) + 여기서는 가로 꽉 채우기만 */
 .input {
+  composes: input from global;
   width: 100%;
-  height: 44px;
-  padding: 0 var(--sp-3);
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  color: var(--ink);
-  background: var(--bg-deep);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 /* 버튼은 공통 Button (common/ui) 사용 - 여기는 위쪽 간격만 */
@@ -70,8 +56,8 @@
   padding: 10px 12px;
   font-size: var(--fs-xs);
   color: var(--green);
-  background: rgba(111, 211, 168, 0.08);
-  border: 1px solid rgba(111, 211, 168, 0.3);
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+  border: 1px solid var(--green-line);
   border-radius: var(--radius);
 }
 
@@ -81,8 +67,8 @@
   padding: 10px 12px;
   font-size: var(--fs-xs);
   color: var(--red);
-  background: rgba(255, 122, 122, 0.08);
-  border: 1px solid rgba(255, 122, 122, 0.3);
+  background: var(--red-soft);
+  border: 1px solid var(--red-line);
   border-radius: var(--radius);
 }
 
