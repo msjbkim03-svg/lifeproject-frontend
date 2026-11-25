@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import { Link, useLocation, useOutletContext } from "react-router-dom";
 import Button from "../../common/ui/Button";
 import Chips from "../../common/ui/Chips";
 import MemorialCommentList from "./MemorialCommentList";
@@ -10,6 +10,7 @@ import s from "./MemorialRoom.module.css";
 // 목록 + 자주 쓰는 말 칩(누르면 입력칸에 들어감) + 한 줄(100자) 남기기
 function MemorialGuestTab() {
   const { room, isLogin, sendComment } = useOutletContext();
+  const location = useLocation(); // 로그인하면 이 화면으로 돌아오게
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false); // 보내는 중 (Enter 연타로 같은 글 여러 번 막기)
 
@@ -50,7 +51,7 @@ function MemorialGuestTab() {
         </div>
       ) : (
         <p className={s.muted}>
-          <Link to="/login" className="gold">로그인</Link>하면 방명록을 남길 수 있어요.
+          <Link to="/login" state={{ background: location }} className="gold">로그인</Link>하면 방명록을 남길 수 있어요.
         </p>
       )}
     </>

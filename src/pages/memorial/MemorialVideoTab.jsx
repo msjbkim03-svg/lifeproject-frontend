@@ -9,7 +9,7 @@ import s from "./MemorialRoom.module.css";
 
 // 영상 탭  주소: /memorial/:lifeId/video
 // 팀원이 만든 엔딩 영상(C22 EndingFilm)을 그대로 틀어 줌 (재료는 방 화면이 받은 film)
-//   포스터는 영상 첫 장면(태어난 방) 그림, 누르면 영상이 화면 가득 재생
+//   포스터는 영상 첫 장면(태어난 방) 그림, 누르면 포스터 자리에서 그대로(전체 화면 아님) 재생
 function MemorialVideoTab() {
   const { room, film, plan } = useOutletContext();
   const [open, setOpen] = useState(false);
@@ -25,10 +25,17 @@ function MemorialVideoTab() {
   return (
     <div className={s.videoCard}>
       {canPlay ? (
-        <button type="button" className={s.poster} onClick={() => setOpen(true)} aria-label="영상 보기">
-          {poster && <MemorialScene v={poster} className={s.fill} />}
-          <span className={s.play}>▶ 영상 보기</span>
-        </button>
+        open ? (
+          // 엔딩 영상(전체 화면용 틀)을 이 칸 폭에 맞춰 재생 (맞추는 CSS 는 MemorialRoom.module.css 의 .filmBox)
+          <div className={s.filmBox}>
+            <EndingFilm lifeId={room.lifeId} result={film.result} filmData={filmData} onClose={() => setOpen(false)} />
+          </div>
+        ) : (
+          <button type="button" className={s.poster} onClick={() => setOpen(true)} aria-label="영상 보기">
+            {poster && <MemorialScene v={poster} className={s.fill} />}
+            <span className={s.play}>▶ 영상 보기</span>
+          </button>
+        )
       ) : (
         <MemorialSlot label={slotLabel} className={s.videoSlot} />
       )}
@@ -38,10 +45,6 @@ function MemorialVideoTab() {
         <p className={s.muted}>{room.name} · {room.birthYear} – {room.deathYear}</p>
         <p className={s.muted}>삶이 끝날 때 스쳐 간 장면들과 마지막 길이에요.</p>
       </div>
-
-      {open && canPlay && (
-        <EndingFilm lifeId={room.lifeId} result={film.result} filmData={filmData} onClose={() => setOpen(false)} />
-      )}
     </div>
   );
 }
