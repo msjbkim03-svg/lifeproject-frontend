@@ -188,7 +188,7 @@ export function homeFamily(life, house = houseOf(life)) {
         k += 1;
       }
     } else if (m.role === '배우자' && m.name) {
-      out.push({ id: 'spouse', label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: m.age });
+      out.push({ id: 'spouse', name: m.name, label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: m.age });
     } else if (m.role === '아들' || m.role === '딸') {
       if (m.age == null || m.age < 30) out.push({ id: 'kid' + kid, label: m.role, gender: m.role === '아들' ? 'M' : 'F', age: m.age ?? 5 });
       kid += 1;
@@ -197,7 +197,9 @@ export function homeFamily(life, house = houseOf(life)) {
   if (withParents && !fam.length && life.parentAlive !== 'N' && age < 40) {
     out.push({ id: 'mom', label: '엄마', gender: 'F' }, { id: 'dad', label: '아빠', gender: 'M' });
   }
-  return out.slice(0, 10);
+    // 생김새 seed (familyLook): 인생 번호 + 가족 id (+ 배우자 이름) → 같은 인생에선 항상 같은 모습
+  const base = life.lifeId ?? life.name ?? '';
+  return out.slice(0, 10).map((m) => ({ ...m, seed: `${base}|${m.id}${m.name ? '|' + m.name : ''}` }));
 }
 
 // 하늘에 뿌릴 별 위치 (다크 테마, x %, y %, 크기 px) - 매번 같은 자리

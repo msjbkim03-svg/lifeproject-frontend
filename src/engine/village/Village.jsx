@@ -21,13 +21,14 @@ import { useTheme } from '../../common/theme';
 import Figure from './Figure';
 import Pet from './Pet';
 import { lookOf, ageGroup } from './costumeData';
+import { familyLook } from './familyLook';
 import './village.css';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const idxOf = (id) => Math.max(0, PLACES.findIndex((p) => p.id === id));
 
 // 교도소·군 부대에서는 입은 코스튬(C21) 대신 수형복·군복으로 덮어씀 (머리 모양은 그대로)
-//   그림은 Figure 에 이미 있는 모양 재활용: stripe 줄무늬 옷, tee 티셔츠, cap 모자
+//   수형복: Figure 의 stripe 줄무늬 옷 / 군복: Figure 의 army 얼룩무늬 옷·전투모 + 바지·군화 색
 const UNIFORM = {
   prison: { top: { style: 'stripe', color: '#7d8794' }, hat: null, pants: '#6b7380', shoe: '#3a3a3a' },
   barracks: { top: { style: 'army', color: '#5a6b3a' }, hat: { style: 'army', color: '#5a6b3a' }, pants: '#4e5f36', shoe: '#2b2a28' },
@@ -1019,7 +1020,7 @@ function FamilyPerson({ m, i }) {
   return (
     <div className={'v-person fam ' + size} style={{ left: FAMILY_SLOTS[i % FAMILY_SLOTS.length] + '%', top: GROUND_Y + '%' }}>
       <div className="v-wander" style={{ animationDuration: 9 + (i % 4) * 2.5 + 's', animationDelay: -i * 1.7 + 's' }}>
-        <Figure look={lookOf({ gender: m.gender, age: m.age, soft: true })} />
+        <Figure look={familyLook({ seed: m.seed ?? m.id, gender: m.gender, age: m.age })} />
         <div className="v-name">{m.label}{m.age != null ? ' ' + m.age + '세' : ''}</div>
       </div>
     </div>
