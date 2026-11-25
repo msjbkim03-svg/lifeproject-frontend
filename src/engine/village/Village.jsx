@@ -21,10 +21,23 @@ import { useTheme } from '../../common/theme';
 import Figure from './Figure';
 import Pet from './Pet';
 import { lookOf, ageGroup } from './costumeData';
+import { familyLook } from './familyLook';
 import './village.css';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const idxOf = (id) => Math.max(0, PLACES.findIndex((p) => p.id === id));
+
+// 교도소·군 부대에서는 입은 코스튬(C21) 대신 수형복·군복으로 덮어씀 (머리 모양은 그대로)
+//   수형복: Figure 의 stripe 줄무늬 옷 / 군복: Figure 의 army 얼룩무늬 옷·전투모 + 바지·군화 색
+const UNIFORM = {
+  prison: { top: { style: 'stripe', color: '#7d8794' }, hat: null, pants: '#6b7380', shoe: '#3a3a3a' },
+  barracks: { top: { style: 'army', color: '#5a6b3a' }, hat: { style: 'army', color: '#5a6b3a' }, pants: '#4e5f36', shoe: '#2b2a28' },
+};
+function myLook({ gender, age, costume, kind }) {
+  const look = lookOf({ gender, age, costume });
+  const u = UNIFORM[kind];
+  return u ? { ...look, ...u } : look;
+}
 
 // ───────── 그림 부품 (SVG 320 × 130, 땅은 y 92 부터) ─────────
 
@@ -1007,7 +1020,7 @@ function FamilyPerson({ m, i }) {
   return (
     <div className={'v-person fam ' + size} style={{ left: FAMILY_SLOTS[i % FAMILY_SLOTS.length] + '%', top: GROUND_Y + '%' }}>
       <div className="v-wander" style={{ animationDuration: 9 + (i % 4) * 2.5 + 's', animationDelay: -i * 1.7 + 's' }}>
-        <Figure look={lookOf({ gender: m.gender, age: m.age, soft: true })} />
+        <Figure look={familyLook({ seed: m.seed ?? m.id, gender: m.gender, age: m.age })} />
         <div className="v-name">{m.label}{m.age != null ? ' ' + m.age + '세' : ''}</div>
       </div>
     </div>
@@ -1056,9 +1069,15 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
   const sceneRef = useRef(start);
   const target = useRef({ scene: start, x: DOOR_X }); // 가려는 곳 (장소 화면, 그 안 위치)
   const boxRef = useRef(null);
+  const awayRef = useRef(away); // 방향키 처리(처음 한 번만 등록)에서도 지금 값을 읽게 ref 로
+  useEffect(() => {
+    awayRef.current = away;
+  }, [away]);
 
   const go = (sc, gx) => {
-    target.current = { scene: clamp(sc, 0, PLACES.length - 1), x: clamp(gx, MIN_X, MAX_X) };
+    // 교도소·군 부대에 있는 동안은 다른 장소로 못 감 (우리 집 화면 안에서만 걷기)
+    const goal = awayRef.current ? idxOf('home') : clamp(sc, 0, PLACES.length - 1);
+    target.current = { scene: goal, x: clamp(gx, MIN_X, MAX_X) };
     const right = target.current.scene > sceneRef.current
       || (target.current.scene === sceneRef.current && target.current.x > pos.current);
     setDir(right ? 'right' : 'left');
@@ -1201,7 +1220,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       {/* 나 */}
       <div className={'v-person me ' + ageGroup(age) + ' ' + dir + (walking ? ' walking' : '')} style={{ left: x + '%', top: GROUND_Y + '%' }}>
         {myMessage && <div className="v-bubble mine">{myMessage}</div>}
-        <Figure look={lookOf({ gender, age, costume })} />
+        <Figure look={myLook({ gender, age, costume, kind: house.kind })} />
         <div className="v-name mine">나{age != null && ', ' + age + '세'}</div>
       </div>
 
@@ -1211,8 +1230,14 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       {/* 위: 지금 장소 + 상황 */}
       <div className="v-place-name" aria-live="polite">
         <b>{here.name}</b>
-        <span>{atDoor && !walking ? (here.id === 'home' ? HOUSE_KINDS[house.kind] : here.desc) : `${t.name} 마을`}</span>
+        <span>{here.id === 'home' && (away || (atDoor && !walking)) ? HOUSE_KINDS[house.kind]
+          : atDoor && !walking ? here.desc : `${t.name} 마을`}</span>
       </div>
+      {away && (
+        <div className="v-lock">
+          {house.kind === 'barracks' ? '군 복무 중엔 이동할 수 없습니다' : '수감 중엔 이동할 수 없습니다'}
+        </div>
+      )}
       {caption && (
         <div className="v-caption">
           {flagCode && <img src={`https://flagcdn.com/w20/${flagCode}.png`} alt="" />}
@@ -1221,11 +1246,11 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       )}
 
       {/* 양 끝: 옆 장소로 */}
-      {prev && (
+      {prev && !away && (
         <button type="button" className="v-edge left" onPointerDown={(e) => e.stopPropagation()}
           onClick={() => go(scene - 1, 82)} aria-label={prev.name + '(으)로 가기'}>◀ {prev.name}</button>
       )}
-      {next && (
+      {next && !away && (
         <button type="button" className="v-edge right" onPointerDown={(e) => e.stopPropagation()}
           onClick={() => go(scene + 1, 18)} aria-label={next.name + '(으)로 가기'}>{next.name} ▶</button>
       )}
