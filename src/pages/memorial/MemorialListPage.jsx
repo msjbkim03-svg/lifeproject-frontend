@@ -54,7 +54,11 @@ function MemorialListPage() {
               <span className={s.mono}>{c.birthYear} – {c.deathYear} · {c.deathAge}세</span>
               <span className={s.cardCountry}>{c.birthCountryName}</span>
               {c.message && <span className={s.cardMsg}>“{c.message}”</span>}
-              <Badge color="gold">🕯 {c.tributeCount}</Badge>
+              <span className={s.cardNick}>👤 {c.nickname}</span>
+              <span className={s.cardStats}>
+                <Badge color="gold">🕯 {c.tributeCount}</Badge>
+                <Badge>👁 {c.viewCount}</Badge>
+              </span>
             </button>
           ))}
         </div>

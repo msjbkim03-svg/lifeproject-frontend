@@ -1,8 +1,8 @@
 // 상단 헤더 (모든 화면 공통) - App.jsx에서 <Routes> 위에 한 번만 붙어요
 // 로그인 안 했을 때: 시작하기 · 추모관 · 내 인생들 | 로그인 · 회원가입
 // 로그인 했을 때:   시작하기 · 추모관 · 내 인생들 (· 관리자) | 닉네임 님 · [집] · 로그아웃
-// 내 인생들 → /mypage/lives (전생 기록 · 특성 강화)
-// [집] 버튼  → /mypage      (마이페이지 · 개인정보 수정)
+// 내 인생들 → /lives (전생 기록 · 특성 강화)
+// [집] 버튼  → /my          (마이페이지 · 개인정보 수정)
 // 로그인 정보는 localStorage(token, nickname, memberRole)에서 읽어요 (민승 Header 로직 그대로)
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Button from './Button';
@@ -38,11 +38,11 @@ function Header() {
   const navClass = ({ isActive }) => (isActive ? 'on' : '');
 
   // 마이페이지 묶음 나누기
-  //   /mypage/lives, /mypage/traits → [내 인생들] 금색
-  //   /mypage, /mypage/edit          → [집] 버튼 금색
+  //   /life 로 시작하면 → [내 인생들] 금색
+  //   /my, /my/edit → [집] 버튼 금색
   const path = location.pathname;
-  const onLives = path.startsWith('/mypage/lives') || path.startsWith('/mypage/traits');
-  const onHome = path === '/mypage' || path.startsWith('/mypage/edit');
+  const onLives = path.startsWith('/life');
+  const onHome = path === '/my' || path.startsWith('/my/');
 
   return (
     <header className="header">
@@ -51,7 +51,7 @@ function Header() {
         <nav className="header-nav">
           <NavLink to="/" end className={navClass}>시작하기</NavLink>
           <NavLink to="/memorial" className={navClass}>추모관</NavLink>
-          <NavLink to="/mypage/lives" className={onLives ? 'on' : ''}>내 인생들</NavLink>
+          <NavLink to="/life/lives" className={onLives ? 'on' : ''}>내 인생들</NavLink>
           {token && isAdmin && <NavLink to="/admin" className={navClass}>관리자</NavLink>}
         </nav>
         <div className="header-space" />
@@ -63,7 +63,7 @@ function Header() {
               <Button
                 size="sm"
                 className={'header-home' + (onHome ? ' on' : '')}
-                onClick={() => navigate('/mypage')}
+                onClick={() => navigate('/my')}
                 aria-label="마이페이지"
                 title="마이페이지"
               >

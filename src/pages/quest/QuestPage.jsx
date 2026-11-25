@@ -116,7 +116,7 @@ function QuestPage() {
                 <LevelDots key={t.traitId} label={TRAIT_VIEW[t.traitId]?.label || t.traitName} level={t.traitLevel} max={t.maxLevel} />
               ))}
             </div>
-            <Button block size="sm" className={styles.traitBtn} onClick={() => navi("/mypage/traits", { state: { decade, picked } })}>
+            <Button block size="sm" className={styles.traitBtn} onClick={() => navi("/life/traits", { state: { decade, picked } })}>
               특성 강화하러 가기
             </Button>
           </Panel>

@@ -1,6 +1,6 @@
 /* 아이디·비밀번호 찾기 (M09)
    탭 = 공통 Chips, 버튼 = 공통 Button, 찾은 아이디 = 공통 InfoBox
-   카드·입력칸은 LoginPage.module.css 같이 씀 → 여기는 간격·안내 문구만 */
+   카드 · 입력칸 · 버튼 간격 · 안내 상자는 LoginPage.module.css 같이 씀 → 여기는 한 줄 배치 · 결과 칸만 */
 
 /* 이메일 칸 + 인증번호 받기 버튼 한 줄 */
 .row {
@@ -12,26 +12,6 @@
 .noWrap {
   white-space: nowrap;
   flex-shrink: 0;
-}
-
-/* 버튼 위쪽 간격 */
-.mainBtn {
-  margin-top: var(--sp-4);
-}
-
-.subBtn {
-  margin-top: var(--sp-2);
-}
-
-/* 안내 문구 (초록) */
-.infoBox {
-  margin-top: var(--sp-3);
-  padding: 10px 12px;
-  font-size: var(--fs-xs);
-  color: var(--green);
-  background: color-mix(in srgb, var(--green) 8%, transparent);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
 }
 
 /* 찾은 아이디 칸 위 간격 */

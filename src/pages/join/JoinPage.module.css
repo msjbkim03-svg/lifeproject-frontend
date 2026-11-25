@@ -75,19 +75,20 @@
   flex-shrink: 0;
 }
 
-/* 칸 아래 문구 */
-.hint {
-  font-size: var(--fs-xs);
-  color: var(--red);
+/* 칸 아래 문구 (빨강 = 문제, 초록 = 통과) */
+.hint,
+.hintOk {
   min-height: 16px;
   margin: 4px 0 0;
+  font-size: var(--fs-xs);
+}
+
+.hint {
+  color: var(--red);
 }
 
 .hintOk {
-  font-size: var(--fs-xs);
   color: var(--green);
-  min-height: 16px;
-  margin: 4px 0 0;
 }
 
 .error {
