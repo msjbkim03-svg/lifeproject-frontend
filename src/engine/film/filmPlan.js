@@ -110,6 +110,7 @@ function scoreOf(e) {
   if (scene === 'newborn' && /첫째|첫 아이/.test(t)) best += 1; // 첫아이가 늦둥이보다 먼저
   if (isDivorce(e) && best < 7) { best = 7; place = null; scene = 'rain'; arg = null; }
   if (scene === 'party' && /은퇴하지 않|더 일하기로|다시 고용|계약직으로/.test(t)) return { s: 0, place: null, scene: null }; // 은퇴를 미룬 줄 (자막 '손을 내려놓았다'와 어긋남)
+  if (scene === 'home' && /실패|손해|날렸|잃었|사기/.test(t)) return { s: 0, place: null, scene: null }; // 집을 샀지만 투자에 실패한 줄은 내 집 마련 축하 장면이 아님 (11/25 점검)
   if (scene === 'fly' && HIST_ID.test(e.eventId || '')) scene = 'flee'; // 역사 사건(전쟁 · 분쟁)으로 나라를 떠남 = 피란
   // 역사 사건: 그해 집에서 소식을 듣는 장면 (원작처럼 내 큰일이 있으면 내 일이 먼저)
   if (e.eventId && HIST_ID.test(e.eventId) && best < 3.5) { best = 3.5; scene = 'news'; place = 'home'; }
@@ -311,6 +312,13 @@ function pickMoments(events, deathAge, name, years = [], retAt = 999) {
     out.push(c);
   }
   return out.sort((x, y) => x.a - y.a || x.idx - y.idx);
+}
+
+// C18 결과 화면 '인생의 큰 장면' (엔딩 크레딧과 같은 고르기, 11/25)
+//   [{ a: 나이, t: 자막 글, scene: 장면 이름(wedding · grad · loss …, 없으면 null), arg }]
+export function bigMoments(r) {
+  const events = r?.events || [];
+  return pickMoments(events, r?.deathAge ?? 0, r?.name, r?.years || [], retireAge(events, r?.years)).map((m) => ({ a: m.a, t: m.t, scene: m.scene || (m.arg === 'cowork' ? 'work' : null), arg: m.arg }));
 }
 
 // ───────── 그 나이의 마을 모습 ─────────
