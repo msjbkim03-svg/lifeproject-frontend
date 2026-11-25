@@ -1056,9 +1056,15 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
   const sceneRef = useRef(start);
   const target = useRef({ scene: start, x: DOOR_X }); // 가려는 곳 (장소 화면, 그 안 위치)
   const boxRef = useRef(null);
+  const awayRef = useRef(away); // 방향키 처리(처음 한 번만 등록)에서도 지금 값을 읽게 ref 로
+  useEffect(() => {
+    awayRef.current = away;
+  }, [away]);
 
   const go = (sc, gx) => {
-    target.current = { scene: clamp(sc, 0, PLACES.length - 1), x: clamp(gx, MIN_X, MAX_X) };
+    // 교도소·군 부대에 있는 동안은 다른 장소로 못 감 (우리 집 화면 안에서만 걷기)
+    const goal = awayRef.current ? idxOf('home') : clamp(sc, 0, PLACES.length - 1);
+    target.current = { scene: goal, x: clamp(gx, MIN_X, MAX_X) };
     const right = target.current.scene > sceneRef.current
       || (target.current.scene === sceneRef.current && target.current.x > pos.current);
     setDir(right ? 'right' : 'left');
@@ -1211,8 +1217,14 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       {/* 위: 지금 장소 + 상황 */}
       <div className="v-place-name" aria-live="polite">
         <b>{here.name}</b>
-        <span>{atDoor && !walking ? (here.id === 'home' ? HOUSE_KINDS[house.kind] : here.desc) : `${t.name} 마을`}</span>
+        <span>{here.id === 'home' && (away || (atDoor && !walking)) ? HOUSE_KINDS[house.kind]
+          : atDoor && !walking ? here.desc : `${t.name} 마을`}</span>
       </div>
+      {away && (
+        <div className="v-lock">
+          {house.kind === 'barracks' ? '군 복무 중엔 이동할 수 없습니다' : '수감 중엔 이동할 수 없습니다'}
+        </div>
+      )}
       {caption && (
         <div className="v-caption">
           {flagCode && <img src={`https://flagcdn.com/w20/${flagCode}.png`} alt="" />}
@@ -1221,11 +1233,11 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       )}
 
       {/* 양 끝: 옆 장소로 */}
-      {prev && (
+      {prev && !away && (
         <button type="button" className="v-edge left" onPointerDown={(e) => e.stopPropagation()}
           onClick={() => go(scene - 1, 82)} aria-label={prev.name + '(으)로 가기'}>◀ {prev.name}</button>
       )}
-      {next && (
+      {next && !away && (
         <button type="button" className="v-edge right" onPointerDown={(e) => e.stopPropagation()}
           onClick={() => go(scene + 1, 18)} aria-label={next.name + '(으)로 가기'}>{next.name} ▶</button>
       )}
