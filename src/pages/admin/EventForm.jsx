@@ -96,7 +96,7 @@ function EventForm({ initial, isNew, templates, onSaved, onCancel }) {
         <Field label="유형">
           <select className="input" value={f.eventType} onChange={set('eventType')} disabled={!isNew}>
             <option value="LIFE">인생 (LIFE)</option>
-            <option value="HIST">역사 (HIST)</option>
+            {!isNew && <option value="HIST">역사 (HIST)</option>}{/* 역사 이벤트는 사건 자료(HISTORY_EVENT)와 함께 DB에서 등록 */}
           </select>
         </Field>
         <Field label="제목" wide>
