@@ -43,7 +43,8 @@ export function familyLook({ seed, gender, age }) {
     };
   }
 
-  const tops = look.group === 'adult' ? (female ? TOPS.adultF : TOPS.adultM) : TOPS[look.group];
+  const teen = look.group === 'adult' && age != null && age < 20; // 13~19세: 몸은 어른 크기, 옷은 아이 목록 (정장·원피스 X, 교복 O)
+  const tops = teen ? TOPS.kid : look.group === 'adult' ? (female ? TOPS.adultF : TOPS.adultM) : TOPS[look.group];
   const style = pick(tops, h, 3);
   look.top = { style, color: pick(style === 'suit' ? SUIT_COLORS : TOP_COLORS, h, 4) };
   return look;
