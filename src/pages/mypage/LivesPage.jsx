@@ -19,6 +19,7 @@ function LivesPage() {
   const [sort, setSort] = useState("recent"); // recent 최신순 / age 오래 산 순
   const [data, setData] = useState(() => cache[`${my.loginId}:1:recent`] ?? null); // 서버 응답 { total, size, questDone, pointSum, lives }
   const [loadError, setLoadError] = useState(false); // 불러오기 실패 (빈 목록과 구분)
+  const [retry, setRetry] = useState(0);              // [다시 시도]를 누르면 숫자가 바뀌어서 다시 물어봄
 
   // 페이지나 정렬이 바뀔 때마다 서버에 다시 물어봄
   useEffect(() => {
@@ -29,7 +30,7 @@ function LivesPage() {
         setLoadError(false);
       })
       .catch(() => setLoadError(true)); // 오류를 '기록 없음'으로 보이지 않게
-  }, [page, sort, my.loginId]);
+  }, [page, sort, my.loginId, retry]);
 
   // 정렬을 바꾸면 1페이지부터
   const changeSort = (e) => {
@@ -38,7 +39,14 @@ function LivesPage() {
   };
 
   if (loadError) {
-    return <main className={common.main}><p className={common.lead}>전생 기록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.</p></main>;
+    return (
+      <main className={common.main}>
+        <p className={common.lead}>전생 기록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.</p>
+        <div>
+          <Button onClick={() => { setLoadError(false); setRetry((n) => n + 1); }}>다시 시도</Button>
+        </div>
+      </main>
+    );
   }
 
   if (!data) {
@@ -118,7 +126,7 @@ function LivesPage() {
                   <td>{l.earnedPoint}P</td>
                   <td>
                     <div className="row" style={{ gap: "var(--sp-1)", flexWrap: "nowrap" }}>
-                      <Button size="sm" onClick={() => navi(`/result/${l.lifeId}`)}>결과 보기</Button>
+                      <Button size="sm" onClick={() => navi(`/result/${l.lifeId}?detail=1`)}>결과 보기</Button>
                       <Button size="sm" onClick={() => navi(`/memorial/${l.lifeId}`)}>추모관</Button>
                     </div>
                   </td>

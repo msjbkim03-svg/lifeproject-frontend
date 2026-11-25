@@ -6,6 +6,7 @@
 //            onDone={(data) => setLife((x) => ({ ...x, assets: data.assets, costume: data.wear }))} onClose={() => …} />}
 import { useEffect, useState } from "react";
 import client from "../../api/api";
+import Button from "../../common/ui/Button";
 import { won } from "../../engine/play/lifeText";
 import Figure from "../../engine/village/Figure";
 import { lookOf } from "../../engine/village/costumeData";
@@ -68,14 +69,14 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
 
   const button = (c) => {
     if (c.equipped === "Y") {
-      return <button type="button" className={styles.ghost} disabled={busy} onClick={() => send(c.costumeId, "unequip")}>벗기</button>;
+      return <Button size="sm" pill disabled={busy} onClick={() => send(c.costumeId, "unequip")}>벗기</Button>;
     }
     if (c.owned === "Y") {
-      return <button type="button" className={styles.ghost} disabled={busy} onClick={() => send(c.costumeId, "equip")}>착용</button>;
+      return <Button size="sm" pill disabled={busy} onClick={() => send(c.costumeId, "equip")}>착용</Button>;
     }
     return (
-      <button type="button" className={styles.buy} disabled={busy || data.assets < c.price}
-        onClick={() => send(c.costumeId, "buy")}>사기</button>
+      <Button type="primary" size="sm" pill disabled={busy || data.assets < c.price}
+        onClick={() => send(c.costumeId, "buy")}>사기</Button>
     );
   };
 
@@ -93,7 +94,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
             </div>
             <div>
               <h2 id="costumeTitle" className={styles.title}>
-                {data ? (data.assets < 0 ? `빚 ${won(-data.assets, k)}` : `모은 돈 ${won(data.assets, k)}`) : "불러오는 중…"}
+                {data ? (data.assets < 0 ? `빚 ${won(-data.assets, k)}` : `모은 돈 ${won(data.assets, k)}`) : msg ? "옷 가게를 열지 못했어요" : "불러오는 중…"}
               </h2>
               <p className={styles.sub}>값은 이 나라 형편에 맞춘 한국 체감 금액이에요. 산 것은 이번 인생 동안 언제든 바꿔 착용할 수 있어요.</p>
             </div>
@@ -128,7 +129,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
           ))}
 
           <div className="dec-foot">
-            <button type="button" className={styles.ghost} onClick={onClose}>닫기</button>
+            <Button size="sm" pill onClick={onClose}>닫기</Button>
           </div>
         </div>
       </div>

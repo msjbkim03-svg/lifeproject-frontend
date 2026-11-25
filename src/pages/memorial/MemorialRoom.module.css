@@ -123,7 +123,6 @@
 .secHead { display: flex; justify-content: space-between; align-items: baseline; }
 .secHead a { font-size: var(--fs-sm); color: var(--primary); }
 .secTitle { font-size: var(--fs-md); margin: 0 0 var(--sp-2); }
-.source { color: var(--ink-light); }
 
 .photoRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
 .photo { margin: 0; }

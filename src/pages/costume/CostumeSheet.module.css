@@ -63,19 +63,4 @@
 
 .name { font-size: 14px; font-weight: 600; }
 .price { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
-
-.buy,
-.ghost {
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 6px 16px;
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.buy { background: var(--primary); color: var(--on-primary); border: 1px solid var(--primary); }
-.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); }
-.ghost:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
-.buy:disabled,
-.ghost:disabled { opacity: 0.5; cursor: default; }
+/* 사기 · 착용 · 벗기 · 닫기 버튼 = 공통 Button (common/ui) */

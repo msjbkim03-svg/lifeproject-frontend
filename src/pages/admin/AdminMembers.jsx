@@ -67,7 +67,8 @@ function AdminMembers() {
     }
   };
 
-  if (error) return <div className="page"><p>{error}</p></div>;
+  // 처음부터 못 불러왔을 때만 화면 전체를 안내로 (목록을 한 번 받은 뒤 검색이 실패하면 목록 위에 문구만)
+  if (error && !data) return <div className="page"><p>{error}</p></div>;
   if (!data) return <div className="page"><p className="sub">불러오는 중…</p></div>;
 
   // 페이지 번호 [1] [2] [3] …
@@ -98,6 +99,7 @@ function AdminMembers() {
         </div>
 
         {message && <p className={styles.message}>{message}</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
         {/* 목록 */}
         {data.list.length === 0 ? (

@@ -25,14 +25,8 @@ function MyPageLayout() {
     client.get("/api/members/me")
       .then((resp) => setMy(resp.data))
       .catch((err) => {
-        // 토큰 만료(401) → 로그인 정보 지우고 로그인 화면으로
-        if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("nickname");
-          localStorage.removeItem("memberRole");
-          navi("/login");
-          return;
-        }
+        // 토큰 만료(401) → api.js 가 로그인 정보를 지우고 로그인 화면으로 보냄 (여기서는 할 일 없음)
+        if (err.response?.status === 401) return;
         // 그 밖의 오류 → '불러오는 중…'에서 멈추지 않게 안내
         setLoadError("내 정보를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.");
       });
