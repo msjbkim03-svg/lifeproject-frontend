@@ -1,7 +1,8 @@
 // 상단 헤더 (모든 화면 공통) - App.jsx에서 <Routes> 위에 한 번만 붙어요
 // 로그인 안 했을 때: 시작하기 · 추모관 · 내 인생들 | 로그인 · 회원가입
-// 로그인 했을 때:   시작하기 · 추모관 · 내 인생들 (· 관리자) | 닉네임 님 · 마이페이지 · 로그아웃
-// 내 인생들 · 마이페이지 둘 다 M04(/mypage)로 이동
+// 로그인 했을 때:   시작하기 · 추모관 · 내 인생들 (· 관리자) | 닉네임 님 · [집] · 로그아웃
+// 내 인생들 → /mypage/lives (전생 기록 · 특성 강화)
+// [집] 버튼  → /mypage      (마이페이지 · 개인정보 수정)
 // 로그인 정보는 localStorage(token, nickname, memberRole)에서 읽어요 (민승 Header 로직 그대로)
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Button from './Button';
@@ -36,6 +37,13 @@ function Header() {
 
   const navClass = ({ isActive }) => (isActive ? 'on' : '');
 
+  // 마이페이지 묶음 나누기
+  //   /mypage/lives, /mypage/traits → [내 인생들] 금색
+  //   /mypage, /mypage/edit          → [집] 버튼 금색
+  const path = location.pathname;
+  const onLives = path.startsWith('/mypage/lives') || path.startsWith('/mypage/traits');
+  const onHome = path === '/mypage' || path.startsWith('/mypage/edit');
+
   return (
     <header className="header">
       <div className="header-in">
@@ -43,7 +51,7 @@ function Header() {
         <nav className="header-nav">
           <NavLink to="/" end className={navClass}>시작하기</NavLink>
           <NavLink to="/memorial" className={navClass}>추모관</NavLink>
-          <NavLink to="/mypage" className={navClass}>내 인생들</NavLink>
+          <NavLink to="/mypage/lives" className={onLives ? 'on' : ''}>내 인생들</NavLink>
           {token && isAdmin && <NavLink to="/admin" className={navClass}>관리자</NavLink>}
         </nav>
         <div className="header-space" />
@@ -51,6 +59,20 @@ function Header() {
           {token ? (
             <>
               <span className="header-user"><b>{nickname}</b> 님</span>
+              {/* 집 모양 = 마이페이지 (마이페이지 · 개인정보 수정) */}
+              <Button
+                size="sm"
+                className={'header-home' + (onHome ? ' on' : '')}
+                onClick={() => navigate('/mypage')}
+                aria-label="마이페이지"
+                title="마이페이지"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 11l9-7 9 7" />
+                  <path d="M5 10v10h5v-6h4v6h5V10" />
+                </svg>
+              </Button>
               <Button size="sm" onClick={handleLogout}>로그아웃</Button>
             </>
           ) : (

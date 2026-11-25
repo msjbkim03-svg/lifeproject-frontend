@@ -109,9 +109,9 @@ function EditPage() {
         navi("/login", { state: { message: "비밀번호를 바꿨어요. 새 비밀번호로 다시 로그인해 주세요." } });
         return;
       }
-      // 헤더 닉네임도 바꾸기
+      // 헤더 닉네임도 바꾸기 (서버가 앞뒤 공백을 자른 값으로)
       localStorage.setItem("nickname", resp.data.nickname);
-      setMy({ ...my, nickname, email: email.trim().toLowerCase(), phone: phone.replace(/-/g, "") });
+      setMy({ ...my, nickname: resp.data.nickname, email: email.trim().toLowerCase(), phone: phone.replace(/-/g, "") });
       setCurrentPassword("");
       setNewPassword("");
       setNewPasswordCheck("");
@@ -119,6 +119,9 @@ function EditPage() {
       setEmailSent(false);
       setEmailMsg("");
       setMessage("저장했어요.");
+      // 헤더는 주소가 바뀔 때만 다시 그려짐 → 같은 주소로 한 번 더 들어가서 새 닉네임을 바로 보여 줌
+      // (같은 화면이라 입력칸 · "저장했어요." 문구는 그대로 남음)
+      navi("/mypage/edit", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "저장하지 못했어요.");
     } finally {

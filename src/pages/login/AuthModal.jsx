@@ -21,14 +21,11 @@ function AuthModal({ children }) {
       if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
-    // 뒤 화면 스크롤 막기 + 사라진 스크롤바 폭만큼 오른쪽을 채워서 화면이 안 밀리게
-    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    // 뒤 화면 스크롤 막기 (스크롤바 자리는 ui.css의 scrollbar-gutter가 비워 둬서 화면이 안 밀림)
     document.body.style.overflow = "hidden";
-    document.body.style.paddingRight = scrollbar + "px";
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

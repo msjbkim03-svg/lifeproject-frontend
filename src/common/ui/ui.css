@@ -182,6 +182,9 @@
 .choice.selected small { color: var(--primary); }
 
 /* ---------- 상단 헤더 ---------- */
+/* 스크롤바 자리를 항상 비워 둠
+   → 짧은 화면(스크롤바 없음) ↔ 긴 화면(스크롤바 있음)을 오가도 헤더가 좌우로 안 흔들림 */
+html { scrollbar-gutter: stable; }
 .header {
   border-bottom: var(--border);
   background: var(--header-bg);
@@ -199,8 +202,10 @@
   display: flex;
   align-items: center;
   gap: var(--sp-5);
+  white-space: nowrap; /* 글자가 두 줄로 꺾이면서 헤더 높이가 바뀌지 않게 */
 }
 .header-logo {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -222,6 +227,14 @@
 .header-right { display: flex; gap: var(--sp-2); align-items: center; }
 .header-user { font-size: var(--fs-sm); color: var(--ink-sub); }
 .header-user b { color: var(--ink); font-weight: 500; }
+.header-nav, .header-right { flex-shrink: 0; }
+/* 집 모양 버튼 (마이페이지) - 동그란 칸, 지금 마이페이지면 금색 */
+.header-home { width: 36px; padding: 0; }
+.header-home.on { color: var(--primary); border-color: var(--primary); }
+/* 좁은 화면: 메뉴 숨김 (원래 main.css에 있어서 메인을 한 번 거쳐야만 적용됐음 → 공통으로 옮김) */
+@media (max-width: 640px) {
+  .header-nav { display: none; }
+}
 
 /* ---------- 게임 진행 바 (나이·속도) ---------- */
 .gamebar {

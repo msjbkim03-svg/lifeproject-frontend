@@ -14,6 +14,8 @@ function ChatBox({ chat }) {
       if (e.key !== "Enter") return;
       const tag = document.activeElement?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON") return;
+      // 이벤트 선택창 · 옷 가게 · 상점 · 엔딩 영상처럼 위에 창이 떠 있으면 그 창이 Enter 를 씀
+      if (document.querySelector('[aria-modal="true"]')) return;
       e.preventDefault();
       inputRef.current?.focus();
     };

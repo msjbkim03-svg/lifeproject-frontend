@@ -91,7 +91,7 @@ function TraitsPage() {
             <dt>시작 레벨</dt><dd>Lv.1</dd>
             <dt>최대 레벨</dt><dd>Lv.5</dd>
             <dt>비용</dt><dd>1레벨당 1P</dd>
-            <dt>버튼 비활성화</dt><dd>Lv.5일 때</dd>
+            <dt>더 올릴 수 없음</dt><dd>Lv.5가 되면</dd>
           </dl>
         </section>
       </div>

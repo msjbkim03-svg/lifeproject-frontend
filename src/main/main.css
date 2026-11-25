@@ -54,7 +54,6 @@
   .ms-in { grid-template-columns: 1fr; grid-template-areas: 'hero' 'globe' 'c1' 'c2' 'c3'; padding: var(--sp-4) var(--sp-3); }
   .ms-title { font-size: 52px; }
   .ms-acts { flex-direction: column; }
-  .header-nav { display: none; }
 }
 
 /* 아무 시대에나 태어나기 */
