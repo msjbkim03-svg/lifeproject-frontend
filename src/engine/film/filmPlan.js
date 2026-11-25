@@ -15,7 +15,7 @@ export const FILM_H = 720;
 const LEN_MAX = 62000;       // 1분 안팎 (11/24 동현님, 원작은 2분)
 const RD_MAX = 5600;         // 장면 하나 최대 5.6초 (원작 9초)
 const CPS = 12;              // 원작 FILM_CPS.ko: 한글 1초에 12자 읽는다고 봄
-const MOMENTS = 5;           // 큰 사건 장면 최대 5개 (+ 첫 장면 제목) - 큼직한 것만 (11/24 동현님)
+const MOMENTS = 7;           // 큰 사건 장면 최대 7개 (+ 첫 장면 제목). 입학 · 졸업 · 일 · 결혼은 꼭 넣고 나머지를 큰 일로 채움 (11/25 동현님)
 export const CAMS = ['track', 'push', 'tilt', 'track', 'pull'];
 
 export const fa = (v, a, b) => Math.max(0, Math.min(1, (v - a) / (b - a)));
@@ -45,17 +45,17 @@ export function stagesOf(age) {
 // ───────── 장면 고르기 ─────────
 
 // 장면으로 안 쓰는 줄 (통계·정보 줄)
-const SKIP = [/^\d+세\. 같은 해/, /세계 인구가/, /남긴 재산은/, /^결혼 상대 /, /^만난 사람은 /, /유언장/, /^“/];
+const SKIP = [/^\d+세\. 같은 해/, /세계 인구가/, /남긴 재산은/, /^결혼 상대 /, /^만난 사람은 /, /유언장/, /^“/, /\?\s*$/, /기회가 생겼다/]; // 고르기 전 질문('어떻게 할까?') · 기회만 생긴 줄은 결과가 아니라서 뺌 (11/25)
 
 // [문장 무늬, 점수, 마을 장소, 장면 그림(FilmScene, 원작 MO.*), 장면 인자]
 const RULES = [
   [/결혼식을 올렸/, 10, 'home', 'wedding'],
   [/아이가 태어|아이가 생겼|막내가 태어|첫째|둘째|셋째|넷째/, 9, 'home', 'newborn'],
   [/피란|난민/, 9, null, 'flee'],
-  [/이민|새 나라|정착/, 9, null, 'fly'],
+  [/이민|새 나라|정착|^\d{4}년, [^.]{1,30}(으로|로) 떠났다\.|나라로 건너갔/, 9, null, 'fly'], // 엔진 이민 문장: '2003년, ○○는 키르기스스탄으로 떠났다.' · '가족이 있는 나라로 건너갔다.' ('짐을 꾸려 도시로 떠났다'는 나라 안 이사라 뺌, 11/25)
   [/세상을 떠나|떠나보/, 7, 'home', 'loss'], // 떠나보내며 · 떠나보냈다
   [/교도소|체포|수감/, 7, null, 'prison'],
-  [/각자의 길을 가기로|이혼했/, 7, null, 'rain'],
+  [/이혼했|^(?![^.]*연인)[^.]*각자의 길을 가기로/, 7, null, 'rain'], // 이혼만: 부부의 '각자의 길' (연인과 헤어짐 '연인과 각자의 길'은 뺌, 11/25 동현님)
   [/대학교?에 (입학|합격)|대학원/, 7, 'univ', 'grad', 'uni'],
   [/입학했다/, 6, 'school', 'school'],
   [/대학교?를 졸업/, 6, 'univ', 'grad', 'uni'],
@@ -68,7 +68,7 @@ const RULES = [
   [/자격증/, 5, 'home', 'cert'],
   [/진단을 받았|앓아누|입원|수술|다쳤|사고를 당|병원을 찾|쓰러졌/, 5, 'clinic', 'hosp'],
   [/일자리를 잃|해고|(가게|회사|공장|사업|일터)[^.]{0,10}문을 닫|직장을 그만두게/, 5, 'market', 'rain'], // '방문을 닫고' 는 아님
-  [/마음이 통하는 사람|청혼/, 5, 'park', 'date'],
+  [/청혼을 받았|청혼했/, 6, 'park', 'date'], // '마음이 통하는 사람을 만났다'는 뺌, 청혼만 (11/25 동현님)
   [/장학금|상을 받|상장|대회에서/, 4, 'school', 'award'],
   [/첫걸음|첫 단어|첫 생일/, 3, 'home'],
   [/여행/, 3, 'park'],
@@ -81,6 +81,7 @@ const ID_RULES = [
   [/^LE_MARRIAGE_WIDOW/, 7, 'home', 'loss'],
   [/^LE_DISEASE_/, 5, 'clinic', 'hosp'],
   [/^LE_SUCCESS_LOTTERY/, 6, null, 'award'],
+  [/^LE_LOVE_PROPOSAL/, 6, 'park', 'date'],
 ];
 const HIST_ID = /^[A-Z]{2,3}_\d{4}/; // 역사 사건 이벤트 (예: IN_1975_EMERGENCY)
 
@@ -98,10 +99,13 @@ function scoreOf(e) {
     if (re.test(e.eventId || '') && s > best) { best = s; place = p; scene = sc || null; arg = ar || null; }
   }
   if (scene === 'newborn' && /첫째|첫 아이/.test(t)) best += 1; // 첫아이가 늦둥이보다 먼저
+  if (scene === 'fly' && HIST_ID.test(e.eventId || '')) scene = 'flee'; // 역사 사건(전쟁 · 분쟁)으로 나라를 떠남 = 피란
   // 역사 사건: 그해 집에서 소식을 듣는 장면 (원작처럼 내 큰일이 있으면 내 일이 먼저)
   if (e.eventId && HIST_ID.test(e.eventId) && best < 3.5) { best = 3.5; scene = 'news'; place = 'home'; }
   if (e.eventId) best += 2;
   // 병원: 누가 아팠는지 / 떠나보냄: 누구를
+  if (scene === 'hosp' && (e.age ?? 0) < 18) return { s: 0, place: null, scene: null }; // 어린 시절 병(홍역 · 설사병 …)은 장면으로 안 씀 (11/25 동현님)
+  if (scene === 'hosp') best -= 1; // 어른 병도 뒤로 (마지막 장면이 이미 병실일 때가 많음)
   if (scene === 'hosp') arg = /아이가|아이를/.test(t) ? 'kid' : /배우자/.test(t) ? 'pt' : /부모님|어머니|아버지/.test(t) ? 'par' : 'me';
   if (scene === 'loss') arg = /배우자/.test(t) || /WIDOW/.test(e.eventId || '') ? 'pt' : /친구/.test(t) ? 'fr' : 'par';
   return { s: best, place, scene, arg };
@@ -131,7 +135,7 @@ export function cleanText(t, name) {
 //   이미 고른 장면과 4년 안쪽이면 하나마다 1점씩 깎음 (81세 인생의 장면 7개가 모두 22세 전에 몰리던 것 막음)
 const REPEAT_COST = 4;
 const NEAR_COST = 1;
-function pickMoments(events, deathAge, name) {
+function pickMoments(events, deathAge, name, years = []) {
   const cands = [];
   events.forEach((e, idx) => {
     if (e.age < 1) return;
@@ -139,11 +143,39 @@ function pickMoments(events, deathAge, name) {
     if (s >= 5) cands.push({ a: e.age, t: cleanText(e.logText, name), s, place, scene, arg, idx, id: e.eventId });
   });
   const kindOf = (c) => (c.scene === 'loss' ? 'loss/' + c.arg : c.scene) || (c.arg === 'cowork' ? 'cowork' : c.place) || 'village'; // 부모님 · 배우자 떠나보냄은 다른 장면으로 셈
+
+  // ① 꼭 넣는 장면 (11/25 동현님): 초등학교 입학 · 마지막 졸업 · 가장 오래 한 일 · 결혼식
+  const must = [];
+  const ev = (re) => events.map((e, idx) => ({ e, idx })).filter(({ e }) => e.age >= 1 && re.test(e.logText || ''));
+  const asMoment = ({ e, idx }, scene, place, arg = null) => ({ a: e.age, t: cleanText(e.logText, name), s: 99, place, scene, arg, idx, id: e.eventId });
+  const enter = ev(/학교에 입학했다/)[0];
+  if (enter) must.push(asMoment(enter, 'school', 'school'));
+  const grads = ev(/(초등학교|중학교|고등학교|대학교|대학원)를 졸업했다/);
+  const grad = grads[grads.length - 1]; // 가장 높은 학교 졸업
+  if (grad) { const uni = /대학/.test(grad.e.logText); must.push(asMoment(grad, 'grad', uni ? 'univ' : 'school', uni ? 'uni' : null)); }
+  const job = topJob(years);
+  if (job && job.years >= 2) {
+    const start = ev(/일을 시작했다/).find(({ e }) => (e.logText || '').includes(job.name + ' 일을 시작'));
+    if (start) must.push(asMoment(start, null, 'work', 'cowork'));
+    else { // 시작 기록이 없으면 그 일을 처음 한 해
+      const y0 = (years || []).filter((y) => y.jobName === job.name).sort((x, y) => x.age - y.age)[0];
+      const idx = events.findIndex((e) => e.age >= y0.age);
+      must.push({ a: y0.age, t: `${job.name} 일을 하며 살았다.`, s: 99, place: 'work', scene: null, arg: 'cowork', idx: idx < 0 ? events.length : idx - 0.5 });
+    }
+  }
+  const wed = ev(/결혼식을 올렸/)[0];
+  if (wed) must.push(asMoment(wed, 'wedding', 'home'));
+
+  // ② 나머지는 큰 사건 점수 순으로 채움 (같은 나이 · 같은 글은 한 번, 같은 장면 반복 · 가까운 나이는 깎음)
+  //   같은 장면 그림이 또 나오면 한 번마다 4점씩 깎음 (아이 넷이면 '아이가 태어났다'만 4장 나오던 것 막음)
+  //   이미 고른 장면과 4년 안쪽이면 하나마다 1점씩 깎음 (81세 인생의 장면이 모두 22세 전에 몰리던 것 막음)
   const used = {};
   const ages = new Set();
   const texts = new Set();
   const out = [];
-  let left = cands;
+  must.forEach((c) => { if (out.length < MOMENTS && !texts.has(c.t)) { out.push(c); ages.add(c.a); texts.add(c.t); used[kindOf(c)] = (used[kindOf(c)] || 0) + 1; } });
+  const mustIdx = new Set(must.map((c) => c.idx));
+  let left = cands.filter((c) => !mustIdx.has(c.idx) && !(c.scene === 'wedding' && wed) && !(c.arg === 'cowork' && job));
   while (out.length < MOMENTS) {
     left = left.filter((c) => !ages.has(c.a) && !texts.has(c.t));
     if (!left.length) break;
@@ -152,13 +184,13 @@ function pickMoments(events, deathAge, name) {
       - 3 * near(c).filter((o) => kindOf(o) === kindOf(c)).length; // 같은 장면이 4년 안에 또 (38세 · 39세 아이 장면 연달아) → 더 깎음
     left.sort((x, y) => eff(y) - eff(x) || x.idx - y.idx);
     const c = left[0];
-    if (eff(c) < 4) break; // 겹치는 장면만 남았으면 그만 (원래 5점 넘던 것만 들어오므로 4점 밑은 거의 같은 장면 반복)
+    if (eff(c) < 4) break; // 겹치는 장면만 남았으면 그만
     ages.add(c.a);
     texts.add(c.t);
     used[kindOf(c)] = (used[kindOf(c)] || 0) + 1;
     out.push(c);
   }
-  return out.sort((x, y) => x.idx - y.idx);
+  return out.sort((x, y) => x.a - y.a || x.idx - y.idx);
 }
 
 // ───────── 그 나이의 마을 모습 ─────────
@@ -367,7 +399,9 @@ function castOf(ctx) {
   }
   const sp = ctx.row('배우자');
   if (sp && sp.name) out.push('배우자 ' + sp.name);
-  (ctx.life.family || []).filter((m) => (m.role === '아들' || m.role === '딸') && m.name).forEach((m) => out.push('자녀 ' + m.name));
+  const kidRows = (ctx.life.family || []).filter((m) => (m.role === '아들' || m.role === '딸') && m.name);
+  if (kidRows.length > 5) out.push(`자녀 ${kidRows.length}명`); // 아이가 많으면 이름 대신 수 (12명이면 크레딧이 너무 빨리 올라감)
+  else [...new Set(kidRows.map((m) => m.name))].forEach((nm) => out.push('자녀 ' + nm));
   const g = ctx.row('손주');
   const gn = g && Number((/^(\d+)명/.exec(g.info || '') || [])[1]);
   if (gn) out.push(`손주 ${gn}명`);
@@ -442,7 +476,8 @@ function funeralText(r, ctx) {
   if (gn) parts.push(`손주 ${gn}명`);
   let attend = null;
   if (parts.length) {
-    const head = parts.length > 1 ? parts.slice(0, -1).join(', ') + '와 ' + parts[parts.length - 1] : parts[0];
+    const pre = parts.slice(0, -1).join(', ');
+    const head = parts.length > 1 ? pre + (hasBatchim(pre) ? '과 ' : '와 ') + parts[parts.length - 1] : parts[0]; // '자녀 3명과 손주 2명' ('명와' 고침)
     attend = `${iga(head)} 곁을 지켰다.`;
   } else {
     const fr = ctx.row('친구');
@@ -465,10 +500,11 @@ export function buildFilm(r, data) {
   //   (11/24 동현님: 첫 장면 자막이 '홍역 진단을 받았다'인데 그림은 태어나는 장면)
   const first = events.find((e) => e.age === 0 && !e.eventId && /^(아버지|어머니)는|집이었다/.test(e.logText || ''));
   const titleF = { a: 0, t: first ? cleanText(first.logText, r.name) : `${r.countryName}에서 태어났다.`, place: 'home' };
-  const moms = pickMoments(events, D, r.name);
+  const moms = pickMoments(events, D, r.name, r.years);
 
   const cast = castOf(ctx);
-  const src = (data.sources || []).filter(Boolean).slice(0, 12);
+  // 자료 이름: 괄호 속 설명은 빼고, 통계 보완 메모('48개국 확대 추정: WDI 빈칸을 Gapminder …')는 짧은 이름으로 (11/25)
+  const src = [...new Set((data.sources || []).filter(Boolean).map((x) => (/빈칸을 Gapminder|Gapminder 비율/.test(x) ? 'Gapminder (빈 통계 보완)' : String(x).replace(/\s*\([^()]*\)\s*/g, ' ').trim())))].slice(0, 12);
   const creditsDur = Math.min(5600, 3800 + (cast.length + src.length) * 160);
 
   const seg = [];
@@ -478,7 +514,7 @@ export function buildFilm(r, data) {
   add('map', 5200);
   add('title', 4200, { f: titleF, v: { ...villageAt(ctx, 0, 'home'), scene: 'born', family: familyAt(ctx, 0, { all: true }).list } });
 
-  const u = Math.max(0.78, Math.min(1, 7 / Math.max(1, moms.length)));
+  const u = Math.max(0.7, Math.min(1, 5 / Math.max(1, moms.length))); // 장면이 7개면 하나를 조금 짧게 (화면 시간 85초 안팎)
   const fixed = 9400 + 3800 + 4600 + 6400 + creditsDur + 2600;
   const F = moms.map((m) => {
     const s = Math.round((4200 + Math.min(800, m.t.length * 7)) * u);

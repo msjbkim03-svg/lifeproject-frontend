@@ -774,14 +774,7 @@ function PlayPage() {
                   <dt>출생</dt><dd><Flag cc={life.birthCountry} />{countryText} · {life.birthYear}년</dd>
                   <dt>거주</dt><dd><Flag cc={life.currentCountry} />{countryName} · {town}</dd>
                   <dt>출신 가정</dt>
-                  <dd>
-                    <Spoon level={life.originClass ?? life.wealthClass} />
-                    {life.originClass != null && life.originClass !== life.wealthClass && (
-                      <span className="pp-spoon-now" title="부모님 형편이 바뀐 뒤 지금 집안 형편이에요">
-                        {life.wealthClass < life.originClass ? '▼' : '▲'} 지금 <Spoon level={life.wealthClass} size={14} />
-                      </span>
-                    )}
-                  </dd>
+                  <dd><Spoon level={life.originClass ?? life.wealthClass} /></dd>{/* 태어난 집 형편만 (지금 형편 ▲▼ 표시는 뺌, 11/25 동현님) */}
                   <dt>학력</dt><dd>{schoolText(life)}</dd>
                   <dt>직업</dt><dd>{jobText(life)}</dd>
                   {tier.kind !== 'spoon' && <><dt>소득</dt><dd title="내 소득(연봉)을 사는 나라 사람들과 견준 위치예요">{tier.title}</dd></>}
