@@ -5,7 +5,7 @@
 import { useEffect, useRef } from "react";
 
 
-const SITE_KEY = "6Lf5hicuAAAAANdEgR7C_CSDYlS2_1cVYD63bxNc";
+const SITE_KEY = "6LcveTEuAAAAAJShNwwESQlbFtRIfFhCjclbk6BU"; // Google Cloud lifeproject 의 체크박스 키 (비밀 키는 백엔드 application-secret.properties)
 
 function RecaptchaBox({ onChange }) {
   const boxRef = useRef(null); // 체크박스가 그려질 자리
