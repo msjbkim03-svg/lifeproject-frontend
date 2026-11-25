@@ -6,10 +6,11 @@
 // /result/test = 엔딩 크레딧 테스트 화면 (FilmTest, 작업용)
 //
 // 인생 기록 화면 (11/25 동현님: 싹 바꿈) - 진행 화면처럼 넓은 두 단
-//   ① 머리: 마지막 모습(마을 캐릭터) · 이름 · 국기+나라(당시 국명) · 생몰년 · 이민 · 사망 원인 · 엔딩 다시 보기 · 추모관
-//   ② 숫자 4칸: 수명(기대수명과 비교) · 가장 행복했던 때(가장 힘들었던 때) · 아시아 소득 상위 % · 태어난 집
-//   ③ 왼쪽: 인생 지도(한 해 한 칸 행복 막대 + 큰 장면 번호 + 일 · 나라 띠) · 인생의 큰 장면(엔딩 크레딧과 같은 고르기) · 능력치 변화 · 인생 기록(나이대별 묶음)
-//   ④ 오른쪽: 삶의 요약(학력 · 일한 직업들 · 평균 소득(한국 체감 원) · 결혼 · 자녀 · 살았던 나라) · 퀘스트 · AI 인생 이야기 · 질문하기
+//   ① 머리: 마지막 모습(마을 캐릭터, 입은 옷) · 이름 · 국기+나라(당시 국명) · 생몰년 · 이민 · 사망 원인 · 엔딩 다시 보기 · 추모관 · 다시 태어나기
+//   ② 숫자 4칸: 수명(기대수명과 비교) · 가장 행복했던 때(가장 힘들었던 때) · 평균 소득 위치(아시아 상위/하위 %) · 태어난 집
+//   ③ 탭: 인생 기록 / 이야기(C19, AI 회고록) / 묻기(C20, 그 사람에게 직접)
+//   ④ 인생 기록 탭: 인생 지도(한 해 한 칸 행복 막대 + 일 · 나라 띠, 마우스 말풍선) · 인생의 큰 장면(누르면 장면 사진) · 능력치 변화 · 인생 기록(나이대별)
+//   ⑤ 오른쪽: 삶의 요약(학력 · 일한 직업들 · 평균 소득(한국 체감 원) · 결혼 · 자녀 · 살았던 나라 · 사망 원인) · 퀘스트
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -22,7 +23,7 @@ import Figure from '../../engine/village/Figure';
 import { lookOf } from '../../engine/village/costumeData';
 import { COUNTRIES } from '../../engine/village/villageData';
 import { won, ro } from '../../engine/play/lifeText';
-import { bigMoments, buildFilm, stagesOf } from '../../engine/film/filmPlan';
+import { bigMoments, buildFilm, retireAge, stagesOf } from '../../engine/film/filmPlan';
 import StatChart from './StatChart';
 import MomentPhoto from './MomentPhoto';
 import StoryPanel from './StoryPanel';
@@ -38,19 +39,24 @@ function eduText(r) {
   if (!r.eduLevel || r.eduLevel === 'NONE') return EDU_NAME.NONE;
   if (r.schoolStatus === 'DROPPED') return EDU_NAME[r.eduLevel] + ' 중퇴';
   if (r.schoolStatus === 'GRADUATED') return EDU_NAME[r.eduLevel] + ' 졸업';
+  if (r.schoolStatus === 'ENROLLED') return EDU_NAME[r.eduLevel] + ' 다니던 중';
   return EDU_NAME[r.eduLevel];
 }
 
 // 결혼: 지금 상태 + 이력 (이혼·사별하면 마지막엔 미혼이라 '안 함'으로 나오던 것)
+//   예: 결혼함 · 재혼 (결혼 2번) · 결혼 후 사별 · 결혼 2번 · 이혼 · 안 함
 function marriedText(r) {
   const w = r.weddingCount || 0;
   const d = r.divorceCount || 0;
   const x = r.widowCount || 0;
-  if (r.marriedYn === 'Y') return w > 1 ? `했음 (재혼, ${w}번)` : '했음';
+  if (r.marriedYn === 'Y') return w > 1 ? `재혼 (결혼 ${w}번)` : '결혼함';
   if (w === 0) return '안 함';
-  const end = d > 0 && x > 0 ? '이혼·사별' : x > 0 ? '사별' : '이혼';
-  return w > 1 ? `했음 → ${end} (${w}번 결혼)` : `했음 → ${end}`;
+  const end = d > 0 && x > 0 ? '이혼 · 사별' : x > 0 ? '사별' : '이혼';
+  return w > 1 ? `결혼 ${w}번 · ${end}` : `결혼 후 ${end}`;
 }
+
+// 사망 원인 분류 이름 → 문장에 넣을 말 ('기타 질환으로 세상을 떠났어요' → '병으로 …', 백엔드 LifeEvidence.causeText 와 같게)
+const causeText = (c) => (!c || c === '기타 질환' || c === '질병' ? '병' : c === '기타 사고·손상' ? '사고' : c);
 
 // 국기 (flagcdn, 출생 화면 · 진행 화면과 같은 그림)
 function Flag({ cc, size = 20 }) {
@@ -78,16 +84,20 @@ function peaksOf(years) {
 
 // 가장 행복했던 때 아래 한 줄: 가까운(±2년) 큰 장면, 없으면 그해 연도 · 하던 일
 //   (그해 사건 줄을 그대로 쓰면 '차별을 겪었다. 어떻게 할까?' 같은 줄이 나와서 뺌)
+//   슬픈 장면(이별 · 시련 · 병원 · 수감 · 피란 · 실직 등)은 '가장 행복했던 때' 밑에 어울리지 않아서 뺌
+const SAD_SCENE = new Set(['loss', 'rain', 'hosp', 'prison', 'flee', 'news']);
+const SAD_TEXT = /잃|그만두|문을 닫|떠나|세상을 떠|아프|병|다쳤|사고|이혼|헤어|실패|빚|해고|쫓겨|피란|전쟁|체포/;
 function peakLine(r, moments, y) {
-  const near = moments.filter((m) => Math.abs(m.a - y.age) <= 2).sort((a, b) => Math.abs(a.a - y.age) - Math.abs(b.a - y.age))[0];
+  const near = moments.filter((m) => Math.abs(m.a - y.age) <= 2 && !SAD_SCENE.has(m.scene) && !SAD_TEXT.test(m.t)).sort((a, b) => Math.abs(a.a - y.age) - Math.abs(b.a - y.age))[0];
   if (near) return near.a === y.age ? near.t : `${near.a}세 · ${near.t}`;
   return `${y.yearNo}년${y.jobName ? ` · ${y.jobName}` : ''}`;
 }
 
 // 일한 직업들: 연도별 기록에서 같은 일이 이어진 구간 [{ name, from, to, years }]
-function jobRuns(years) {
+//   은퇴한 뒤에도 연도 기록에 마지막 직업이 남아 있던 인생('봉제 공장 50~98세')은 은퇴 나이에서 끊음 (11/25)
+function jobRuns(years, ret = 999) {
   const out = [];
-  (years || []).forEach((y) => {
+  (years || []).filter((y) => y.age < ret).forEach((y) => {
     const last = out[out.length - 1];
     if (y.jobName && last && last.name === y.jobName && last.to === y.age - 1) last.to = y.age;
     else if (y.jobName) out.push({ name: y.jobName, from: y.age, to: y.age });
@@ -95,17 +105,23 @@ function jobRuns(years) {
   return out.map((j) => ({ ...j, years: j.to - j.from + 1 }));
 }
 
-// 살았던 나라 구간 [{ cc, from, to }]
+// 살았던 나라 구간 [{ cc, name, from, to }] (name: 서버가 붙여 준 그 나라 이름, 11/25)
 function countryRuns(years) {
   const out = [];
   (years || []).forEach((y) => {
     if (!y.countryCode) return;
     const last = out[out.length - 1];
     if (last && last.cc === y.countryCode) last.to = y.age;
-    else out.push({ cc: y.countryCode, from: y.age, to: y.age });
+    else out.push({ cc: y.countryCode, name: y.countryName, from: y.age, to: y.age });
   });
   return out;
 }
+
+// 띠 안에 들어갈 만큼만 글자 (넘치면 …)
+const fit = (text, px) => {
+  const n = Math.floor((px - 8) / 9.5);
+  return text.length <= n ? text : n >= 3 ? text.slice(0, n - 1) + '…' : '';
+};
 
 // 큰 장면 이름표 (엔딩 크레딧 장면 이름)
 const SCENE_LABEL = {
@@ -116,7 +132,7 @@ const SCENE_LABEL = {
 // 행복 → 막대 색 (낮으면 차갑게, 높으면 따뜻하게)
 const hapColor = (h) => (h >= 70 ? 'var(--stat-happiness)' : h >= 50 ? '#d9b25c' : h >= 35 ? '#9aa7b8' : '#6f7f96');
 
-// 인생 지도: 한 해 한 칸 (높이 = 행복), 위에 큰 장면 번호, 아래에 일 · 나라 띠
+// 인생 지도: 한 해 한 칸 (높이 = 행복), 아래에 일 · 나라 띠. 칸에 마우스를 올리면 그해 말풍선, 큰 장면이 있는 해는 누르면 사진
 function LifeMap({ r, moments, jobs, lands, onPick, onTip }) {
   const ys = r.years || [];
   const n = Math.max(1, (r.deathAge || 0) + 1);
@@ -147,14 +163,14 @@ function LifeMap({ r, moments, jobs, lands, onPick, onTip }) {
       {jobs.map((j, i) => (
         <g key={'j' + i}>
           <rect x={x(j.from)} y={top + barH + 8} width={Math.max(2, x(j.to + 1) - x(j.from))} height="12" rx="4" fill={i % 2 ? 'var(--blue-line)' : 'var(--green-line)'}><title>{`${j.name} · ${j.from}~${j.to}세`}</title></rect>
-          {x(j.to + 1) - x(j.from) > 70 && <text x={x(j.from) + 5} y={top + barH + 17.5} fontSize="9.5" fill="var(--ink)">{j.name}</text>}
+          <text x={x(j.from) + 5} y={top + barH + 17.5} fontSize="9.5" fill="var(--ink)" pointerEvents="none">{fit(j.name, x(j.to + 1) - x(j.from))}</text>
         </g>
       ))}
       {/* 나라 띠 (이민했을 때만) */}
       {lands.length > 1 && lands.map((l, i) => (
         <g key={'l' + i}>
-          <rect x={x(l.from)} y={top + barH + 24} width={Math.max(2, x(l.to + 1) - x(l.from))} height="12" rx="4" fill={i % 2 ? 'var(--primary-light)' : 'var(--panel-2)'} stroke="var(--line)"><title>{`${l.cc} · ${l.from}~${l.to}세`}</title></rect>
-          <text x={x(l.from) + 5} y={top + barH + 33.5} fontSize="9.5" fill="var(--ink-sub)">{l.name}</text>
+          <rect x={x(l.from)} y={top + barH + 24} width={Math.max(2, x(l.to + 1) - x(l.from))} height="12" rx="4" fill={i % 2 ? 'var(--primary-light)' : 'var(--panel-2)'} stroke="var(--line)"><title>{`${l.name} · ${l.from}~${l.to}세`}</title></rect>
+          <text x={x(l.from) + 5} y={top + barH + 33.5} fontSize="9.5" fill="var(--ink-sub)" pointerEvents="none">{fit(l.name, x(l.to + 1) - x(l.from))}</text>
         </g>
       ))}
       {/* 나이 눈금 */}
@@ -284,8 +300,8 @@ function ResultView() {
     const r = result;
     let moments = [];
     try { moments = bigMoments(r); } catch { moments = []; }
-    const jobs = jobRuns(r.years);
-    const lands = countryRuns(r.years).map((l) => ({ ...l, name: l.cc === r.birthCountry ? r.countryName : l.cc === r.currentCountry ? r.currentCountryName : l.cc }));
+    const jobs = jobRuns(r.years, retireAge(r.events, r.years));
+    const lands = countryRuns(r.years).map((l) => ({ ...l, name: l.name || (l.cc === r.birthCountry ? r.countryName : l.cc === r.currentCountry ? r.currentCountryName : l.cc) }));
     const stages = stagesOf(r.deathAge || 0).map(([a, b, name]) => ({ a, b, name, events: (r.events || []).filter((e) => e.age >= a && e.age <= b) })).filter((s) => s.events.length);
     const bigAges = new Set(moments.map((m) => m.a));
     return { moments, jobs, lands, stages, bigAges, peaks: peaksOf(r.years) };
@@ -341,7 +357,7 @@ function ResultView() {
             <p className={styles.where}>
               <Flag cc={r.birthCountry} size={24} />
               <b>{r.countryName}</b>
-              {r.histName && r.histName !== r.countryName && <span className={styles.hist}>당시 {r.histName}</span>}
+              {r.histName && !r.histName.includes(r.countryName) && <span className={styles.hist}>당시 {r.histName}</span>}
               <span className={styles.dot}>·</span>
               <span>{r.birthYear} – {r.deathYear}</span>
               <span className={styles.dot}>·</span>
@@ -350,7 +366,7 @@ function ResultView() {
             {migrated && (
               <p className={styles.moved}><Flag cc={r.currentCountry} size={18} />{r.currentCountryName}에서 생을 마침</p>
             )}
-            <p className={styles.cause}>{r.deathCause ? `${ro(r.deathCause)} 세상을 떠났어요.` : '세상을 떠났어요.'}</p>
+            <p className={styles.cause}>{ro(causeText(r.deathCause))} 세상을 떠났어요.</p>
           </div>
           <div className={styles.heroActs}>
             <Button type="primary" pill onClick={() => navigate(filmUrl)}>▶ 엔딩 크레딧 다시 보기</Button>
@@ -391,8 +407,17 @@ function ResultView() {
           </div>
           <div className={styles.num}>
             <span className={styles.numLabel}>평균 소득 위치</span>
-            <b className={styles.numVal}>{r.incomeTopPct == null ? '-' : r.incomeTopPct > 50 ? <>하위 {Math.round((100 - r.incomeTopPct) * 10) / 10}<small>%</small></> : <>상위 {r.incomeTopPct}<small>%</small></>}</b>
-            <span className={styles.numSub}>아시아(등록된 나라) 사람들 가운데 · 한 해 평균 {money(r.avgIncome)}</span>
+            {!r.avgIncome ? (
+              <>
+                <b className={styles.numVal}>소득 없음</b>
+                <span className={styles.numSub}>{r.deathAge < 18 ? '돈을 벌 나이가 되기 전에 세상을 떠났어요.' : '일해서 번 돈이 없었어요.'}</span>
+              </>
+            ) : (
+              <>
+                <b className={styles.numVal}>{r.incomeTopPct == null ? '-' : r.incomeTopPct > 50 ? <>하위 {Math.round((100 - r.incomeTopPct) * 10) / 10}<small>%</small></> : <>상위 {r.incomeTopPct}<small>%</small></>}</b>
+                <span className={styles.numSub}>아시아(등록된 나라) 사람들 가운데 · 한 해 평균 {money(r.avgIncome)}</span>
+              </>
+            )}
           </div>
           <div className={styles.num}>
             <span className={styles.numLabel}>태어난 집</span>
@@ -514,7 +539,7 @@ function ResultView() {
                     </ul>
                   )}
                 </dd>
-                <dt>평균 소득</dt><dd>한 해 {money(r.avgIncome)}{k ? <small className={styles.note}> 한국 체감</small> : null}</dd>
+                <dt>평균 소득</dt><dd>{r.avgIncome ? <>한 해 {money(r.avgIncome)}{k ? <small className={styles.note}> 한국 체감</small> : null}</> : '없음'}</dd>
                 <dt>결혼</dt><dd>{marriedText(r)}</dd>
                 <dt>자녀</dt><dd>{r.childCount ? `${r.childCount}명` : '없음'}</dd>
                 <dt>살았던 나라</dt>
@@ -534,7 +559,7 @@ function ResultView() {
                     <li key={q.questId} className={q.achieved === 'Y' ? styles.qOk : ''}>
                       <span aria-hidden="true">{q.achieved === 'Y' ? '★' : '☆'}</span>
                       <span>{q.questName}</span>
-                      <b>{q.achieved === 'Y' ? '달성' : '실패'}</b>
+                      <b>{q.achieved === 'Y' ? '달성' : '미달성'}</b>
                     </li>
                   ))}
                 </ul>

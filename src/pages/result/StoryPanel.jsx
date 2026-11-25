@@ -3,6 +3,7 @@
 //   이야기는 '## 어린 시절 (0~12세)' 같은 장 제목 줄로 나뉘어 옴 → 장마다 그 나이의 큰 장면 사진을 붙임
 //   장 제목이 없는 예전 이야기는 문단만 그대로 보여 줌
 //   이야기 속 [1], [2] 는 아래 출처 목록 번호
+//   AI가 안 되면(한도 · 키 · 시간 초과) 서버가 인생 기록 줄로 엮은 이야기를 fallback: true 로 줌 → 안내 + 'AI로 다시 쓰기'
 //   예: <StoryPanel lifeId={11271} guestToken={...} moments={view.moments} segs={filmSegs} onPhoto={setPick} />
 import { useEffect, useState } from 'react';
 import client from '../../api/api';
@@ -21,7 +22,7 @@ function withCites(text) {
 function chaptersOf(text) {
   const out = [];
   let cur = null;
-  text.split(/\n+/).map((l) => l.trim()).filter(Boolean).forEach((line) => {
+  text.split(/\n+/).map((l) => l.replace(/\*\*/g, '').replace(/^[-*]\s+/, '').trim()).filter(Boolean).forEach((line) => { // AI가 붙이는 **굵게** · 목록 표시는 뺌
     const h = /^#{1,3}\s*(.+?)\s*\((\d+)\s*[~∼-]\s*(\d+)\s*세\)\s*$/.exec(line);
     if (h) {
       cur = { title: h[1], from: +h[2], to: +h[3], paras: [] };
@@ -81,18 +82,25 @@ function StoryPanel({ lifeId, guestToken: linkToken, moments = [], segs, onPhoto
       <div className={styles.box}>
         <div className={styles.loading}>
           <span className={styles.pen} aria-hidden="true">✎</span>
-          <p>AI가 이 사람의 일생을 실제 역사 자료와 함께 정리하고 있어요…<br /><small>처음 한 번만 10초쯤 걸려요</small></p>
+          <p>AI가 이 사람의 일생을 실제 역사 자료와 함께 정리하고 있어요…<br /><small>처음 한 번만 길게는 30초쯤 걸려요. 다음부터는 바로 열려요.</small></p>
         </div>
       </div>
     );
   }
 
   const chapters = chaptersOf(story.story || '');
+  const retry = () => { setStory(null); setTryNo((n) => n + 1); };
   const segOf = (i) => (segs ? segs.find((s) => s.f?.a === moments[i].a) || segs[i] : null);
   const used = new Set();
 
   return (
     <div className={styles.box}>
+      {story.fallback && (
+        <div className={styles.notice}>
+          <span>{story.notice || 'AI가 잠시 답하지 않아요.'} 그동안 인생 기록으로 엮은 이야기를 보여 드려요.</span>
+          <Button size="sm" pill onClick={retry}>AI로 다시 쓰기</Button>
+        </div>
+      )}
       <div className={styles.album}>
         {chapters.map((c, ci) => {
           // 이 장 나이대의 큰 장면 (한 장면은 한 번만)
@@ -133,7 +141,9 @@ function StoryPanel({ lifeId, guestToken: linkToken, moments = [], segs, onPhoto
         </details>
       )}
       <p className={styles.foot}>
-        인물과 개인사는 게임 속 가상 이야기이고, 역사·통계는 출처의 실제 자료예요. AI가 쓴 글이라 틀린 부분이 있을 수 있어요.
+        {story.fallback
+          ? '게임 속 인생 기록을 그대로 이어 붙인 글이에요.'
+          : '인물과 개인사는 게임 속 가상 이야기이고, 역사·통계는 출처의 실제 자료예요. AI가 쓴 글이라 틀린 부분이 있을 수 있어요.'}
         {story.createdAt ? ` · ${story.createdAt}` : ''}
       </p>
     </div>

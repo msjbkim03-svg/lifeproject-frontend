@@ -85,8 +85,8 @@ function StatChart({ years }) {
     >
       <div className={styles.head}>
         <span className={styles.when}>
-          {hover == null ? '세상을 떠난 해' : `${cur.age}세`}
-          <small>{cur.yearNo ? `${cur.yearNo}년` : ''}</small>
+          {cur.age}세
+          <small>{cur.yearNo ? `${cur.yearNo}년` : ''}{hover == null ? ' · 마지막 기록' : ''}</small>
         </span>
         <span className={styles.hint}>그래프 위에 올리면 그 나이의 값이 나와요</span>
       </div>

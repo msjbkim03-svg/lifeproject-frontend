@@ -9,6 +9,7 @@
 // 원작처럼 장면 글에 맞는 그림 (FilmScene.jsx, v.scene): 결혼식 · 아이 · 병원 · 떠나보냄 · 이민 · 입학 · 졸업 · 만남 · 상 · 내 집 · 은퇴 …
 //   그때 같이 있던 사람(그 나이의 가족)을 같이 세움. 맞는 그림이 없으면 그 나이의 마을
 // 사용: const film = buildFilm(result, data)   result = GET /api/result/{lifeId},  data = GET /api/engine/film + wear
+import { familyLook } from '../village/familyLook';
 
 export const FILM_W = 1280;  // 필름 크기 (가로 16:9), 글자 크기·자리는 이 크기 기준 px
 export const FILM_H = 720;
@@ -390,7 +391,22 @@ function lifeCtx(result, data) {
     });
   }
 
-  return { life, D, by: result.birthYear, row, owns, years, married, marks, spAt, momAt, dadAt, industryAt, pet, kids, kidBorn };
+  // 가족 생김새 seed (윤아님 familyLook): 마을 homeFamily 와 같은 규칙 `${인생 번호}|${가족 id}` (+ 배우자 이름)
+  //   마을은 살아 있는 가족만, 자녀 번호(kid0~)도 살아 있는 아들 · 딸 순서로 셈 → 여기서도 똑같이 셈
+  //   먼저 떠난 자녀는 마을에 안 나와서 이름으로 따로 (마을과 겹치지 않게)
+  const seedBase = life.lifeId ?? result.lifeId ?? life.name ?? '';
+  const kidId = new Map();
+  let vk = 0;
+  fam.forEach((m) => { if (m.alive && (m.role === '아들' || m.role === '딸')) kidId.set(m, 'kid' + vk++); });
+  kids.forEach((m, i) => { if (!kidId.has(m)) kidId.set(m, `kidx${i}|${m.name || ''}`); });
+
+  return { life, D, by: result.birthYear, row, owns, years, married, marks, spAt, momAt, dadAt, industryAt, pet, kids, kidBorn, seedBase, kidId };
+}
+
+// 가족 한 사람에 생김새를 붙임 (마을과 같은 머리 · 옷). 그림(px)은 p.look 이 있으면 그것을 씀
+function withLook(ctx, m) {
+  const seed = `${ctx.seedBase}|${m.id}${m.name ? '|' + m.name : ''}`;
+  return { ...m, seed, look: familyLook({ seed, gender: m.gender, age: m.age }) };
 }
 
 // 부모님 나이 (그 나이 때): 살아 계시면 지금 나이에서 거꾸로, 떠나셨으면 떠나신 나이에서 거꾸로
@@ -426,13 +442,13 @@ function familyAt(ctx, a, { all = false } = {}) {
   }
   if (wed) {
     const sp = ctx.row('배우자');
-    out.push({ id: 'spouse', label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: sp?.age != null ? sp.age - (ctx.D - a) : a + 2 });
+    out.push({ id: 'spouse', name: sp?.name, label: life.gender === 'M' ? '아내' : '남편', gender: life.gender === 'M' ? 'F' : 'M', age: sp?.age != null ? sp.age - (ctx.D - a) : a + 2 });
   }
   ctx.kids.forEach((m, kid) => {
     const ka = a - ctx.kidBorn[kid];
-    if (ka >= 0 && (all || ka < 30)) out.push({ id: 'kid' + kid, label: m.role, gender: m.role === '아들' ? 'M' : 'F', age: ka });
+    if (ka >= 0 && (all || ka < 30)) out.push({ id: ctx.kidId.get(m) || 'kid' + kid, label: m.role, gender: m.role === '아들' ? 'M' : 'F', age: ka });
   });
-  return { list: out.slice(0, 10), withParents };
+  return { list: out.slice(0, 10).map((m) => withLook(ctx, m)), withParents };
 }
 
 function houseAt(ctx, a, withParents) {
@@ -541,7 +557,7 @@ function castOf(ctx) {
 }
 
 // 은퇴한 나이: 은퇴 기록이 있으면 그해, 없으면 55세 넘어 수입(연금)이 3년 넘게 그대로인 해 (그 뒤에도 직업 이름이 기록에 남아 있음)
-function retireAge(events, years) {
+export function retireAge(events, years) {
   const e = (events || []).find((x) => /은퇴했|일을 마치고 은퇴|정년퇴직|은퇴하기로 했/.test(x.logText || '') && !/않고|않기로/.test(x.logText || ''));
   if (e) return e.age;
   const ys = [...(years || [])].sort((x, y) => x.age - y.age);

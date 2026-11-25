@@ -287,8 +287,9 @@ export function wedding(px, t, v) {
   const gx = Math.round(ax - lerp(12, 8, near));
   const bx = Math.round(ax + lerp(12, 8, near));
   const up = kissing ? -1 : 0;
-  const gLook = { ...lookOf({ gender: 'M', age: groom.age, costume: groom.costume, soft: groom.soft }), top: { style: 'suit', color: '#2f3b5c' } };
-  const bLook = { ...lookOf({ gender: 'F', age: bride.age, costume: bride.costume, soft: bride.soft }), top: { style: 'dress', color: '#fbf7f2' } };
+  // 가족(배우자)은 마을과 같은 머리 (familyLook → p.look), 옷만 예복으로
+  const gLook = { ...(groom.look || lookOf({ gender: 'M', age: groom.age, costume: groom.costume, soft: groom.soft })), top: { style: 'suit', color: '#2f3b5c' } };
+  const bLook = { ...(bride.look || lookOf({ gender: 'F', age: bride.age, costume: bride.costume, soft: bride.soft })), top: { style: 'dress', color: '#fbf7f2' } };
   const gF = figure({ look: gLook, gaze: 1, face: kissing ? 'closed' : 'open', pose: t > 900 && !kissing ? 'clap1' : 'stand' });
   const bF = figure({ look: bLook, gaze: -1, face: kissing ? 'closed' : 'open', pose: 'hold' });
   // 면사포 (신부 뒤 · 살랑)
@@ -319,11 +320,19 @@ export function wedding(px, t, v) {
     const f = Math.floor(t / 120 + d) % 2;
     px.rect(x - 1, y, 3, 2, '#ffffff'); px.px(x + 2, y, '#e6e0e8'); px.px(x - 2, y - f, '#ffffff'); px.px(x + 3, y - f, '#ffffff'); px.px(x - 3, y - 1 + f, '#f0ecf4'); px.px(x + 4, y - 1 + f, '#f0ecf4'); px.px(x + (d % 2 ? 2 : -1), y + 1, '#f2b05a');
   }
-  // 사진사 (옆에서 찰칵 · 뽀뽀 때 플래시)
-  const phx = 160;
-  actor(px, t, 31, extra(5, { gender: 'M', age: 33 }), phx, G + 4, { gaze: -1, pose: 'clap1' });
-  px.rect(phx - 4, G - 15, 6, 4, '#3a3440'); px.rect(phx - 6, G - 14, 2, 2, '#5a5460'); px.px(phx - 1, G - 16, '#3a3440');
-  if ((t > 1550 && t < 1700) || (t > 2300 && t < 2400)) px.alpha(0.85, () => { px.disc(phx - 6, G - 13, 3, '#ffffff'); px.rect(phx - 14, G - 13, 16, 1, '#fff8e0'); px.rect(phx - 6, G - 21, 1, 16, '#fff8e0'); });
+  // 사진사 (삼각대 카메라 옆에 서서 찰칵 · 뽀뽀 때 플래시)
+  //   11/25 동현님: 카메라가 얼굴에 붙어 보임 → 얼굴 앞에 들지 않고 몸 앞 삼각대 위에
+  const phx = 166;
+  const cx = phx - 13; // 삼각대 가운데
+  const cy = G - 9;    // 카메라 몸통 위 (사진사 가슴 높이)
+  actor(px, t, 31, extra(5, { gender: 'M', age: 33 }), phx, G + 4, { gaze: -1, pose: 'stand' });
+  // 삼각대 다리 3개
+  for (let j = 0; j <= 12; j++) { const q = j / 12; px.px(Math.round(cx - q * 4), cy + 5 + j, '#5a5460'); px.px(Math.round(cx + q * 4), cy + 5 + j, '#5a5460'); px.px(cx, cy + 5 + Math.round(j * 0.9), '#4a4450'); }
+  // 카메라 몸통 · 렌즈(커플 쪽) · 뷰파인더
+  px.rect(cx - 4, cy, 8, 5, '#3a3440'); px.rect(cx - 3, cy + 1, 6, 1, '#4a4452');
+  px.rect(cx - 7, cy + 1, 3, 3, '#5a5460'); px.px(cx - 7, cy + 2, '#9ab0d0');
+  px.rect(cx - 1, cy - 1, 3, 1, '#3a3440');
+  if ((t > 1550 && t < 1700) || (t > 2300 && t < 2400)) px.alpha(0.85, () => { px.disc(cx - 8, cy + 2, 3, '#ffffff'); px.rect(cx - 16, cy + 2, 16, 1, '#fff8e0'); px.rect(cx - 8, cy - 6, 1, 16, '#fff8e0'); });
   if (t > 1550 && t < 1660) px.alpha(0.18, () => px.rect(0, 0, W, H, '#ffffff'));
 
   // 앞 하객 (서서 박수 · 환호 · 아이는 폴짝 · 부모님은 눈물)

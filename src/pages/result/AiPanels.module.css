@@ -11,6 +11,10 @@
 .pen { font-size: 26px; color: var(--primary); animation: penMove 1.2s ease-in-out infinite; }
 @keyframes penMove { 0%, 100% { transform: translate(0, 0) rotate(-8deg); } 50% { transform: translate(6px, 2px) rotate(4deg); } }
 
+/* AI가 안 될 때 안내 */
+.notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding: 10px 14px;
+  border-radius: 12px; background: var(--primary-light); border: 1px solid var(--primary-line); font-size: 13px; color: var(--ink); }
+
 /* ── 이야기: 장 ── */
 .album { display: flex; flex-direction: column; gap: 26px; }
 .chapter + .chapter { padding-top: 24px; border-top: 1px dashed var(--line); }

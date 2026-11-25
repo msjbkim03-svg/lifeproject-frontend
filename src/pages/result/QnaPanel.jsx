@@ -1,6 +1,7 @@
 // C20 이 삶에 대해 묻기 — 그 사람에게 직접 묻는 대화 (11/25 다시 만듦)
-// GET  /api/qa/{lifeId}?guestToken=...           → 지난 질문·답변
-// POST /api/qa/{lifeId}  { question, guestToken } → 그 사람이 1인칭으로 답함 (근거: 그 인생 기록 + 나라·시대 자료(DB))
+// POST /api/qa/{lifeId}  { question, guestToken, sinceQaId } → 그 사람이 1인칭으로 답함 (근거: 그 인생 기록 + 나라·시대 자료(DB))
+//   묻기 탭을 열 때마다 새 대화 (11/25 동현님): 지난 대화는 불러오지 않고, AI도 이번 대화(sinceQaId 부터)만 참고
+//   (지난 질문은 DB QA_LOG 에 남아 질문 수 제한(인생당 30개)에만 쓰임)
 //   13살 전에 떠난 아이는 어머니가 대신 답함 (백엔드 QaService.speaker 와 같게)
 //   추천 질문은 이 인생에 맞춰 만듦 (이민 · 일 · 결혼 · 자녀 · 가장 행복했던 때)
 //   답변 속 [1], [2] 는 그 답변 아래 출처 번호
@@ -11,6 +12,7 @@ import Button from '../../common/ui/Button';
 import Figure from '../../engine/village/Figure';
 import { lookOf } from '../../engine/village/costumeData';
 import { ro } from '../../engine/play/lifeText';
+import { retireAge } from '../../engine/film/filmPlan';
 import styles from './AiPanels.module.css';
 
 const MAX_LENGTH = 200; // 백엔드 QaService.MAX_QUESTION_LENGTH 와 같게
@@ -46,12 +48,13 @@ function suggestionsOf(r, happyAge, child) {
   }
   const q = [];
   if (r.currentCountry && r.currentCountry !== r.birthCountry) q.push(`${ro(r.currentCountryName)} 떠날 때 어땠어요?`);
-  const job = (r.years || []).map((y) => y.jobName).filter(Boolean);
+  const ret = retireAge(r.events, r.years);
+  const job = (r.years || []).filter((y) => y.age < ret).map((y) => y.jobName).filter(Boolean);
   if (job.length) {
     const most = Object.entries(job.reduce((m, j) => ({ ...m, [j]: (m[j] || 0) + 1 }), {})).sort((a, b) => b[1] - a[1])[0][0];
     q.push(`${most} 일은 어땠어요?`);
   }
-  if (happyAge != null) q.push(`${happyAge}세 무렵이 가장 행복하셨죠? 그때 이야기 들려주세요.`);
+  if (happyAge != null) q.push(`${happyAge}세 무렵엔 어떻게 지내셨어요?`); // '가장 행복하셨죠?'라고 단정하면 기록과 어긋날 때 AI가 부정함 (11/25)
   if ((r.weddingCount || 0) > 0 || r.marriedYn === 'Y') q.push('결혼할 때 이야기 들려주세요.');
   if (r.childCount > 0) q.push('아이들은 어떻게 키우셨어요?');
   q.push('그 시절 사람들은 어떻게 살았어요?');
@@ -73,12 +76,6 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
     : lookOf({ gender: r.gender, age: r.deathAge, costume })), [child, r, costume]);
 
   useEffect(() => {
-    client.get(`/api/qa/${lifeId}`, { params: { guestToken: guestToken(linkToken) } })
-      .then((res) => setList(res.data))
-      .catch(() => setError('지난 대화를 불러오지 못했어요.'));
-  }, [lifeId, linkToken]);
-
-  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [list, asking]);
 
@@ -91,7 +88,8 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
     setAsking(text);
     setQuestion('');
     setError('');
-    client.post(`/api/qa/${lifeId}`, { question: text, guestToken: guestToken(linkToken) }, { timeout: 60000 })
+    const sinceQaId = list.length ? list[0].qaId : null; // 이번 대화의 첫 질문 번호
+    client.post(`/api/qa/${lifeId}`, { question: text, guestToken: guestToken(linkToken), sinceQaId }, { timeout: 60000 })
       .then((res) => setList((old) => [...old, res.data]))
       .catch((err) => {
         const msg = err.response?.data;
