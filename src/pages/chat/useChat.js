@@ -44,9 +44,10 @@ function useChat(countryCode, me) {
   useEffect(() => {
     if (!countryCode) return;
     let alive = true;
+    let gotWsPlayers = false; // 웹소켓 명단이 먼저 도착했으면 늦게 온 HTTP 응답으로 덮어쓰지 않음
 
     client.get(`/api/chat/${countryCode}/players`)
-      .then((resp) => { if (alive) setPlayers(resp.data); })
+      .then((resp) => { if (alive && !gotWsPlayers) setPlayers(resp.data); })
       .catch(() => {});
 
     const stomp = new Client({
@@ -61,7 +62,10 @@ function useChat(countryCode, me) {
           const m = { ...JSON.parse(msg.body), at: Date.now() };
           setMessages((prev) => [...prev, m].slice(-30));
         }, who);
-        stomp.subscribe(`/topic/chat/${countryCode}/players`, (msg) => setPlayers(JSON.parse(msg.body)), who);
+        stomp.subscribe(`/topic/chat/${countryCode}/players`, (msg) => {
+          gotWsPlayers = true;
+          setPlayers(JSON.parse(msg.body));
+        }, who);
         stomp.subscribe(`/topic/chat/${countryCode}/move`, (msg) => {
           const p = JSON.parse(msg.body);
           setPlayers((prev) => prev.map((x) => (x.memberId === p.memberId ? { ...x, ...p } : x)));
@@ -84,16 +88,19 @@ function useChat(countryCode, me) {
     };
   }, [countryCode]);
 
+  // 입장·나이 변경·로그인 전환(myId 변경) 시 서버에 내 정보 전송
+  // (토큰 자동 연장으로 token 문자열만 바뀔 때는 myId 가 같아서 불필요하게 다시 보내지 않음)
   useEffect(() => {
     if (!connected || !stompRef.current) return;
+    const currentToken = localStorage.getItem("token");
     stompRef.current.publish({
       destination: `/app/chat/${countryCode}/join`,
       body: JSON.stringify({
-        token, memberId: myId, guestToken: token ? null : localStorage.getItem("guestToken"),
+        token: currentToken, memberId: myId, guestToken: currentToken ? null : localStorage.getItem("guestToken"),
         age: me.age, gender: me.gender, ...myPos.current,
       }),
     });
-  }, [connected, token, myId ,countryCode, me.age, me.gender]);
+  }, [connected, myId, countryCode, me.age, me.gender]);
 
   useEffect(() => {
     const ends = messages.filter((m) => m.at + BUBBLE_MS > now).map((m) => m.at + BUBBLE_MS);

@@ -26,13 +26,13 @@ function Header() {
   const nickname = localStorage.getItem('nickname');
   const isAdmin = localStorage.getItem('memberRole') === 'ADMIN';
 
-  // 로그아웃: 저장해 둔 토큰·닉네임·권한을 지우고 메인으로
+  // 로그아웃: 저장해 둔 토큰·닉네임·권한을 지우고 메인으로 새로 이동 (화면에 남아 있던 회원 이어하기 상태도 비움)
   // (비회원 임시 토큰 guestToken 은 다른 키라서 지우지 않음)
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('nickname');
     localStorage.removeItem('memberRole');
-    navigate('/');
+    window.location.href = '/';
   };
 
   const navClass = ({ isActive }) => (isActive ? 'on' : '');
@@ -78,7 +78,7 @@ function Header() {
           ) : (
             <>
               <Button size="sm" onClick={() => navigate('/login', { state: { background } })}>로그인</Button>
-              <Button size="sm" type="light" onClick={() => navigate('/join')}>회원가입</Button>
+              <Button size="sm" type="light" onClick={() => navigate('/join', { state: { returnTo: background } })}>회원가입</Button>
             </>
           )}
         </div>
