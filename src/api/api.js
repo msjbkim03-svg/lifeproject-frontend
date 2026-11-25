@@ -35,13 +35,29 @@ client.interceptors.request.use((config) => {
 
 // 응답을 받은 직후 실행됨
 // → 서버가 새 토큰(New-Token)을 주면 바꿔 끼움 (게임하는 동안 로그인 자동 연장)
-client.interceptors.response.use((resp) => {
-  const newToken = resp.headers['new-token'];
-  // 로그아웃한 뒤에 늦게 도착한 응답이면 바꾸지 않음 (로그인 정보가 되살아나지 않게)
-  if (newToken && localStorage.getItem('token')) {
-    localStorage.setItem('token', newToken);
+client.interceptors.response.use(
+  (resp) => {
+    const newToken = resp.headers['new-token'];
+    // 로그아웃한 뒤에 늦게 도착한 응답이면 바꾸지 않음 (로그인 정보가 되살아나지 않게)
+    if (newToken && localStorage.getItem('token')) {
+      localStorage.setItem('token', newToken);
+    }
+    return resp;
+  },
+  // 서버가 401(로그인이 무효: 비밀번호가 바뀌었거나 탈퇴 처리됨)을 주면
+  // → 남아 있는 로그인 정보를 지우고 로그인 화면으로 (로그인·찾기 요청의 401 은 그대로 둠)
+  (err) => {
+    const url = err.config?.url || '';
+    const skip = url.includes('/api/members/login') || url.includes('/api/members/find');
+    if (err.response?.status === 401 && localStorage.getItem('token') && !skip
+        && window.location.pathname !== '/login') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('nickname');
+      localStorage.removeItem('memberRole');
+      window.location.href = '/login?expired=1';
+    }
+    return Promise.reject(err);
   }
-  return resp;
-});
+);
 
 export default client;

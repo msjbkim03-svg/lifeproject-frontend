@@ -15,21 +15,11 @@
   color: var(--ink-sub);
 }
 
+/* 입력칸 = 공통 .input (design.css: 높이 44px · 테두리 · 포커스 빛) + 여기서는 남은 너비 채우기만 */
 .input {
+  composes: input from global;
   flex: 1;
-  height: 42px;
-  padding: 0 12px;
-  background: var(--bg-deep);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primary);
+  min-width: 0;
 }
 
 /* 아이디 칸 (못 바꿈) */
@@ -55,12 +45,16 @@
 
 .error {
   color: var(--red);
-  border: 1px solid var(--red);
+  background: var(--red-soft);
+  border: 1px solid var(--red-line);
+  border-radius: var(--radius);
 }
 
 .ok {
   color: var(--green);
-  border: 1px solid var(--green);
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
 }
 
 /* 취소 · 저장하기 버튼 (오른쪽 정렬) */
