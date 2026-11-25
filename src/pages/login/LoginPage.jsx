@@ -12,6 +12,7 @@ function LoginPage() {
   const expired = new URLSearchParams(location.search).get("expired");
   const notice = location.state?.message || (expired ? "로그인이 만료됐어요. 다시 로그인하면 이어서 살 수 있어요." : null);
   const background = location.state?.background;
+  const returnTo = background || location.state?.returnTo;
 
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +52,7 @@ function LoginPage() {
       if (resp.data.guestConverted) {
         localStorage.removeItem("guestToken");
       }
-      goBack();
+      goBack(resp.data.guestConverted);
     } catch (err) {
       setError(err.response?.data?.message || "아이디 또는 비밀번호가 맞지 않아요.");
     } finally {
@@ -66,10 +67,11 @@ function LoginPage() {
     localStorage.setItem("memberRole", data.memberRole);
   };
 
-  // 로그인 끝 → 팝업으로 로그인했으면 뒤에 깔려 있던 화면(플레이·추모관 등)으로, 아니면 메인
+  // 로그인 끝 → 팝업·가입 전 화면(플레이·추모관 등)이 있으면 그곳으로, 비회원 인생을 전환했으면 플레이 화면으로, 아니면 메인
   // ※ 플레이 화면은 비회원 인생을 들고 있어서, 화면을 새로 불러와야 회원 인생으로 다시 시작함
-  const goBack = () => {
-    if (background) window.location.href = background.pathname + background.search;
+  const goBack = (converted = false) => {
+    if (returnTo) window.location.href = returnTo.pathname + returnTo.search;
+    else if (converted) window.location.href = "/play";
     else navi("/");
   };
 
@@ -84,7 +86,7 @@ function LoginPage() {
         { headers: { Authorization: `Bearer ${pending.token}` } });
       saveLogin(pending);
       localStorage.removeItem("guestToken");
-      goBack();
+      goBack(true);
     } catch (err) {
       setError(err.response?.data?.message || "인생을 옮기지 못했어요.");
       setBusy(false);
@@ -147,9 +149,9 @@ function LoginPage() {
           </Button>
 
           <div className={styles.links}>
-            <Link to="/find" state={{ background }}>아이디·비밀번호 찾기</Link>
+            <Link to="/find" state={{ background, returnTo }}>아이디·비밀번호 찾기</Link>
             <span>|</span>
-            <Link to="/join">회원가입</Link>
+            <Link to="/join" state={{ returnTo }}>회원가입</Link>
           </div>
 
           <Button block className={styles.subBtn} onClick={() => navi("/")}>
