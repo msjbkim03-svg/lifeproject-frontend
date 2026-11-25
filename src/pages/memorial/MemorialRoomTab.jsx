@@ -37,7 +37,7 @@ function MemorialRoomTab() {
               big
               age={e.age}
               year={e.year}
-              text={<>{e.text}{e.source && <small className={s.source}> ({e.source})</small>}</>}
+              text={e.text}
             />
           ))
         )}

@@ -15,17 +15,37 @@ const isExpired = (token) => {
   }
 };
 
+// 회원 전용 요청인지 확인 (백엔드 WebConfig 의 LoginValidator 와 같은 기준)
+// → 비회원도 쓰는 주소(메인·추모관 보기·로그인·가입·중복확인·찾기 등)는 만료된 토큰만 지우고 요청을 그대로 보냄
+const isMemberOnly = (url = '') => {
+  if (url.startsWith('/api/quests') || url.startsWith('/api/admin')) return true;
+  if (url.startsWith('/api/members/')
+      && !url.startsWith('/api/members/login')
+      && !url.startsWith('/api/members/check')
+      && !url.startsWith('/api/members/find')) {
+    return true;
+  }
+  if (url.startsWith('/api/memorials/')
+      && (url.includes('/open') || url.includes('/candle') || url.includes('/comments'))) {
+    return true;
+  }
+  return false;
+};
+
 // 요청을 보내기 직전에 실행됨
 // → 로그인 토큰이 있으면 Authorization 헤더에 자동으로 붙여 줌
-// → 토큰이 이미 만료됐으면 로그인 정보를 지우고 로그인 화면으로 ("로그인이 만료됐어요" 안내)
+// → 토큰이 이미 만료됐으면 로그인 정보를 지우고, 회원 전용 요청이면 로그인 화면으로 ("로그인이 만료됐어요" 안내)
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token && isExpired(token)) {
     localStorage.removeItem('token');
     localStorage.removeItem('nickname');
     localStorage.removeItem('memberRole');
-    window.location.href = '/login?expired=1';
-    return Promise.reject(new Error('로그인이 만료됐어요.'));
+    if (isMemberOnly(config.url) && window.location.pathname !== '/login') {
+      window.location.href = '/login?expired=1';
+      return Promise.reject(new Error('로그인이 만료됐어요.'));
+    }
+    return config;
   }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

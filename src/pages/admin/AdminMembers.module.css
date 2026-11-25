@@ -26,6 +26,12 @@
   color: var(--green);
 }
 
+.error {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--red);
+}
+
 /* 회원 표 */
 .table {
   width: 100%;

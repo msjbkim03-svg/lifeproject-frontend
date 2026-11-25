@@ -17,6 +17,9 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false); // 로그인 중 (연타로 요청 여러 번 막기)
+  // 회원 인생과 비회원 인생 중 무엇을 이어갈지 묻는 중이면 로그인 응답을 여기 잠깐 맡겨 둠
+  // (고르기 전에 팝업을 닫으면 로그인하지 않은 것으로 → 하던 비회원 인생이 그대로 이어짐)
+  const [pending, setPending] = useState(null);
 
   // 이미 로그인한 상태로 들어오면 메인으로
   useEffect(() => {
@@ -39,23 +42,84 @@ function LoginPage() {
 
       const resp = await client.post("/api/members/login", { loginId, password, guestToken });
 
-      localStorage.setItem("token", resp.data.token);
-      // 헤더에 보여줄 닉네임, 관리자 메뉴용 권한도 저장
-      localStorage.setItem("nickname", resp.data.nickname);
-      localStorage.setItem("memberRole", resp.data.memberRole);
+      // 회원에게 이미 진행 중인 인생이 있는데 비회원으로 하던 인생도 있음 → 저장하기 전에 어느 쪽을 이어갈지 물어봄
+      if (resp.data.guestPending) {
+        setPending(resp.data);
+        return;
+      }
+      saveLogin(resp.data);
       if (resp.data.guestConverted) {
         localStorage.removeItem("guestToken");
       }
-
-      // 팝업으로 로그인했으면 뒤에 깔려 있던 화면(추모관·플레이 등)으로 돌아감, 아니면 메인
-      if (background) navi(background.pathname + background.search, { replace: true });
-      else navi("/");
+      goBack();
     } catch (err) {
       setError(err.response?.data?.message || "아이디 또는 비밀번호가 맞지 않아요.");
     } finally {
       setBusy(false);
     }
   };
+
+  // 로그인 정보 저장 (헤더에 보여 줄 닉네임, 관리자 메뉴용 권한도)
+  const saveLogin = (data) => {
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("nickname", data.nickname);
+    localStorage.setItem("memberRole", data.memberRole);
+  };
+
+  // 로그인 끝 → 팝업으로 로그인했으면 뒤에 깔려 있던 화면(플레이·추모관 등)으로, 아니면 메인
+  // ※ 플레이 화면은 비회원 인생을 들고 있어서, 화면을 새로 불러와야 회원 인생으로 다시 시작함
+  const goBack = () => {
+    if (background) window.location.href = background.pathname + background.search;
+    else navi("/");
+  };
+
+  // [비회원 인생 이어가기] → 회원이 하던 인생은 포기하고 비회원 인생을 회원 인생으로 옮김
+  const takeGuest = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      // 아직 저장 전이라 토큰을 직접 붙여 보냄
+      await client.post("/api/members/me/takeGuestLife", { guestToken: localStorage.getItem("guestToken") },
+        { headers: { Authorization: `Bearer ${pending.token}` } });
+      saveLogin(pending);
+      localStorage.removeItem("guestToken");
+      goBack();
+    } catch (err) {
+      setError(err.response?.data?.message || "인생을 옮기지 못했어요.");
+      setBusy(false);
+    }
+  };
+
+  // [원래 인생 이어가기] → 비회원 인생은 두고(7일 뒤 정리) 회원 인생으로
+  const keepMine = () => {
+    saveLogin(pending);
+    localStorage.removeItem("guestToken");
+    goBack();
+  };
+
+  // 어느 인생을 이어갈지 고르는 화면
+  if (pending) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <div className={styles.cardTitle}>이미 진행 중인 인생이 있어요</div>
+          <div className={styles.cardBody}>
+            <p className={styles.hint}>이 계정에는 이어서 하던 인생이 있어요. 어느 인생을 이어서 할까요?</p>
+            {error && <div className={styles.errorBox}>{error}</div>}
+            <Button type="primary" size="lg" block className={styles.mainBtn} disabled={busy} onClick={takeGuest}>
+              {busy ? "옮기는 중…" : "지금 하던 비회원 인생 이어가기"}
+            </Button>
+            <p className={styles.hint}>계정에서 하던 원래 인생은 포기돼요.</p>
+            <Button block className={styles.subBtn} disabled={busy} onClick={keepMine}>
+              계정의 원래 인생 이어가기
+            </Button>
+            <p className={styles.hint}>지금 하던 비회원 인생은 이어서 할 수 없어요.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

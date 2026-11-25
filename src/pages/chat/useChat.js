@@ -147,7 +147,8 @@ function useChat(countryCode, me) {
     setError("");
     stompRef.current.publish({
       destination: `/app/chat/${countryCode}`,
-      body: JSON.stringify({ token, content }),
+      // 게임하는 동안 토큰이 자동 연장(New-Token)될 수 있어서 보내는 순간의 토큰을 새로 읽음
+      body: JSON.stringify({ token: localStorage.getItem("token"), content }),
     });
   };
 
