@@ -1,5 +1,6 @@
 // C19 AI 인생 이야기 — 사진첩처럼 나이대별 장 (11/25 다시 만듦)
-// GET /api/story/{lifeId}?guestToken=...  → 처음엔 Gemini가 만들어 저장(5~15초), 다음부터는 바로 나옴
+// GET /api/story/{lifeId}?guestToken=...&scenes=16:grad,18:work  → 처음엔 Gemini가 만들어 저장(5~15초), 다음부터는 바로 나옴
+//   scenes: 장마다 붙일 큰 장면 사진의 '나이:장면' → 서버가 그 장 글에 그 일을 꼭 쓰게 함 (11/25: 18세 일 시작 사진은 10대인데 글은 청년기에 있던 것)
 //   이야기는 '## 어린 시절 (0~12세)' 같은 장 제목 줄로 나뉘어 옴 → 장마다 그 나이의 큰 장면 사진을 붙임
 //   장 제목이 없는 예전 이야기는 문단만 그대로 보여 줌
 //   이야기 속 [1], [2] 는 아래 출처 목록 번호
@@ -54,12 +55,13 @@ function StoryPanel({ lifeId, guestToken: linkToken, moments = [], segs, onPhoto
   const [story, setStory] = useState(null);
   const [error, setError] = useState('');
   const [tryNo, setTryNo] = useState(0); // 다시 시도 버튼용
+  const scenes = moments.map((m) => `${m.a}:${m.scene || 'village'}`).join(','); // 글자로 바꿔서 넘김 (배열은 그릴 때마다 새로 만들어져서)
 
   useEffect(() => {
     const isLogin = !!localStorage.getItem('token');
     const guestToken = linkToken || (isLogin ? null : localStorage.getItem('guestToken'));
     let alive = true;
-    client.get(`/api/story/${lifeId}`, { params: { guestToken }, timeout: 60000 })
+    client.get(`/api/story/${lifeId}`, { params: { guestToken, scenes: scenes || undefined }, timeout: 70000 }) // 고쳐 쓰기까지 하면 길게는 1분
       .then((res) => { if (alive) { setStory(res.data); setError(''); } })
       .catch((err) => {
         if (!alive) return;
@@ -67,7 +69,7 @@ function StoryPanel({ lifeId, guestToken: linkToken, moments = [], segs, onPhoto
         setError(typeof msg === 'string' && msg ? msg : 'AI 이야기를 불러오지 못했어요.');
       });
     return () => { alive = false; };
-  }, [lifeId, tryNo, linkToken]);
+  }, [lifeId, tryNo, linkToken, scenes]);
 
   if (error) {
     return (
@@ -82,7 +84,7 @@ function StoryPanel({ lifeId, guestToken: linkToken, moments = [], segs, onPhoto
       <div className={styles.box}>
         <div className={styles.loading}>
           <span className={styles.pen} aria-hidden="true">✎</span>
-          <p>AI가 이 사람의 일생을 실제 역사 자료와 함께 정리하고 있어요…<br /><small>처음 한 번만 길게는 30초쯤 걸려요. 다음부터는 바로 열려요.</small></p>
+          <p>AI가 이 사람의 일생을 실제 역사 자료와 함께 정리하고 있어요…<br /><small>처음 한 번만 길게는 1분쯤 걸려요. 다음부터는 바로 열려요.</small></p>
         </div>
       </div>
     );
