@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
@@ -23,6 +23,12 @@ function JoinPage() {
     nickname: "",
     email: "",
     phone: "",
+  });
+
+  // 입력값의 최신 상태 (중복 확인 응답이 늦게 왔을 때, 그 사이 값이 바뀌었는지 보려고)
+  const formRef = useRef(form);
+  useEffect(() => {
+    formRef.current = form;
   });
 
   // 개인정보 수집·이용 동의 (필수)
@@ -59,13 +65,24 @@ function JoinPage() {
     }
   };
 
+  // 그 칸의 통과 여부와 안내 문구를 함께 바꿈 (다른 칸은 그대로 두는 방식이라 연달아 눌러도 안 꼬임)
+  const setHint = (field, ok, text) => {
+    setChecked((prev) => ({ ...prev, [field]: ok }));
+    setMsg((prev) => ({ ...prev, [field]: text }));
+  };
+
   // ② 중복 확인 버튼 (field = 'loginId' | 'nickname' | 'email')
   const checkDuplicate = async (field) => {
     const value = form[field];
-    if (!value) {
-      setMsg({ ...msg, [field]: "먼저 입력해 주세요." });
-      return;
-    }
+    if (!value) return setHint(field, false, "먼저 입력해 주세요.");
+
+    const nick = value.trim();
+    const rules = {
+      loginId: [/^[a-zA-Z0-9]{4,20}$/.test(value), "아이디는 영문·숫자 4~20자로 입력해 주세요."],
+      nickname: [nick.length >= 2 && nick.length <= 10, "닉네임은 2~10자로 입력해 주세요."],
+      email: [/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(value.trim()), "이메일 형식이 맞지 않아요."],
+    };
+    if (!rules[field][0]) return setHint(field, false, rules[field][1]);
 
     const urls = {
       loginId: `/api/members/checkId?loginId=${encodeURIComponent(value)}`,
@@ -75,15 +92,11 @@ function JoinPage() {
 
     try {
       const resp = await client.get(urls[field]); // 서버에 물어보기
-      if (resp.data.available) {
-        setChecked({ ...checked, [field]: true });
-        setMsg({ ...msg, [field]: "사용할 수 있어요." });
-      } else {
-        setChecked({ ...checked, [field]: false });
-        setMsg({ ...msg, [field]: "이미 사용 중이에요." });
-      }
+      if (formRef.current[field] !== value) return; // 기다리는 사이 값을 고쳤으면 이 응답은 버림
+      if (resp.data.available) setHint(field, true, "사용할 수 있어요.");
+      else setHint(field, false, "이미 사용 중이에요.");
     } catch {
-      setMsg({ ...msg, [field]: "서버에 연결할 수 없어요." });
+      setHint(field, false, "서버에 연결할 수 없어요.");
     }
   };
 

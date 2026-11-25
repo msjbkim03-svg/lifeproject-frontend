@@ -48,6 +48,8 @@ function EditPage() {
   // 2. 닉네임 중복 확인 (원래 닉네임 그대로면 확인 필요 없음)
   const checkNickname = async () => {
     if (nickname === my.nickname) return setNickMsg("지금 쓰는 닉네임이에요.");
+    const nick = nickname.trim();
+    if (nick.length < 2 || nick.length > 10) return setNickMsg("닉네임은 2~10자로 입력해 주세요.");
     try {
       const resp = await client.get("/api/members/checkNickname", { params: { nickname } });
       setNickMsg(resp.data.available ? "사용할 수 있는 닉네임이에요." : "이미 사용 중인 닉네임이에요.");
@@ -59,6 +61,7 @@ function EditPage() {
   // 3. 이메일 중복 확인
   const checkEmail = async () => {
     if (!emailChanged) return setEmailMsg("지금 쓰는 이메일이에요.");
+    if (!/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(email.trim())) return setEmailMsg("이메일 형식이 맞지 않아요.");
     try {
       const resp = await client.get("/api/members/checkEmail", { params: { email } });
       setEmailMsg(resp.data.available ? "사용할 수 있는 이메일이에요." : "이미 사용 중인 이메일이에요.");
