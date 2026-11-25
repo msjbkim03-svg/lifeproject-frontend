@@ -26,6 +26,18 @@ import './village.css';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const idxOf = (id) => Math.max(0, PLACES.findIndex((p) => p.id === id));
 
+// 교도소·군 부대에서는 입은 코스튬(C21) 대신 수형복·군복으로 덮어씀 (머리 모양은 그대로)
+//   그림은 Figure 에 이미 있는 모양 재활용: stripe 줄무늬 옷, tee 티셔츠, cap 모자
+const UNIFORM = {
+  prison: { top: { style: 'stripe', color: '#7d8794' }, hat: null, pants: '#6b7380', shoe: '#3a3a3a' },
+  barracks: { top: { style: 'army', color: '#5a6b3a' }, hat: { style: 'army', color: '#5a6b3a' }, pants: '#4e5f36', shoe: '#2b2a28' },
+};
+function myLook({ gender, age, costume, kind }) {
+  const look = lookOf({ gender, age, costume });
+  const u = UNIFORM[kind];
+  return u ? { ...look, ...u } : look;
+}
+
 // ───────── 그림 부품 (SVG 320 × 130, 땅은 y 92 부터) ─────────
 
 // ───────── 하늘 날씨 (행복에 따라, 원작 mood) ─────────
@@ -1207,7 +1219,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       {/* 나 */}
       <div className={'v-person me ' + ageGroup(age) + ' ' + dir + (walking ? ' walking' : '')} style={{ left: x + '%', top: GROUND_Y + '%' }}>
         {myMessage && <div className="v-bubble mine">{myMessage}</div>}
-        <Figure look={lookOf({ gender, age, costume })} />
+        <Figure look={myLook({ gender, age, costume, kind: house.kind })} />
         <div className="v-name mine">나{age != null && ', ' + age + '세'}</div>
       </div>
 
