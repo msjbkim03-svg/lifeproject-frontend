@@ -46,13 +46,16 @@ function App() {
         <Route path="/join" element={<JoinPage />} />
         <Route path="/find" element={<FindPage />} />
 
-        <Route path="/mypage" element={<MyPageLayout />}>
-          <Route index element={<MyPage />} />             
-          <Route path="edit" element={<EditPage />} />     
-          <Route path="lives" element={<LivesPage />} />   
-          <Route path="traits" element={<TraitsPage />} /> 
+        <Route path="/my" element={<MyPageLayout />}>
+          <Route index element={<MyPage />} />
+          <Route path="edit" element={<EditPage />} />
         </Route>
-        
+
+        <Route path="/life" element={<MyPageLayout />}>
+          <Route path="lives" element={<LivesPage />} />
+          <Route path="traits" element={<TraitsPage />} />
+        </Route>
+
         {/* C01 퀘스트 설정 (회원이 태어나기 전) */}
         <Route path="/quest" element={<QuestPage />} />
         {/* C02 출생 추첨 */}
@@ -61,6 +64,7 @@ function App() {
         <Route path="/play" element={<PlayPage />} />
         {/* C18 인생 결과 */}
         <Route path="/result/:lifeId" element={<ResultPage />} />
+
         {/* B01 추모관 목록 (헤더·메인 [추모관]) → 방 */}
         <Route path="/memorial" element={<MemorialListPage />} />
         <Route path="/memorial/:lifeId" element={<MemorialRoomPage />}>
@@ -70,6 +74,7 @@ function App() {
           <Route path="guest" element={<MemorialGuestTab />} />
           <Route path="last" element={<MemorialLastTab />} />
         </Route>
+        
         {/* A04 관리자 메인 */}
          <Route path="/admin" element={<AdminMain />} />
         {/* A03 이벤트 관리 · C10 역사 문장 검수 (관리자만, 서버가 권한 확인) */}

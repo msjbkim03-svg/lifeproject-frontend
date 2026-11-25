@@ -1,9 +1,12 @@
 import { useOutletContext } from "react-router-dom";
 import MemorialFuneral from "./MemorialFuneral";
+import MemorialScene from "./MemorialScene";
+import { withWear } from "./memorialFilm";
+import { funeralText } from "./memorialData";
 import s from "./MemorialRoom.module.css";
 
 // 마지막 순간 탭  주소: /memorial/:lifeId/last
-// 빈소 그림(영정 · 국화 단 · 관) + 장례 설명 + 묘비판 + 마지막 문장
+// 장례 장면 그림(사진첩의 장례 사진과 같음) + 장례 문장(누가 배웅했는지) + 묘비판 + 마지막 문장
 function MemorialLastTab() {
   const { room, film, plan } = useOutletContext();
   // 영정 사진 = 엔딩 영상의 '마지막 장면'(death) 속 내 모습 그대로 (세상을 떠난 나이 · 성별 · 그 생에 입은 옷)
@@ -14,14 +17,28 @@ function MemorialLastTab() {
     age: last?.age ?? room.deathAge,
     costume: film?.wear,
   };
+  const family = film?.film?.life?.family;
+  const funeral = family ? funeralText(family) : null; // 영상 재료가 없으면 서버 글로 대신
+  const fv = plan?.seg.find((x) => x.kind === "funeral")?.v;
+  const funeralV = fv ? withWear(fv, film?.wear) : null;
   const days = Math.round(room.deathAge * 365.25); // 산 날 수 (대략)
 
   return (
     <>
-      {/* 영정 속 모습 = 내 마지막 모습 (영상 마지막 장면 · 왼쪽 초상과 같은 사람) */}
-      <MemorialFuneral gender={me.gender} age={me.age} costume={me.costume} />
-      {room.last.scene && <p className={s.lastText}>{room.last.scene}</p>}
-      {room.last.mourners && <p className={s.muted}>{room.last.mourners}</p>}
+      {/* 장례 그림 = 사진첩과 같은 영상 장례 장면 (가족 · 내 마지막 모습) (영상 재료가 없으면 빈소 그림) */}
+      {funeralV ? (
+        <MemorialScene v={funeralV} live />
+      ) : (
+        <MemorialFuneral gender={me.gender} age={me.age} costume={me.costume} />
+      )}
+      {funeral ? (
+        <>
+          <p className={s.lastText}>{funeral.title}</p>
+          <p className={s.muted}>{funeral.people}</p>
+        </>
+      ) : (
+        room.last.mourners && <p className={s.muted}>{room.last.mourners}</p>
+      )}
 
       {/* 묘비판 */}
       <div className={s.plaque}>

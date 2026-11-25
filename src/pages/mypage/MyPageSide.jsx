@@ -8,12 +8,12 @@ import styles from "./MyPage.module.css";
 // 예: <MyPageSide active="edit" nickname="민승" loginId="msj01" />
 // active: 지금 보고 있는 메뉴 → 'home' / 'edit' / 'lives' / 'traits'
 const HOME_MENUS = [
-  { key: "home", label: "마이페이지", path: "/mypage" },
-  { key: "edit", label: "개인정보 수정", path: "/mypage/edit" },
+  { key: "home", label: "마이페이지", path: "/my" },
+  { key: "edit", label: "개인정보 수정", path: "/my/edit" },
 ];
 const LIFE_MENUS = [
-  { key: "lives", label: "전생 기록", path: "/mypage/lives" },
-  { key: "traits", label: "특성 강화", path: "/mypage/traits" },
+  { key: "lives", label: "전생 기록", path: "/life/lives" },
+  { key: "traits", label: "특성 강화", path: "/life/traits" },
 ];
 
 function MyPageSide({ active, nickname, loginId }) {

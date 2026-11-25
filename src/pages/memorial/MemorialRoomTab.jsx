@@ -8,7 +8,7 @@ import MemorialCommentList from "./MemorialCommentList";
 import s from "./MemorialRoom.module.css";
 
 // 방 탭  주소: /memorial/:lifeId
-// 픽셀 방 + 삶이 남긴 것 + 이 삶이 만난 세상(큰 사건 3개) + 사진첩·방명록 미리보기
+// 픽셀 방 + 삶이 남긴 것 + 이 삶이 만난 길(큰 사건) + 사진첩·방명록 미리보기
 // 방 = 엔딩 영상(C22)의 마지막 해 집 장면을 계속 돌림 / 사진 = 사진첩과 같은 영상 장면 앞 3장
 function MemorialRoomTab() {
   const { room, base, film, plan } = useOutletContext();
@@ -27,7 +27,7 @@ function MemorialRoomTab() {
       )}
 
       <section className={s.section}>
-        <h3 className={s.secTitle}>이 삶이 만난 세상</h3>
+        <h3 className={s.secTitle}>이 삶이 만난 길</h3>
         {room.events.length === 0 ? (
           <p className={s.muted}>기록된 큰 사건이 없어요.</p>
         ) : (

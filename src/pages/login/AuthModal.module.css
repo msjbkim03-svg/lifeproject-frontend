@@ -8,7 +8,9 @@
   display: flex;
   overflow-y: auto;
   padding: var(--sp-4) var(--sp-3);
-  background: var(--scrim); /* 공통 Modal 과 같은 뒤 배경 (테마마다 알맞게) */
+  /* 공통 뒤 배경(--scrim, 테마마다 알맞게) 위에 검은 막을 한 겹 더 → 뒤 화면이 덜 비쳐 보임
+     더 진하게 하려면 0.55 를 키우면 됨 (0 = 원래대로, 1 = 완전 검정) */
+  background: linear-gradient(rgba(10, 14, 22, 0.55), rgba(10, 14, 22, 0.55)), var(--scrim);
   animation: fadeIn 0.25s ease-out both;
 }
 
@@ -22,6 +24,14 @@
 /* 페이지 안의 바깥 여백은 팝업에선 빼기 */
 .box > div {
   padding: 0;
+}
+
+/* 팝업 안 카드(로그인 · 회원가입 · 찾기)는 반투명 유리 대신 꽉 찬 색으로 → 뒤가 비쳐 보이지 않게
+   --panel 은 밝은 모드 · 다크 모드마다 알맞은 카드 색 (design.css) */
+.box :global(.panel) {
+  background: var(--panel);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .closeBtn {

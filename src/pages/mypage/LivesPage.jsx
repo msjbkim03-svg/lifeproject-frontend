@@ -5,7 +5,11 @@ import Button from "../../common/ui/Button";
 import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (main, card, stats, life …)
 import styles from "./LivesPage.module.css"; // 표·페이지 번호만
 
-// 전생 기록 (M07)  주소: /mypage/lives
+// 마지막으로 받은 전생 기록을 기억해 둠 (다른 화면에 갔다 와도 '불러오는 중…' 없이 바로 보여 주고, 뒤에서 새로 받음)
+//   키에 로그인 아이디를 넣어서 다른 사람 기록이 섞이지 않게 함
+const cache = {};
+
+// 전생 기록 (M07)  주소: /life/lives
 // 와이어프레임 17쪽: 숫자 칸 3개 + 진행 중인 인생 + 인생 목록(10개씩, 최신순/오래 산 순) + 페이지 번호
 function LivesPage() {
   const navi = useNavigate();
@@ -13,18 +17,19 @@ function LivesPage() {
 
   const [page, setPage] = useState(1);        // 지금 페이지
   const [sort, setSort] = useState("recent"); // recent 최신순 / age 오래 산 순
-  const [data, setData] = useState(null);     // 서버 응답 { total, size, questDone, pointSum, lives }
+  const [data, setData] = useState(() => cache[`${my.loginId}:1:recent`] ?? null); // 서버 응답 { total, size, questDone, pointSum, lives }
   const [loadError, setLoadError] = useState(false); // 불러오기 실패 (빈 목록과 구분)
 
   // 페이지나 정렬이 바뀔 때마다 서버에 다시 물어봄
   useEffect(() => {
     client.get("/api/members/me/lives", { params: { page, sort } })
       .then((resp) => {
+        cache[`${my.loginId}:${page}:${sort}`] = resp.data;
         setData(resp.data);
         setLoadError(false);
       })
       .catch(() => setLoadError(true)); // 오류를 '기록 없음'으로 보이지 않게
-  }, [page, sort]);
+  }, [page, sort, my.loginId]);
 
   // 정렬을 바꾸면 1페이지부터
   const changeSort = (e) => {

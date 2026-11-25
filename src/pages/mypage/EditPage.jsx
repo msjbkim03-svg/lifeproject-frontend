@@ -7,7 +7,7 @@ import { formatPhone } from "../../utils/phone";
 import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (container, card, title …)
 import styles from "./EditPage.module.css"; // 이 화면만 쓰는 입력칸 모양
 
-// 개인정보 수정 (M05) + 회원 탈퇴 (M06)  주소: /mypage/edit
+// 개인정보 수정 (M05) + 회원 탈퇴 (M06)  주소: /my/edit
 // 와이어프레임 16쪽
 function EditPage() {
   const navi = useNavigate();
@@ -124,7 +124,7 @@ function EditPage() {
       setMessage("저장했어요.");
       // 헤더는 주소가 바뀔 때만 다시 그려짐 → 같은 주소로 한 번 더 들어가서 새 닉네임을 바로 보여 줌
       // (같은 화면이라 입력칸 · "저장했어요." 문구는 그대로 남음)
-      navi("/mypage/edit", { replace: true });
+      navi("/my/edit", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "저장하지 못했어요.");
     } finally {
@@ -166,7 +166,10 @@ function EditPage() {
         <p className={common.lead}>저장하려면 현재 비밀번호를 꼭 입력해 주세요. 아이디는 바꿀 수 없어요.</p>
 
         {/* ===== 개인정보 수정 (M05) ===== */}
-        <section className={common.card}>
+        {/* 카드 안을 [입력칸 | 안내 상자] 두 칸으로 나눔 */}
+        <section className={`${common.card} ${styles.narrow}`}>
+          <div className={styles.editGrid}>
+          <div className={styles.form}>
           <div className={styles.row}>
             <label>아이디</label>
             <input className={styles.input} value={my.loginId} disabled />
@@ -231,23 +234,51 @@ function EditPage() {
           {message && <div className={styles.ok}>{message}</div>}
 
           <div className={styles.actions}>
-            <Button onClick={() => navi("/mypage")}>취소</Button>
+            <Button onClick={() => navi("/my")}>취소</Button>
             <Button type="primary" disabled={busy} onClick={save}>{busy ? "저장하는 중…" : "저장하기"}</Button>
+          </div>
+          </div>
+
+          {/* 오른쪽 안내 상자: 이 화면이 실제로 검사하는 규칙만 적음 */}
+          <aside className={styles.guide}>
+            <b className={styles.guideTitle}>수정할 때 알아 두세요</b>
+            <ul className={styles.guideList}>
+              <li><b>아이디</b>는 바꿀 수 없어요.</li>
+              <li><b>닉네임</b>은 2~10자이고, 바꿨다면 중복 확인을 해 주세요.</li>
+              <li>저장하려면 <b>현재 비밀번호</b>가 꼭 필요해요.</li>
+              <li><b>새 비밀번호</b>를 바꾸면 저장 후 로그아웃돼요. 새 비밀번호로 다시 로그인해 주세요.</li>
+              <li><b>이메일</b>을 바꾸면 새 이메일로 받은 6자리 인증번호를 넣어야 해요.</li>
+              <li><b>전화번호</b>는 010-1234-5678 모양으로 적어 주세요.</li>
+            </ul>
+          </aside>
           </div>
         </section>
 
         {/* ===== 회원 탈퇴 (M06) ===== */}
-        <section className={common.card}>
+        <section className={`${common.card} ${styles.narrow}`}>
           <div className={common.cardHead}>
             <span className={common.cardTitle}>회원 탈퇴</span>
           </div>
-          <p className={common.desc}>탈퇴하면 다시 로그인할 수 없어요. 비밀번호를 입력해 본인 확인을 해 주세요.</p>
-          <div className={styles.row}>
-            <input className={styles.input} type="password" value={withdrawPw} placeholder="비밀번호"
-              onChange={(e) => setWithdrawPw(e.target.value)} />
-            <Button type="danger" onClick={openConfirm}>회원 탈퇴</Button>
+          {/* 수정 카드와 같은 모양: [입력칸 | 안내 상자] */}
+          <div className={styles.editGrid}>
+            <div className={styles.form}>
+              <p className={common.desc}>탈퇴하면 다시 로그인할 수 없어요. 비밀번호를 입력해 본인 확인을 해 주세요.</p>
+              <div className={styles.row}>
+                <label>비밀번호</label>
+                <input className={styles.input} type="password" value={withdrawPw} placeholder="지금 비밀번호"
+                  onChange={(e) => setWithdrawPw(e.target.value)} />
+                <Button type="danger" onClick={openConfirm}>회원 탈퇴</Button>
+              </div>
+              {withdrawError && <div className={styles.error}>{withdrawError}</div>}
+            </div>
+
+            <aside className={styles.guide}>
+              <b className={styles.guideTitle}>탈퇴 전에 확인하세요</b>
+              <ul className={styles.guideList}>
+                <li>탈퇴하면 이 계정으로 <b>다시 로그인할 수 없어요.</b></li>
+              </ul>
+            </aside>
           </div>
-          {withdrawError && <div className={styles.error}>{withdrawError}</div>}
         </section>
       </main>
 
