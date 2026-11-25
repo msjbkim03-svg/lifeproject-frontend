@@ -224,7 +224,15 @@ function BirthPage() {
           <ul className={styles.facts}>
             <li>
               <span>태어난 집</span>
-              <strong><Spoon level={life.wealthClass} /> <small>{HOME_WORD[life.wealthClass] || ''}</small></strong>
+              {/* 상위 n% (11/25 동현님): 그 나라 소득 분포에서 태어난 집 자리 · 아시아 전체에서의 자리 (엔진 C02 계산) */}
+              {life.homeTopPct ? (
+                <strong className={styles.homePct}>
+                  <Spoon level={life.wealthClass} /> 상위 <em>{life.homeTopPct}%</em>
+                  <small>{life.countryName || '그 나라'} 기준{life.homeTopPctAsia ? ` · 아시아에서는 상위 ${life.homeTopPctAsia}%` : ''}</small>
+                </strong>
+              ) : (
+                <strong><Spoon level={life.wealthClass} /> <small>{HOME_WORD[life.wealthClass] || ''}</small></strong>
+              )}
             </li>
             <li>
               <span>사는 곳</span>

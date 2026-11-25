@@ -116,3 +116,9 @@
 @media (max-width: 640px) {
   .ms-q { font-size: 50px; }
 }
+
+/* 실제 플레이어 목록 (11/25) */
+.ms-live { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--ink-light); }
+.ms-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #e8584c; animation: ms-blink 1.6s ease-in-out infinite; }
+@keyframes ms-blink { 50% { opacity: 0.25; } }
+.ms-empty { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-light); }
