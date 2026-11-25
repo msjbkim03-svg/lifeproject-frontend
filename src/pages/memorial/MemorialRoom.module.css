@@ -183,6 +183,26 @@
 .poster:hover .play { background: rgba(0, 0, 0, 0.82); }
 .fill { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
 
+/* 엔딩 영상(EndingFilm)을 화면 전체가 아니라 이 칸 안에서 재생
+   EndingFilm 은 원래 화면을 덮는 극장(.ef: fixed)이라서, 여기서만 칸 폭에 맞게 바꿈 (영상 파일은 그대로) */
+.filmBox {
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #040508;
+}
+.filmBox :global(.ef) {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  display: block;
+  min-height: 12rem;
+  background: transparent;
+}
+.filmBox :global(.ef-stage) { width: 100%; gap: 0; }
+.filmBox :global(.ef-frame) { width: 100%; border-radius: 0; box-shadow: none; }
+.filmBox :global(.ef-bar) { width: 100%; box-sizing: border-box; padding: 8px 12px; }
+.filmBox :global(.ef-msg) { padding: var(--sp-5) 0; }
+
 /* 초상 (영정 액자) - 테마와 상관없이 같은 색 */
 .portraitBox {
   display: flex;

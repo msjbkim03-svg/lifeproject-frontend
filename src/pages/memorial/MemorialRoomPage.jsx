@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
 import Panel from "../../common/ui/Panel";
@@ -16,6 +16,7 @@ import s from "./MemorialRoom.module.css";
 function MemorialRoomPage() {
   const { lifeId } = useParams();
   const navi = useNavigate();
+  const location = useLocation();
   const isLogin = !!localStorage.getItem("token");
 
   const [room, setRoom] = useState(null);
@@ -56,7 +57,8 @@ function MemorialRoomPage() {
   }, [film]);
 
   // 401 이면 로그인 화면으로
-  const goLogin = () => navi("/login", { state: { message: "로그인하고 다시 해 주세요." } });
+  //   background = 지금 화면 → 로그인 팝업이 뜨고, 로그인하면 이 추모관으로 돌아옴
+  const goLogin = () => navi("/login", { state: { message: "로그인하고 다시 해 주세요.", background: location } });
 
   // 추모관 열기 (내 끝난 인생, 마지막 한마디)
   const openRoom = async (message) => {

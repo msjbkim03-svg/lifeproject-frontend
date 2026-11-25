@@ -44,7 +44,7 @@ function ChatBox({ chat }) {
           <button type="submit" className="btn btn-primary btn-sm">말하기</button>
         </form>
       ) : chat.atHome ? (
-        <p className={styles.guest}>집 안에서는 말할 수 없어요. 밖으로 나가면 같은 나라 사람들과 말할 수 있어요.</p>
+        <p className={styles.guest}>밖으로 나가면 같은 나라 사람들과 말할 수 있어요.</p>
       ) : (
         <p className={styles.guest}>로그인하면 같은 나라 사람들과 말할 수 있어요.</p>
       )}
