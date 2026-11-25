@@ -166,17 +166,18 @@ export function lieIn(px, t, p, x, G, w = 56, o = {}) {
   const sp = f.spr;
   const headX = L + 3;
   const cy = G - 18;
+  const a = headX + Math.max(10, f.eyes[0][1] - f.head + 4); // 이불(접은 홑청)이 시작하는 곳 = 턱 아래 (어른 13칸, 아이도 얼굴을 덮지 않게)
   for (let yy = 0; yy < sp.h; yy++) for (let xx = 0; xx < sp.w; xx++) {
     const col = sp.d[yy * sp.w + xx];
     if (!col) continue;
     const X = headX + (yy - f.head);
+    if (X >= a) continue; // 이불 밑 몸은 찍지 않음 (어깨 · 팔 끝이 이불 위로 삐져나오던 것)
     const Y = cy + (xx - f.fx);
     px.px(X, Y, col);
   }
   if (o.cry) { const ex = headX + (f.eyes[0][1] - f.head); px.px(ex, cy + 2, '#5fb4ee'); }
   // 이불: 몸 모양을 따라 (가슴 · 배 · 무릎 · 발끝) 부드럽게 솟고, 침대 옆으로 자락이 늘어짐
   const breath = o.breath ?? (Math.sin(t / 650) + 1) / 2;
-  const a = Math.round(headX + 13 * k);
   const R2 = Math.round(L + w);
   const col = o.quilt || '#e9b8a8';
   const hi = lt(col, 0.32);

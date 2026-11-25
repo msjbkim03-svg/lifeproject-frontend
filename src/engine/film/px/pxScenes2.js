@@ -843,7 +843,7 @@ export function loss(px, t, v) {
   // 내려놓은 꽃 (2.2초부터)
   if (t > 2200) [[-6, '#ffffff'], [-3, '#f2e6a0'], [0, '#ffffff'], [3, '#f2e6a0']].forEach(([dx, col]) => { px.hl(sx + dx - 2, sx + dx + 2, G - 2, '#4e7a44'); bloom(px, sx + dx - 1, G - 4, col); });
   // 사람들: 언덕길을 올라와 → 꽃 내려놓고 → 절 · 눈물
-  const who = v.arg === 'pt' ? [k.me, ...k.kids.slice(0, 2)] : v.arg === 'fr' ? [k.me] : [k.me, k.pt, ...k.sib.slice(0, 1), ...k.kids.slice(0, 1)];
+  const who = v.arg === 'pt' ? [k.me, ...k.kids.slice(0, 2)] : v.arg === 'fr' ? [k.me] : [k.me, ...k.par.slice(0, 1), k.pt, ...k.sib.slice(0, 1), ...k.kids.slice(0, 1)]; // 부모님을 떠나보내면 남은 부모님도 함께
   const ppl = who.filter(Boolean).slice(0, 4);
   // 가랑비 (3.2초부터) → 둘씩 짝지어 우산을 펴서 같이 씀 (홀수면 마지막 사람은 혼자), 아무도 비를 맞지 않게
   const rainA = seg(t, 3200, 4200);
@@ -1014,7 +1014,8 @@ export function rain(px, t, v) {
   const me = actor(px, t, 0, k.me, w.x, sit ? G - 4 : G + 6, { walk: w.walk, gaze: 1, pose: sit ? (t > 2000 ? 'bow' : 'sit') : 'hold', noShadow: sit });
   if (!sit) { const ux = w.x + 3; const uy = me.headY - 12; for (let j = 0; j < 7; j++) px.hl(ux - 3 - j * 2, ux + 3 + j * 2, uy + j, j === 6 ? '#3a5a8a' : j % 2 ? '#5b86c9' : '#4f78b8'); px.vl(ux, uy, uy + 18, OUT); }
   else { px.rect(sx - 30, G - 18, 3, 16, '#4f78b8'); px.px(sx - 29, G - 19, OUT); }
-  if (t > 2200) bub(px, 'dots', me);
+  const busX = alone && t > 4000 ? lerp(300, -100, seg(t, 4000, 6500)) : null;
+  if (t > 2200 && !(busX != null && Math.abs(busX - me.x) < 48)) bub(px, 'dots', me); // 버스가 앞을 지날 때는 숨김
   // 차가 지나가며 물보라 (2.6초)
   const cq = seg(t, 2400, 3400);
   if (cq > 0 && cq < 1) {
@@ -1334,11 +1335,17 @@ export function prison(px, t, v) {
 // 팀장이 악수 · 자리 안내 → 일하는 모습 (자판 두드리기 / 컨베이어 · 불꽃 / 모내기) · 동료가 커피(새참)를 건넴
 // 직업 이름 → 일터 종류 (filmPlan 이 v.job 에 '노점상·소상인' 같은 이름을 넘김, 없으면 산업으로)
 const JOB_KINDS = [
+  ['transit', /조종사|승무원|철도|기관사|항공/],
+  ['med', /의사|간호|치료사|병리|요양/],
+  ['edu', /교사|교수|연구원|강사|보육/],
+  ['uniform', /경찰|군인|장교|경비/],
+  ['studio', /예술|크리에이터|PD|디자이너|영상|방송/],
+  ['walk', /가사도우미|트레이너|성직자/], // 일터 그림 없이 마을 산책
   ['sea', /어부|선원|어업|해녀|항해|양식/],
   ['farm', /농|목축|목장|축산|과수|원예|임업|양봉/],
   ['road', /배달|택배|운전|기사|택시|버스|트럭/],
   ['factory', /공장|조립|생산|물류|정비|수공업|재봉|기계|창고|건설|목수|용접|배관|광부|광산|노동자|미장/],
-  ['shop', /노점|상인|가게|판매|점원|요리|식당|미용|이발|청소|미화|시장|카페|제빵|행상/],
+  ['shop', /노점|상인|가게|판매|점원|요리|식당|미용|이발|청소|미화|시장|카페|제빵|행상|자영업|사장|딜러|카지노|호텔|여행/],
 ];
 export function jobKind(v) {
   const j = v.job || '';
@@ -1346,15 +1353,164 @@ export function jobKind(v) {
   if (hit) return hit[0];
   return v.industry === 'AGRI' ? 'farm' : v.industry === 'INDUSTRY' ? 'factory' : 'office';
 }
+// ───────── 새 일터 (11/25): 병원 · 학교 · 제복 · 작업실 · 공항/역 ─────────
+// 직업 이름 → 세부 (의사/간호 · 학교/어린이집/대학 · 경찰/군/경비 · 예술/PD/디자인 · 비행기/철도)
+function subOf(ind, j) {
+  if (ind === 'MED') return /의사/.test(j) ? 'doc' : 'nurse';
+  if (ind === 'EDU') return /보육/.test(j) ? 'kinder' : /교수|연구/.test(j) ? 'uni' : 'school';
+  if (ind === 'UNIFORM') return /경찰/.test(j) ? 'police' : /경비/.test(j) ? 'guard' : 'army';
+  if (ind === 'STUDIO') return /PD|영상|방송/.test(j) ? 'pd' : /디자이너/.test(j) ? 'design' : 'art';
+  if (ind === 'TRANSIT') return /철도|기관사/.test(j) ? 'rail' : 'air';
+  return '';
+}
+// 일터 옷 (모자 · 윗옷). me 이면 직업에 맞게, 아니면 같은 일터 사람들 옷
+function outfitOf(ind, sub, me) {
+  if (ind === 'MED') return { top: { style: 'tee', color: me && sub === 'nurse' ? '#bfe0e8' : '#f6f8fa' } };
+  if (ind === 'UNIFORM') return sub === 'police' ? { hat: { style: 'cap', color: '#2e3e6a' }, top: { style: 'suit', color: '#2e3e6a' } }
+    : sub === 'guard' ? { hat: { style: 'cap', color: '#3a4450' }, top: { style: 'suit', color: '#5a6470' } }
+      : { hat: { style: 'beret', color: '#56643a' }, top: { style: 'tee', color: '#6a7a4a' } };
+  if (ind === 'TRANSIT') return sub === 'rail' ? { hat: { style: 'cap', color: '#3a4a64' }, top: { style: 'suit', color: '#3a4a64' } }
+    : { hat: me ? { style: 'cap', color: '#2e3e6a' } : null, top: { style: 'suit', color: me ? '#2e3e6a' : '#3f6aa8' } };
+  if (ind === 'STUDIO') return me ? (sub === 'art' ? { hat: { style: 'beret', color: '#c9544a' } } : sub === 'pd' ? { top: { style: 'hoodie', color: '#5a6478' } } : {}) : {};
+  if (ind === 'EDU') return me || sub === 'uni' ? {} : {};
+  return {};
+}
+// 일터 배경 + 동료 (나 · 팀장 · 커피는 work() 아래 공용)
+function workPlace(px, t, v, c, ind, sub, G, mates, greet) {
+  const doorOpen = seg(t, 0, 400) - seg(t, 1400, 1800);
+  const matePose = (i, base) => (greet ? clapPose(t, i) : base);
+  if (ind === 'MED') {
+    // 병실: 십자 표시 · 침대의 환자 · 링거 · 모니터 · 손 소독기
+    room(px, { wall: '#e8f0ee', floor: '#cfdad7', paper: 'stripe', win: [[14, 18]], sky: roomSky(c), curtain: '#bcd8d4', t, G });
+    clock(px, 130, 18, t);
+    px.rect(152, 22, 15, 15, '#ffffff'); px.rect(158, 25, 3, 9, '#e8584c'); px.rect(155, 28, 9, 3, '#e8584c');
+    px.rect(178, 40, 6, 10, '#e6eef2'); px.rect(179, 37, 4, 3, '#9aa6b2'); px.rect(180, 43, 2, 3, '#5fb4ee');
+    door(px, 232, G, 16, 30, '#a8c8c4', doorOpen, '#e6f2f0');
+    const bx = 78;
+    px.vl(44, 40, G, '#9aa6b2'); px.hl(39, 49, 40, '#9aa6b2'); px.rect(40, 41, 7, 10, '#e6f4fb'); px.px(43, 53 + Math.floor((t / 130) % 4), '#5fb4ee'); px.line(43, 56, 60, 96, '#cfe3f0');
+    px.rect(112, 46, 20, 14, '#3a4450'); px.rect(113, 47, 18, 11, '#16202a');
+    const yb = 52; px.hl(114, 118, yb, '#6ee0a0'); px.line(118, yb, 120, yb - 4, '#6ee0a0'); px.line(120, yb - 4, 122, yb + 3, '#6ee0a0'); px.line(122, yb + 3, 124, yb, '#6ee0a0'); px.hl(124, 130, yb, '#6ee0a0');
+    px.rect(114 + Math.floor(((t % 1000) / 1000) * 16), 48, 2, 9, '#16202a'); px.vl(122, 60, G, '#9aa6b2');
+    bed(px, bx, G, 54, true);
+    lieIn(px, t, extra(5, { age: 68 }), bx, G, 54, { quilt: '#cfe3f0', pattern: 'plain', face: t > 4200 ? 'open' : 'closed' });
+    if (t > 4400) bubble(px, 'heart', bx - 22, G - 26);
+    // 동료: 간호사는 차트 · 링거 확인, 의사는 청진기
+    const m0 = actor(px, t, 3, mates[0], 24, G + 8, { gaze: 1, pose: matePose(0, Math.floor(t / 700) % 2 ? 'hold' : 'stand') });
+    if (m0 && !greet) { px.rect(26, m0.headY + 14, 5, 6, '#c9a07a'); px.rect(27, m0.headY + 15, 3, 4, '#ffffff'); }
+  } else if (ind === 'EDU') {
+    // 교실: 칠판 (분필 글씨가 늘어남) · 게시판 · 책상에 앉은 아이들 (뒷모습)
+    room(px, { wall: '#f2ead8', floor: '#c8a070', paper: 'dot', win: [[10, 18]], sky: roomSky(c), curtain: '#e8c890', t, G });
+    px.rect(62, 16, 128, 46, '#8a6a4f'); px.rect(64, 18, 124, 42, sub === 'kinder' ? '#4a7a5a' : '#3e6a52'); px.rect(62, 62, 128, 2, '#a8845e');
+    for (let i = 0; i < 4; i++) px.rect(70 + i * 6, 61, 4, 1, ['#ffffff', '#f6c6d6', '#ffe8a0', '#bfe0f0'][i]);
+    const wq = seg(t, 3000, 6400);
+    if (sub === 'kinder') { // 그림 (해 · 꽃 · 집)
+      if (wq > 0) { px.ring(90, 32, 5, '#ffe8a0'); if (wq > 0.3) { px.rect(118, 36, 16, 12, '#f6c6d6'); px.line(116, 36, 126, 28, '#f6c6d6'); px.line(126, 28, 136, 36, '#f6c6d6'); } if (wq > 0.6) [150, 160, 170].forEach((x) => { px.vl(x, 44, 54, '#bfe0a0'); px.ring(x, 42, 2, '#ffffff'); }); }
+    } else {
+      for (let i = 0; i < 5; i++) { const len = Math.round(Math.max(0, Math.min(1, wq * 5 - i)) * (i === 0 ? 70 : 96 - (i % 3) * 18)); if (len > 0) px.hl(74, 74 + len, 26 + i * 7, i === 0 ? '#ffe8a0' : '#e8efe6'); }
+      if (sub === 'uni' && wq > 0.8) { px.line(150, 50, 176, 30, '#ffffff'); px.hl(150, 176, 50, '#ffffff'); }
+    }
+    clock(px, 206, 16, t);
+    px.rect(200, 30, 24, 18, '#c9a06a'); for (let i = 0; i < 4; i++) px.rect(202 + (i % 2) * 11, 32 + (i >> 1) * 8, 9, 6, ['#ffffff', '#f6c6d6', '#bfe0f0', '#ffe8a0'][i]);
+    door(px, 238, G, 14, 30, '#a87650', doorOpen, '#e8dcc8');
+    // 아이들: 책상 앞에 앉아 칠판을 봄 → 손을 듦
+    const sage = sub === 'kinder' ? 5 : sub === 'uni' ? 21 : 10;
+    [34, 76, 118, 160, 202].forEach((x, i) => {
+      const s = extra(8 + i, { age: sage + (i % 2) });
+      const hand = t > 3600 && Math.floor((t + i * 900) / 1300) % 4 === 0;
+      table(px, x - 11, G + 18, 22, G + 30, '#c9a06a'); // 책상은 아이 너머 (칠판 쪽)
+      actor(px, t, 20 + i, sub === 'school' ? dressed(s, { style: 'school', color: '#3a4a64' }) : s, x, G + 27, { back: true, noShadow: true, pose: hand ? 'up' : 'sit' });
+    });
+  } else if (ind === 'UNIFORM') {
+    // 정문: 관공서 건물 · 깃발 · 초소와 차단기 (경찰이면 순찰차)
+    outdoor(px, t, c, { hillY: 90 });
+    const wall = sub === 'army' ? '#c8c4a8' : lt(c.wall, 0.06);
+    bricks(px, 112, 44, 144, G - 50, wall); px.rect(112, 40, 144, 4, sub === 'army' ? '#6a7a4a' : '#3f5a8a');
+    for (let x = 122; x < 250; x += 16) { bwin(px, x, 52, 10, 9, false, true); bwin(px, x, 70, 10, 9, false, false); }
+    px.disc(184, 30, 7, '#f6f2e6'); px.ring(184, 30, 7, sub === 'police' ? '#3f5a8a' : '#6a7a4a'); px.disc(184, 30, 3, '#f2c230');
+    ground(px, c, false, G - 6, 'un', true);
+    px.vl(100, 14, G - 6, '#8a8478'); const fw = Math.round(wave(t, 700, 1.5));
+    for (let y = 0; y < 10; y++) px.hl(101, 116 + (y % 3 === 0 ? fw : 0), 15 + y, y < 5 ? '#f6f2e6' : (sub === 'army' ? '#6a7a4a' : '#3f6aa8'));
+    if (sub === 'police') { // 순찰차 (경광등이 번갈아 깜빡)
+      const cx = 46;
+      px.rect(cx - 28, G - 8, 56, 12, '#f6f6f6'); px.rect(cx - 18, G - 17, 34, 10, '#f6f6f6'); px.rect(cx - 15, G - 15, 13, 7, '#a8c8e8'); px.rect(cx + 1, G - 15, 12, 7, '#a8c8e8');
+      px.rect(cx - 28, G - 2, 56, 3, '#2e3e6a'); px.disc(cx - 16, G + 5, 4, '#2e2a33'); px.disc(cx + 16, G + 5, 4, '#2e2a33');
+      const bl = Math.floor(t / 250) % 2; px.rect(cx - 6, G - 20, 5, 3, bl ? '#e8584c' : '#7a2a2a'); px.rect(cx, G - 20, 5, 3, bl ? '#2a3a7a' : '#5b86ff');
+      px.alpha(0.2, () => px.disc(bl ? cx - 4 : cx + 3, G - 19, 8, bl ? '#e8584c' : '#5b86ff'));
+    } else { // 초소 · 차단기 (나를 맞으려고 1.4초에 올라감)
+      px.rect(12, G - 34, 30, 34, '#e6e2d8'); px.rect(10, G - 37, 34, 4, sub === 'army' ? '#6a7a4a' : '#5a6470'); px.rect(17, G - 28, 20, 10, '#a8c8e8'); px.hl(17, 36, G - 23, '#ffffff');
+      px.rect(46, G - 16, 5, 16, '#3a3e46');
+      const up = seg(t, 1200, 1600) - seg(t, 3000, 3400); const ang = up * 1.2;
+      for (let i = 0; i < 48; i++) { const x = 51 + Math.round(Math.cos(ang) * i); const y = G - 14 - Math.round(Math.sin(ang) * i); px.rect(x, y, 1, 3, (i >> 3) % 2 ? '#e8584c' : '#ffffff'); }
+    }
+    // 동료 (차렷 · 인사할 때 경례)
+    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [118, 140][i], G + 6, { gaze: 1, pose: greet ? 'wave1' : 'stand' }));
+  } else if (ind === 'STUDIO') {
+    // 작업실: 큰 창 · 선반 (물감 · 책) · 이젤 (그림이 그려짐) / 카메라와 조명 / 큰 모니터
+    room(px, { wall: '#efe4d6', floor: '#b89470', paper: 'stripe', win: [[12, 16], [52, 16]], sky: roomSky(c), curtain: '#d8b890', t, G });
+    shelf(px, 188, 26, t); plant(px, 98, G, t);
+    door(px, 238, G, 14, 30, '#a87650', doorOpen, '#e8dcc8');
+    const pq = seg(t, 3000, 6600);
+    if (sub === 'art') {
+      px.line(112, G, 124, 56, '#8a5a3b'); px.line(136, G, 124, 56, '#8a5a3b'); px.vl(124, 60, G, '#7a4a2f'); px.rect(108, 86, 32, 2, '#8a5a3b');
+      px.rect(110, 58, 28, 28, '#fbf8f2'); px.rect(109, 57, 30, 1, '#c9a06a');
+      if (pq > 0) { px.rect(111, 59, 26, Math.round(12 * Math.min(1, pq * 2)), '#bfe0f0'); }
+      if (pq > 0.3) { px.disc(118, 66, 3, '#ffd37a'); }
+      if (pq > 0.5) { for (let x = 111; x < 137; x++) px.vl(x, 74 + Math.round(Math.sin(x / 4) * 2), 84, '#9ac070'); }
+      if (pq > 0.8) { px.disc(130, 76, 2, '#f05a7e'); px.disc(126, 78, 2, '#ffffff'); }
+      px.rect(150, G - 8, 12, 8, '#8a6a4f'); [0, 1, 2, 3].forEach((i) => px.rect(151 + i * 3, G - 11, 2, 3, ['#e8584c', '#f2c230', '#3f6aa8', '#7ab65a'][i]));
+    } else if (sub === 'pd') {
+      px.line(98, G, 106, 70, '#3a3440'); px.line(114, G, 106, 70, '#3a3440'); px.vl(106, 70, G, '#3a3440');
+      px.rect(98, 60, 18, 11, '#2e2a33'); px.rect(116, 62, 6, 7, '#3a3440'); px.disc(98, 65, 3, '#5a6478'); px.px(110, 62, Math.floor(t / 400) % 2 ? '#e8584c' : '#5a2a2a');
+      px.vl(72, 50, G, '#5a5460'); px.rect(64, 40, 16, 12, '#fffaf0'); px.alpha(0.18, () => px.disc(72, 50, 18, '#fff6d0'));
+      px.rect(150, G - 16, 30, 3, '#5a4a3a'); px.rect(156, G - 34, 20, 15, '#2e2a33'); px.rect(157, G - 33, 18, 12, (Math.floor(t / 600) % 2) ? '#9fc7e0' : '#c4a8ec');
+    } else {
+      table(px, 104, G - 16, 44, G, '#d8dce4'); px.rect(112, G - 36, 28, 19, '#2e2a33'); px.rect(113, G - 35, 26, 16, '#f6f2ea');
+      if (pq > 0) { px.rect(116, G - 32, Math.round(20 * pq), 4, '#f05a7e'); px.disc(122, G - 24, 3, '#3f6aa8'); if (pq > 0.5) px.rect(128, G - 26, 8, 5, '#f2c230'); }
+      px.rect(124, G - 17, 4, 1, '#3a3440'); px.rect(140, G - 18, 6, 2, '#5a5460');
+    }
+    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [34, 74][i], G + 8, { gaze: 1, pose: matePose(i, Math.floor((t + i * 500) / 800) % 2 ? 'hold' : 'stand') }));
+  } else if (ind === 'TRANSIT' && sub === 'rail') {
+    // 기차역: 지붕 · 기둥 · 멀리 도시 → 기차가 들어와 멈춤 → 6초에 떠남, 앞은 승강장 (노란 선)
+    outdoor(px, t, c, { hillY: 84 });
+    skyline(px, c, false, 82, 'rl' + v.countryCode, t);
+    px.rect(0, 82, W, 8, '#8a8478'); px.hl(0, W, 84, '#5a5460'); px.hl(0, W, 88, '#5a5460');
+    const tx = t < 2600 ? lerp(330, 40, ease(seg(t, 600, 2600))) : lerp(40, -260, ease(seg(t, 6000, 7600)));
+    for (let k2 = 0; k2 < 3; k2++) { const x = Math.round(tx + k2 * 74); px.rect(x, 52, 70, 34, k2 === 0 ? '#3f6aa8' : '#e6e8ee'); px.rect(x, 74, 70, 4, '#3f6aa8'); for (let i = 0; i < 5; i++) px.rect(x + 6 + i * 13, 58, 9, 10, '#a8c8e8'); px.rect(x, 52, 70, 2, '#c8ccd4'); }
+    px.rect(Math.round(tx) - 4, 56, 6, 22, '#3f6aa8'); px.rect(Math.round(tx) - 2, 60, 3, 8, '#fff6c8');
+    px.rect(0, 10, W, 6, '#5a6470'); px.rect(0, 16, W, 2, '#3a4450'); for (let x = 20; x < W; x += 60) px.rect(x, 18, 3, G - 24, '#6a7480');
+    px.rect(150, 22, 40, 8, '#2e3e6a'); px.rect(152, 24, 36, 4, '#f6f6f6');
+    px.rect(0, G - 22, W, H - G + 22, '#b8b0a4'); px.rect(0, G - 22, W, 2, '#d8d0c4'); for (let x = 0; x < W; x += 4) px.rect(x, G - 18, 2, 2, '#f2c230');
+    for (let y = G - 14; y < H; y += 8) px.hl(0, W, y, '#aaa296');
+    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [40, 72][i], G + 6, { gaze: 1, pose: matePose(i, i === 0 && t > 5600 ? 'wave1' : 'stand') }));
+  } else if (ind === 'TRANSIT') {
+    // 공항 계류장: 큰 비행기 (창 · 날개 · 꼬리) · 트랩 · 유도선 · 견인차
+    outdoor(px, t, c, { hillY: 86, sunX: 220 });
+    px.rect(0, 90, W, H - 90, '#9aa0a8'); for (let x = -((t * 0.01) % 30); x < W; x += 30) px.rect(x, 124, 14, 2, '#f2c230');
+    const py = 66;
+    px.rect(6, py, 150, 22, '#f6f6f6'); px.disc(156, py + 11, 11, '#f6f6f6'); px.rect(6, py + 16, 160, 6, '#e6e8ee');
+    px.rect(150, py + 4, 9, 5, '#2e3e6a'); px.rect(160, py + 5, 4, 4, '#2e3e6a');
+    for (let x = 30; x < 140; x += 7) px.rect(x, py + 6, 4, 4, '#a8c8e8');
+    px.rect(6, py + 12, 160, 2, '#3f6aa8');
+    px.rect(0, py - 22, 22, 26, '#f6f6f6'); px.rect(2, py - 20, 14, 12, '#3f6aa8');
+    px.rect(60, py + 18, 50, 5, '#d8dce4'); px.rect(70, py + 22, 10, 6, '#9aa0a8');
+    px.disc(40, 98, 3, '#2e2a33'); px.disc(150, 98, 3, '#2e2a33'); px.vl(40, py + 22, 96, '#5a5460'); px.vl(150, py + 22, 96, '#5a5460');
+    px.rect(118, py + 8, 10, 14, '#3f6aa8');
+    for (let i = 0; i < 8; i++) px.rect(118 + i * 4, py + 22 + i * 3, 10, 2, '#d8dce4'); px.line(128, py + 18, 160, py + 46, '#8a909a');
+    mates.slice(0, 2).forEach((p, i) => { const w = walkX(t, 2000 + i * 400, 4600 + i * 400, 30 + i * 22, 84 + i * 22); const r = actor(px, t, 3 + i, p, w.x, G + 10, { walk: w.walk, gaze: 1, pose: matePose(i, 'hold') }); if (r) { px.rect(w.x + 6, G + 2, 6, 8, '#3a4450'); px.vl(w.x + 8, G - 2, G + 2, '#5a6470'); } });
+  }
+}
 export function work(px, t, v) {
   const c = paletteOf(v);
   const k = castOf(v);
   const kind = jobKind(v);
+  if (kind === 'walk') return village(px, t, v);
   const ind = { office: 'SERVICE', factory: 'INDUSTRY', farm: 'AGRI' }[kind] || kind.toUpperCase();
   const herd = /목축|목장|축산/.test(v.job || '');
   const G = 112;
   const hat = ind === 'INDUSTRY' ? { style: 'cap', color: '#f2b22e' } : ind === 'AGRI' ? { style: 'straw', color: '#e2c27a' } : ind === 'SEA' ? { style: 'beanie', color: '#e8584c' } : ind === 'ROAD' ? { style: 'cap', color: '#3f6aa8' } : null;
-  const wear = (p) => { const l = p.look || lookOf({ gender: p.gender, age: p.age, costume: p.costume, soft: p.soft }); return { ...p, look: { ...l, ...(hat ? { hat } : {}), ...(ind === 'SERVICE' ? { top: { style: 'suit', color: p.gender === 'F' ? '#5a6a8a' : '#3a4a64' } } : {}) } }; };
+  const sub = subOf(ind, v.job || '');
+  const NEW = ['MED', 'EDU', 'UNIFORM', 'STUDIO', 'TRANSIT'].includes(ind);
+  const wear = (p, me = false) => { const l = p.look || lookOf({ gender: p.gender, age: p.age, costume: p.costume, soft: p.soft }); if (NEW) { const o = outfitOf(ind, sub, me); return { ...p, look: { ...l, ...(o.hat ? { hat: o.hat } : {}), ...(o.top ? { top: o.top } : {}) } }; } return { ...p, look: { ...l, ...(hat ? { hat } : {}), ...(ind === 'SERVICE' ? { top: { style: 'suit', color: p.gender === 'F' ? '#5a6a8a' : '#3a4a64' } } : {}) } }; };
   const mates = (v.extra && v.extra.length ? v.extra : [{ gender: 'M', age: 34 }, { gender: 'F', age: 29 }]).map((p, i) => wear(extra(i + 3, p)));
   const more = [wear(extra(0, { age: 41 })), wear(extra(7, { age: 26 }))];
   const in1 = walkX(t, 0, 1400, 236, 170);
@@ -1433,14 +1589,16 @@ export function work(px, t, v) {
     px.rect(0, G + 4, W, 16, '#6a6e76'); for (let x = -((t * 0.08) % 24); x < W; x += 24) px.rect(x, G + 11, 12, 2, '#f2f2f2');
     bricks(px, 150, 58, 100, G - 64, lt(c.wall, 0.04)); px.rect(150, 54, 100, 6, '#3f6aa8'); px.rect(170, 55, 60, 4, '#ffffff'); door(px, 226, G - 6, 16, 22, '#6a7a8a', 0.6, '#e6e8ee');
     for (let i = 0; i < 6; i++) { const x = 160 + (i % 3) * 11; const y = G - 13 - Math.floor(i / 3) * 7; px.rect(x, y, 10, 7, '#c9a06a'); px.hl(x, x + 9, y + 3, '#a07a48'); px.vl(x + 5, y, y + 6, '#a07a48'); }
-    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [200, 216][i], G + 6, { pose: greet ? clapPose(t, i) : 'hold', gaze: -1 }));
+    mates.slice(0, 2).forEach((p, i) => actor(px, t, 3 + i, p, [216, 240][i], G + 6, { pose: greet ? clapPose(t, i) : 'hold', gaze: -1 }));
+  } else if (NEW) {
+    workPlace(px, t, v, c, ind, sub, G, mates, greet);
   } else {
     // 논밭: 하늘 · 산 · 물 댄 논 줄 · 초가 · 허수아비 · 물소
     outdoor(px, t, c, { sunX: 200, hillY: 86 });
     if (herd) {
       grass(px, 96, H, '#9ac070', '#86ae60', '#aed084', 'hd');
       for (let x = 4; x < 150; x += 12) { px.rect(x, 92, 2, 12, '#8a6a4f'); } px.hl(0, 150, 95, '#8a6a4f'); px.hl(0, 150, 100, '#8a6a4f');
-      [[40, 104, 0], [96, 100, 1], [132, 108, 2]].forEach(([x0, y, i]) => { const x = x0 + Math.round(wave(t + i * 900, 5000, 3)); const eat = Math.floor((t + i * 700) / 900) % 2; px.rect(x - 9, y - 7, 18, 8, '#f6f2ea'); px.rect(x - 4, y - 6, 5, 4, '#3a3440'); px.rect(x + 3, y - 3, 4, 3, '#3a3440'); px.rect(x + 9, y - 8 + eat * 3, 5, 5, '#f6f2ea'); px.px(x + 12, y - 7 + eat * 3, '#2e2a33'); px.rect(x + 12, y - 4 + eat * 3, 3, 2, '#f2b8a8'); [x - 8, x - 4, x + 3, x + 7].forEach((lx) => px.vl(lx, y + 1, y + 4, '#5a5460')); px.vl(x - 10, y - 6, y - 1, '#5a5460'); });
+      [[26, 134, 0], [92, 137, 1], [222, 133, 2]].forEach(([x0, y, i]) => { const x = x0 + Math.round(wave(t + i * 900, 5000, 3)); const eat = Math.floor((t + i * 700) / 900) % 2; px.rect(x - 9, y - 7, 18, 8, '#f6f2ea'); px.rect(x - 4, y - 6, 5, 4, '#3a3440'); px.rect(x + 3, y - 3, 4, 3, '#3a3440'); px.rect(x + 9, y - 8 + eat * 3, 5, 5, '#f6f2ea'); px.px(x + 12, y - 7 + eat * 3, '#2e2a33'); px.rect(x + 12, y - 4 + eat * 3, 3, 2, '#f2b8a8'); [x - 8, x - 4, x + 3, x + 7].forEach((lx) => px.vl(lx, y + 1, y + 4, '#5a5460')); px.vl(x - 10, y - 6, y - 1, '#5a5460'); });
     } else {
     const paddy = mix(c.water || '#9fc7e0', '#9ac080', 0.35);
     px.rect(0, 96, W, H - 96, paddy);
@@ -1458,13 +1616,14 @@ export function work(px, t, v) {
   const lr = actor(px, t, 8, lead, 192, G + 12, { gaze: 1, pose: greet ? 'hold' : 'stand' });
   if (greet) bub(px, 'note', lr);
   // 나: 문으로 들어와 → 인사 · 악수 → 자리에서 일함
-  const sx = { SERVICE: 150, INDUSTRY: 130, AGRI: 160, SHOP: 150, SEA: 120, ROAD: 140 }[ind] || 150;
+  const sx = { SERVICE: 150, INDUSTRY: 130, AGRI: 160, SHOP: 150, SEA: 120, ROAD: 140, MED: 106, EDU: 128, UNIFORM: 162, STUDIO: 148, TRANSIT: sub === 'rail' ? 150 : 170 }[ind] || 150;
   const w2 = walkX(t, 2600, 3000, in1.x, sx);
   const roadGo = ind === 'ROAD' ? seg(t, 3600, 6000) : 0;
   const mx = roadGo > 0 ? Math.round(lerp(sx + 8, 300, ease(roadGo))) - 2 : t < 2600 ? in1.x : w2.x;
   const riding = roadGo > 0;
-  const me = actor(px, t, 0, wear(k.me), mx, working && ind === 'SERVICE' ? G - 4 : riding ? G + 8 : G + 14, {
-    walk: in1.walk || w2.walk, gaze: riding ? 1 : -1, pose: greet ? 'hold' : working ? (ind === 'SERVICE' ? 'sit' : ind === 'SHOP' ? (Math.floor(t / 500) % 2 ? 'wave1' : 'hold') : ind === 'SEA' ? (Math.floor(t / 450) % 2 ? 'up' : 'hold') : ind === 'ROAD' ? (riding ? 'sit' : 'hold') : Math.floor(t / 400) % 2 ? 'hold' : ind === 'AGRI' && !herd ? 'bow' : 'stand') : undefined, noShadow: working && ind === 'SERVICE',
+  const newPose = ind === 'MED' ? (Math.floor(t / 600) % 2 ? 'hold' : 'stand') : ind === 'EDU' ? (Math.floor(t / 500) % 3 ? 'up' : 'wave1') : ind === 'UNIFORM' ? (t % 2400 < 700 ? 'wave1' : 'stand') : ind === 'STUDIO' ? (sub === 'design' ? 'hold' : Math.floor(t / 380) % 2 ? 'up' : 'hold') : ind === 'TRANSIT' ? (t % 2000 < 600 ? 'wave1' : 'hold') : null;
+  const me = actor(px, t, 0, wear(k.me, true), mx, working && ind === 'SERVICE' ? G - 4 : riding ? G + 8 : G + 14, {
+    walk: in1.walk || w2.walk, gaze: riding ? 1 : -1, pose: greet ? 'hold' : working ? (newPose || (ind === 'SERVICE' ? 'sit' : ind === 'SHOP' ? (Math.floor(t / 500) % 2 ? 'wave1' : 'hold') : ind === 'SEA' ? (Math.floor(t / 450) % 2 ? 'up' : 'hold') : ind === 'ROAD' ? (riding ? 'sit' : 'hold') : Math.floor(t / 400) % 2 ? 'hold' : ind === 'AGRI' && !herd ? 'bow' : 'stand')) : undefined, noShadow: working && ind === 'SERVICE',
   });
   if (ind === 'ROAD' && working) { // 상자를 싣고 오토바이로 출발 (화면 밖으로)
     const go = seg(t, 3600, 6000);
@@ -1476,8 +1635,8 @@ export function work(px, t, v) {
   if (working && ind === 'SERVICE') { chair(px, mx, G + 2, '#3a4450', -1); px.px(mx - 6 + (Math.floor(t / 90) % 3), G - 15, '#ffffff'); }
   if (greet) bub(px, 'sweat', me);
   if (t > 3600 && !riding) bub(px, 'star', me);
-  // 동료가 커피(새참)를 건넴
-  if (t > 4000 && ind !== 'ROAD') { const cw = walkX(t, 4000, 4800, 60, mx - 18); const p = more[0]; actor(px, t, 7, p, cw.x, G + 16, { walk: cw.walk, gaze: 1, pose: 'hold' }); px.rect(cw.x + 3, G + 2, 3, 4, ind === 'AGRI' ? '#c9a07a' : '#ffffff'); steam(px, cw.x + 4, G, t); if (!cw.walk) bubble(px, 'heart', cw.x + 3, G - 14); }
+  // 동료가 커피(새참)를 건넴 (교실 · 제복 · 공항역은 사람이 겹쳐서 없음)
+  if (t > 4000 && !['ROAD', 'EDU', 'UNIFORM', 'TRANSIT'].includes(ind)) { const cw = walkX(t, 4000, 4800, 60, mx - 18); const p = more[0]; actor(px, t, 7, p, cw.x, G + 16, { walk: cw.walk, gaze: 1, pose: 'hold' }); px.rect(cw.x + 3, G + 2, 3, 4, ind === 'AGRI' ? '#c9a07a' : '#ffffff'); steam(px, cw.x + 4, G, t); if (!cw.walk) bubble(px, 'heart', cw.x + 3, G - 14); }
 }
 
 // ───────── 장례 ─────────
