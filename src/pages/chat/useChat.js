@@ -31,6 +31,7 @@ function useChat(countryCode, me) {
   const [players, setPlayers] = useState([]);
   const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
+  const [atHome, setAtHome] = useState(me.place === "home"); // 집 안에서는 다른 사람이 안 보여서 말도 막음
   const [now, setNow] = useState(() => Date.now());
   const stompRef = useRef(null);
   const myPos = useRef({ place: me.place, x: 50, dir: "right", walking: false });
@@ -109,6 +110,7 @@ function useChat(countryCode, me) {
 
   const move = useCallback((p) => {
     myPos.current = { place: p.place, x: Math.round(p.x * 10) / 10, dir: p.dir, walking: p.walking };
+    setAtHome(p.place === "home");
     const stomp = stompRef.current;
     if (!stomp?.connected) return;
     const t = Date.now();
@@ -137,6 +139,7 @@ function useChat(countryCode, me) {
   const count = new Set(players.map((p) => p.memberId)).size;
 
   const send = (content) => {
+    if (atHome) return;
     if (!stompRef.current?.connected) {
       setError("채팅 서버에 연결하는 중이에요. 잠깐 뒤에 다시 보내 주세요.");
       return;
@@ -149,9 +152,9 @@ function useChat(countryCode, me) {
   };
 
   return {
-    others, count, error, connected, send, move,
+    others, count, error, connected, send, move, atHome,
     myMessage: myId ? bubbleOf(myId) : null,
-    canTalk: !!token,
+    canTalk: !!token && !atHome,
   };
 }
 
