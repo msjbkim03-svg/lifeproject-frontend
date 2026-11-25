@@ -39,6 +39,16 @@ function Top({ style, color }) {
       {style === 'hero' && <><P x={8} y={15} w={2} c="#f2c230" /><P x={7} y={16} w={4} c="#f2c230" /><P x={8} y={17} w={2} c="#f2c230" /><P x={5} y={18} w={8} c="#f2c230" /></>}
       {style === 'pajama' && <><P x={6} y={14} h={6} c="#ffffff" o={0.6} /><P x={9} y={14} h={6} c="#ffffff" o={0.6} /><P x={12} y={14} h={5} c="#ffffff" o={0.6} /><P x={8} y={14} c="#ffffff" /><P x={8} y={16} c="#ffffff" /></>}
       {style === 'space' && <><P x={7} y={15} w={4} h={3} c="#9aa3b5" /><P x={8} y={16} c="#e8584c" /><P x={9} y={16} c="#5b86c9" /><P x={5} y={14} c="#d0383f" /></>}
+      {style === 'space' && <><P x={7} y={15} w={4} h={3} c="#9aa3b5" /><P x={8} y={16} c="#e8584c" /><P x={9} y={16} c="#5b86c9" /><P x={5} y={14} c="#d0383f" /></>}
+      {style === 'army' && <>
+        {/* 얼룩무늬: 짙은 녹색 · 갈색 · 검정 */}
+        <P x={5} y={14} w={2} c="#3f4a2a" /><P x={9} y={16} w={2} c="#3f4a2a" /><P x={6} y={18} c="#3f4a2a" />
+        <P x={7} y={15} c="#7a6646" /><P x={11} y={17} w={2} c="#7a6646" /><P x={5} y={17} c="#7a6646" />
+        <P x={8} y={14} c="#2f3524" /><P x={12} y={16} c="#2f3524" />
+        {/* 명찰 · 벨트 · 버클 */}
+        <P x={10} y={15} w={2} c="#f5f0e6" />
+        <P x={6} y={19} w={6} c="#3a3a2e" /><P x={8} y={19} w={2} c="#c9b46a" />
+      </>}
     </g>
   );
 }
@@ -155,6 +165,18 @@ function Hat({ style, color }) {
       </g>
     );
   }
+  if (style === 'army') {
+    // 전투모: 짧은 챙 + 얼룩무늬 + 앞쪽 계급장
+    return (
+      <g>
+        <S rows={[[-1, 6, 11], [0, 5, 12], [1, 4, 13], [2, 3, 14], [3, 2, 15], [4, 2, 16], [5, 13, 16]]} c={OUT} />
+        <S rows={[[0, 6, 11], [1, 5, 12], [2, 4, 13], [3, 3, 14]]} c={color} />
+        <P x={14} y={4} w={2} c={color} />
+        <P x={6} y={1} w={2} c="#3f4a2a" /><P x={10} y={2} w={2} c="#7a6646" /><P x={4} y={3} w={2} c="#3f4a2a" /><P x={9} y={0} c="#2f3524" />
+        <P x={12} y={1} c="#2f3524" />
+      </g>
+    );
+  }
   // cap: 챙이 앞(오른쪽)으로
   return (
     <g>
@@ -167,14 +189,16 @@ function Hat({ style, color }) {
 
 function Figure({ look }) {
   const top = look.top.color;
+  const pants = look.pants || PANTS; // 군복·수형복은 바지·신발 색도 바꿈 (없으면 기본)
+  const shoe = look.shoe || SHOE;
   const long = look.hair && look.hair.style === 'long';
   return (
     <svg className="v-fig" viewBox="0 -2 18 27" width="25" height="37" shapeRendering="crispEdges" aria-hidden="true">
       {/* 긴 머리 뒷부분 (얼굴·몸 뒤로 양옆만 보임) */}
       {long && <><P x={1} y={6} w={16} h={8} c={OUT} /><P x={2} y={7} w={14} h={6} c={look.hair.color} /></>}
       {/* 다리 (fb: 왼다리 / fa: 오른다리) - 바지 + 신발 */}
-      <g className="fb leg"><P x={5} y={20} w={4} h={5} c={OUT} /><P x={6} y={21} w={2} h={2} c={PANTS} /><P x={6} y={23} w={2} c={SHOE} /></g>
-      <g className="fa leg"><P x={9} y={20} w={4} h={5} c={OUT} /><P x={10} y={21} w={2} h={2} c={PANTS} /><P x={10} y={23} w={2} c={SHOE} /></g>
+      <g className="fb leg"><P x={5} y={20} w={4} h={5} c={OUT} /><P x={6} y={21} w={2} h={2} c={pants} /><P x={6} y={23} w={2} c={shoe} /></g>
+      <g className="fa leg"><P x={9} y={20} w={4} h={5} c={OUT} /><P x={10} y={21} w={2} h={2} c={pants} /><P x={10} y={23} w={2} c={shoe} /></g>
       {/* 팔 (fa: 왼팔 / fb: 오른팔) - 소매는 옷 색, 끝은 손 */}
       <g className="fa arm"><P x={2} y={13} w={2} h={7} c={OUT} /><P x={1} y={14} w={4} h={5} c={OUT} /><P x={2} y={14} w={2} h={3} c={top} /><P x={2} y={17} w={2} h={2} c={SKIN} /></g>
       <g className="fb arm"><P x={14} y={13} w={2} h={7} c={OUT} /><P x={13} y={14} w={4} h={5} c={OUT} /><P x={14} y={14} w={2} h={3} c={top} /><P x={14} y={17} w={2} h={2} c={SKIN} /></g>

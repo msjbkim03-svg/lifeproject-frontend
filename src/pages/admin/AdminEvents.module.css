@@ -34,6 +34,7 @@
   color: var(--ink-sub);
   padding: 6px;
   border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap; /* 머리글(AI 서술 등)도 한 줄로 */
 }
 .table td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .table tbody tr { cursor: pointer; }
@@ -42,7 +43,7 @@
 .id { font-size: var(--fs-xs); color: var(--ink-sub); word-break: break-all; }
 
 /* 표 안의 AI 토글 (공통 칩보다 작게) */
-.table .aiChip { height: 26px; padding: 0 10px; font-size: var(--fs-xs); }
+.table .aiChip { height: 26px; padding: 0 10px; font-size: var(--fs-xs); white-space: nowrap; flex-shrink: 0; } /* 좁은 화면에서도 켜짐·꺼짐 한 줄로 */
 
 /* 상세 */
 .label { font-size: var(--fs-sm); font-weight: 600; margin-bottom: 4px; }
