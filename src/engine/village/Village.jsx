@@ -1187,8 +1187,8 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
         {/* 반려동물 (우리 집 화면에만, 강아지·고양이) */}
         {here.id === 'home' && !away && pet && <PetWalker pet={pet} />}
 
-        {/* 같은 나라 접속자 (흐린 실루엣, C15) - 같은 장소에 있는 사람만 */}
-        {others.filter((o) => (o.place || 'home') === here.id).map((o) => (
+        {/* 같은 나라 접속자 (흐린 실루엣, C15) - 같은 장소에 있는 사람만, 우리 집은 가족만 있는 공간이라 안 보임 */}
+        {here.id !== 'home' && others.filter((o) => (o.place || 'home') === here.id).map((o) => (
           <div key={o.id} className={'v-person other ' + ageGroup(o.age) + ' ' + (o.dir || 'right') + (o.walking ? ' walking' : '')}
             style={{ left: o.x + '%', top: GROUND_Y + '%' }}>
             {o.message && <div className="v-bubble">{o.message}</div>}
