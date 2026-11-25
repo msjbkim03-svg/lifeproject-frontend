@@ -9,7 +9,7 @@ import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (main
 import styles from "./TraitsPage.module.css";
 import { TRAIT_VIEW } from "../../utils/traits";
 
-// 특성 강화 (M08)  주소: /mypage/traits
+// 특성 강화 (M08)  주소: /life/traits
 // 와이어프레임 18쪽: 보유 포인트 + 강화 규칙 / 특성 4종 카드 / 고른 카드의 확인 줄 (Lv.3 → Lv.4)
 // 포인트 1점 = 1레벨, Lv.1 ~ Lv.5, 올린 레벨은 다음 생부터 적용 (C13)
 

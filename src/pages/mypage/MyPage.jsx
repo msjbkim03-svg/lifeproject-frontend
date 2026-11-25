@@ -3,7 +3,7 @@ import Button from "../../common/ui/Button";
 import { formatPhone } from "../../utils/phone";
 import styles from "./MyPage.module.css";
 
-// 마이페이지 (M04)  주소: /mypage
+// 마이페이지 (M04)  주소: /my
 // 와이어프레임 15쪽: (왼쪽 메뉴는 MyPageLayout) 가입 정보 + 숫자 칸 3개 + 진행 중인 인생 + 전생 기록·특성 강화 바로가기
 function MyPage() {
   const navi = useNavigate();
@@ -20,7 +20,7 @@ function MyPage() {
         <section className={styles.card}>
           <div className={styles.cardHead}>
             <span className={styles.cardTitle}>가입 정보</span>
-            <Button size="sm" onClick={() => navi("/mypage/edit")}>개인정보 수정</Button>
+            <Button size="sm" onClick={() => navi("/my/edit")}>개인정보 수정</Button>
           </div>
           <dl className={styles.info}>
             <dt>아이디</dt><dd>{my.loginId}</dd>
@@ -71,12 +71,12 @@ function MyPage() {
           <section className={styles.card}>
             <div className={styles.cardHead}><span className={styles.cardTitle}>전생 기록</span></div>
             <p className={styles.desc}>지금까지 {my.lifeCount}번의 인생을 살았어요.</p>
-            <Button block onClick={() => navi("/mypage/lives")}>바로가기 ›</Button>
+            <Button block onClick={() => navi("/life/lives")}>바로가기 ›</Button>
           </section>
           <section className={styles.card}>
             <div className={styles.cardHead}><span className={styles.cardTitle}>특성 강화</span></div>
             <p className={styles.desc}>포인트 {my.point}P로 특성을 올릴 수 있어요.</p>
-            <Button block onClick={() => navi("/mypage/traits")}>바로가기 ›</Button>
+            <Button block onClick={() => navi("/life/traits")}>바로가기 ›</Button>
           </section>
         </div>
       </main>

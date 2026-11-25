@@ -23,7 +23,7 @@ function MemorialVideoTab() {
   const slotLabel = film === null ? "영상을 불러오는 중…" : film === false ? "영상을 불러오지 못했어요" : "이 삶의 영상을 만들지 못했어요";
 
   return (
-    <div className={s.videoCard}>
+    <div>
       {canPlay ? (
         open ? (
           // 엔딩 영상(전체 화면용 틀)을 이 칸 폭에 맞춰 재생 (맞추는 CSS 는 MemorialRoom.module.css 의 .filmBox)

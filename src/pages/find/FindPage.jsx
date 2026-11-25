@@ -156,10 +156,10 @@ function FindPage() {
               <div className={styles.result}>
                 <InfoBox label="가입한 아이디" value={foundId} />
               </div>
-              <Button type="primary" size="lg" block className={styles.mainBtn} onClick={() => navi("/login", { state: { background } })}>
+              <Button type="primary" size="lg" block className={common.mainBtn} onClick={() => navi("/login", { state: { background } })}>
                 로그인하러 가기
               </Button>
-              <Button block className={styles.subBtn} onClick={() => changeTab("RESET_PW")}>
+              <Button block className={common.subBtn} onClick={() => changeTab("RESET_PW")}>
                 비밀번호도 찾기
               </Button>
             </>
@@ -212,12 +212,12 @@ function FindPage() {
                 </>
               )}
 
-              {info && <div className={styles.infoBox}>{info}</div>}
+              {info && <div className={common.noticeBox}>{info}</div>}
               {error && <div className={common.errorBox}>{error}</div>}
 
               {/* 인증된 뒤에만 [아이디 확인] / [비밀번호 변경] */}
               {verified && (
-                <Button type="primary" size="lg" block className={styles.mainBtn} disabled={busy}
+                <Button type="primary" size="lg" block className={common.mainBtn} disabled={busy}
                   onClick={tab === "FIND_ID" ? findId : resetPw}>
                   {tab === "FIND_ID" ? "아이디 확인" : "비밀번호 변경"}
                 </Button>

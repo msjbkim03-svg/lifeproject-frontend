@@ -1,6 +1,6 @@
-/* 개인정보 수정·회원 탈퇴 (M05·M06) - 입력칸 모양만 (틀은 MyPage.module.css) */
+/* 개인정보 수정 · 회원 탈퇴 (M05 · M06) - 틀은 MyPage.module.css, 여기는 카드 안 모양만 */
 
-/* 한 줄: [이름표 140px] [입력칸 꽉 채우기] [버튼] */
+/* ===== 입력 한 줄: [이름표 140px] [입력칸 꽉 채우기] [버튼] ===== */
 .row {
   display: flex;
   align-items: center;
@@ -15,7 +15,7 @@
   color: var(--ink-sub);
 }
 
-/* 입력칸 = 공통 .input (design.css: 높이 44px · 테두리 · 포커스 빛) + 여기서는 남은 너비 채우기만 */
+/* 입력칸 = 공통 .input (design.css: 높이 44px · 테두리 · 포커스 빛) + 남은 너비 채우기 */
 .input {
   composes: input from global;
   flex: 1;
@@ -28,13 +28,14 @@
   background: var(--panel-2);
 }
 
-/* 중복 확인 결과 문구 */
+/* 중복 확인 결과 문구 (입력칸 바로 밑) */
 .hint {
   margin: calc(var(--sp-2) * -1) 0 var(--sp-3) 148px;
   font-size: var(--fs-xs);
   color: var(--ink-sub);
 }
 
+/* 오류 · 완료 안내 상자 */
 .error,
 .ok {
   margin-bottom: var(--sp-3);
@@ -47,14 +48,12 @@
   color: var(--red);
   background: var(--red-soft);
   border: 1px solid var(--red-line);
-  border-radius: var(--radius);
 }
 
 .ok {
   color: var(--green);
   background: color-mix(in srgb, var(--green) 8%, transparent);
   border: 1px solid var(--green-line);
-  border-radius: var(--radius);
 }
 
 /* 취소 · 저장하기 버튼 (오른쪽 정렬) */
@@ -62,4 +61,75 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--sp-2);
+}
+
+/* ===== 카드 안 배치: [입력칸(최대 600px) | 안내 상자(260px)] 를 카드 가운데로 ===== */
+.editGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 600px) 260px;
+  justify-content: center;
+  gap: var(--sp-5);
+  align-items: stretch; /* 안내 상자 높이 = 왼쪽 입력칸 높이 */
+}
+
+.form {
+  min-width: 0;
+}
+
+/* 카드는 마이페이지 카드와 같은 폭, 안의 입력 줄만 600px 까지 + 가운데 */
+.narrow .row,
+.narrow .hint,
+.narrow .error,
+.narrow .ok,
+.narrow .actions {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 중복 확인 문구는 입력칸 밑에 맞춰야 해서 왼쪽 148px 를 안쪽 여백으로 */
+.narrow .hint {
+  padding-left: 148px;
+  box-sizing: border-box;
+}
+
+/* ===== 오른쪽 안내 상자 ===== */
+.guide {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-sub);
+}
+
+.guideTitle {
+  display: block;
+  margin-bottom: var(--sp-2);
+  color: var(--ink);
+}
+
+/* 목록이 상자의 남은 높이를 다 차지하고, 항목 사이를 고르게 벌림 */
+.guideList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  margin: 0;
+  padding-left: 1.1em;
+  line-height: 1.7;
+}
+
+.guideList b {
+  color: var(--ink);
+}
+
+/* 화면이 좁으면 안내 상자를 입력칸 아래로 */
+@media (max-width: 1100px) {
+  .editGrid {
+    grid-template-columns: minmax(0, 600px);
+  }
 }

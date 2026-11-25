@@ -11,6 +11,25 @@
   align-items: start;
 }
 
+/* 오른쪽 내용(main)을 칸 나누기에 풀어서 [제목 / 안내 / 첫 창 …] 한 줄씩 두고
+   왼쪽 메뉴는 3번째 줄(첫 창)부터 → 메뉴 윗선 = 첫 창 윗선 (마이 · 라이프 모든 화면 같음) */
+.containerAligned {
+  grid-template-rows: auto auto auto 1fr;
+  row-gap: var(--sp-3);
+}
+.containerAligned > main {
+  display: contents;
+}
+.containerAligned > main > * {
+  grid-column: 2;
+  align-self: start;
+}
+.containerAligned > .side {
+  grid-column: 1;
+  grid-row: 3 / -1;
+  align-self: start;
+}
+
 .loading {
   padding: var(--sp-6);
   text-align: center;
@@ -19,9 +38,6 @@
 
 /* ===== 공통 카드 = 팀 공통 .panel (유리 카드 · 테두리 · 둥근 모서리 · 여백) ===== */
 .card {
-  composes: panel from global;
-}
-.side {
   composes: panel from global;
 }
 
@@ -54,8 +70,9 @@
   font-size: var(--fs-xs);
 }
 
-/* ===== 왼쪽 메뉴 ===== */
+/* ===== 왼쪽 메뉴 = 공통 .panel + 세로 줄 ===== */
 .side {
+  composes: panel from global;
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
@@ -213,7 +230,16 @@
 /* 좁은 화면: 한 줄로 쌓기 */
 @media (max-width: 860px) {
   .container,
+  .containerAligned,
   .twoCol {
     grid-template-columns: 1fr;
+  }
+  .containerAligned {
+    grid-template-rows: none;
+  }
+  .containerAligned > main > *,
+  .containerAligned > .side {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
