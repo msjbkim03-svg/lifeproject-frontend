@@ -24,6 +24,7 @@ import { autoWaitSec, autoPickOf } from '../../common/ui/autoPick';
 import DecisionModal from '../../common/ui/DecisionModal';
 import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
+import Modal from '../../common/ui/Modal';
 import Spoon from '../../common/ui/Spoon.jsx';
 import { SPOONS } from '../../common/ui/spoon';
 import ChatVillage from '../../pages/chat/ChatVillage';
@@ -215,11 +216,15 @@ function PlayPage() {
   const [years, setYears] = useState({});             // 인생 지도: 나이 → { h 행복, hl 건강, nw 순자산, flow 그해 돈 내역 }
   const [mapTip, setMapTip] = useState(null);         // 인생 지도 말풍선 { age, x, y }
   const [traits, setTraits] = useState(null);         // 특성 칸 { traits: [{ traitId, level, effect }], temper }
-  const [ctyView, setCtyView] = useState('cur');      // 나라 패널: cur 사는 나라 / born 태어난 나라 (이민했을 때)
+  const [ctyView, setCtyView] = useState('born');     // 나라 패널: born 태어난 나라 (기본, 11/25 동현님: 이민 가도 출생 나라 기준) / cur 사는 나라
   const [cty, setCty] = useState(null);               // 나라 패널 통계 (GET /api/engine/country)
   const [shopOpen, setShopOpen] = useState(false);    // 돈 쓰기 · 투자 창 (여는 동안 시간 멈춤)
   const [costumeOpen, setCostumeOpen] = useState(false); // C21 옷 가게 창 (여는 동안 시간 멈춤)
   const [wear, setWear] = useState({});                 // C21 입은 착장 { hair, top, hat } (해마다 life 가 바뀌어도 유지)
+  const [endOpen, setEndOpen] = useState(false);       // 삶을 마감 확인 창 (여는 동안 시간 멈춤, 11/25 동현님)
+  const [endName, setEndName] = useState('');          // 확인용으로 입력한 이름
+  const [endBusy, setEndBusy] = useState(false);
+  const [endErr, setEndErr] = useState('');
   // 선택 이벤트를 운에 맡기기 (원작 '자동으로 맡기기', 이 브라우저에 기억)
   const [autoChoice, setAutoChoiceState] = useState(() => {
     try { return localStorage.getItem('autoChoice') === 'Y'; } catch { return false; }
@@ -463,7 +468,7 @@ function PlayPage() {
   // ② 한 해 흐르기: 막대가 차는 동안 미리 받은 그해 일을 하나씩 보여 주고, 다 차면 나이 +1
   //    매 프레임 막대는 DOM 으로 바로 칠하고(React 다시 그리기 없음), 해가 바뀔 때만 화면을 새로 그려서 버벅임 없음
   //    다음 해는 막대가 끝나기 조금 전에 미리 요청해 두어 해 사이에 멈춤이 없게 함
-  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen && !costumeOpen;
+  const running = !!life && !ended && !paused && !hidden && !waiting && !busy && !error && !shopOpen && !costumeOpen && !endOpen;
   // 화면을 다시 그린 뒤 진행 막대를 지금 위치로 맞춤 (막대가 새로 만들어져도 0으로 보이지 않게)
   useLayoutEffect(() => { if (!ended) setProg(yr.current.t); });
   const loopRef = useRef({ yearSec, guestToken, pushLines, remember, reload });
@@ -749,6 +754,9 @@ function PlayPage() {
                 disabled={!bgm.on || bgm.missing} onChange={(e) => bgm.setVolume(e.target.value)} />
             </span>
 
+            {!ended && (
+              <button type="button" className="pp-b pp-quit" onClick={() => { setEndName(''); setEndErr(''); setEndOpen(true); }}>삶을 마감</button>
+            )}
             <button type="button" className="pp-b ghost" onClick={() => navigate('/')}>나가기</button>
           </div>
         </div>
@@ -949,14 +957,15 @@ function PlayPage() {
 
           {life.peers?.length > 0 && (
             <section className="pp-panel">
-              <h3 className="pp-h"><span>같은 1초에 태어난 사람들</span><span className="pp-lbl">{life.birthYear}년생</span></h3>
+              <h3 className="pp-h"><span>같은 해에 태어난 사람들</span><span className="pp-lbl">{life.birthYear}년생 또래</span></h3>
+              {/* 실제 플레이어의 인생이 먼저 (같은 연대 · 태어난 해가 가까운 순), 4명이 안 되면 만든 또래로 채움 (11/25 동현님) */}
               <ul className="pp-peers">
                 {life.peers.map((p, i) => (
-                  <li key={i} className={p.alive ? '' : 'gone'}>
+                  <li key={i} className={(p.alive ? '' : 'gone') + (p.real ? ' real' : '')}>
                     <b>{p.name}</b>
-                    <small><Flag cc={p.countryCode} />{p.countryName || p.countryCode} · {p.gender === 'M' ? '남' : '여'}</small>
-                    {/* 세상을 떠난 또래는 내 나이를 붙이지 않음 (나이가 계속 오르던 것) */}
-                    <span>{p.alive ? `${life.currentAge}세 · ${p.status}` : p.status}</span>
+                    <small><Flag cc={p.countryCode} />{p.countryName || p.countryCode} · {p.gender === 'M' ? '남' : '여'}{p.real && p.birthYear && p.birthYear !== life.birthYear ? ` · ${p.birthYear}년생` : ''}</small>
+                    {/* 세상을 떠난 또래는 나이를 붙이지 않음 (나이가 계속 오르던 것) · 실제 플레이어가 아직 내 나이까지 못 살았으면 그 사람 지금 나이 */}
+                    <span>{p.alive ? `${p.age ?? life.currentAge}세 · ${p.status}` : p.status}</span>
                   </li>
                 ))}
               </ul>
@@ -1054,6 +1063,36 @@ function PlayPage() {
         hint={autoChoice && !decAuto ? '이번 창은 자동 결정을 멈췄어요. 직접 골라 주세요.' : undefined}
         footer={<FateFooter onFate={fateDest} busy={busy} auto={autoChoice} onAuto={setAutoChoice} hideFate={!!decAuto} />} />
 
+      {/* 삶을 마감 (11/25 동현님): 회원 탈퇴처럼 강한 경고 → 이름을 그대로 입력해야 지울 수 있음 */}
+      <Modal open={endOpen} title="정말 삶을 마감할까요?" onClose={endBusy ? undefined : () => setEndOpen(false)}>
+        <div className="pp-endbox">
+          <p className="pp-endwarn"><b aria-hidden="true">!</b>이 인생은 <em>영구히 삭제</em>되고 되돌릴 수 없어요.</p>
+          <ul className="pp-endlist">
+            <li><b>{life.name}</b>({life.currentAge}세)의 인생 기록 · 인생 지도 · 경험이 모두 지워져요.</li>
+            <li>엔딩 크레딧 · 결과 화면 · 추모관에도 남지 않아요.</li>
+            <li>이 인생에서 고른 퀘스트와 산 옷도 함께 사라져요. 특성 포인트는 그대로 남아요.</li>
+          </ul>
+          <label className="pp-endlabel">
+            확인을 위해 이름 <b>{life.name}</b>{eul(life.name)} 그대로 입력해 주세요.
+            <input value={endName} onChange={(e) => setEndName(e.target.value)} placeholder={life.name} autoComplete="off" disabled={endBusy} />
+          </label>
+          {endErr && <p className="pp-enderr" role="alert">{endErr}</p>}
+          <div className="pp-endacts">
+            <Button onClick={() => setEndOpen(false)} disabled={endBusy}>계속 살기</Button>
+            <Button type="danger" disabled={endBusy || endName.trim() !== life.name}
+              onClick={() => {
+                setEndBusy(true);
+                setEndErr('');
+                client.post('/api/engine/delete', { lifeId: life.lifeId, guestToken })
+                  .then(() => navigate('/', { replace: true }))
+                  .catch((err) => { setEndErr(typeof err.response?.data === 'string' ? err.response.data : '삶을 마감하지 못했어요. 잠시 뒤 다시 해 주세요.'); setEndBusy(false); });
+              }}>
+              {endBusy ? '지우는 중…' : '영구히 삭제하기'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* C06-3 돈 쓰기 · 투자 */}
       {shopOpen && (
         <ShopSheet life={life} age={life.currentAge} guestToken={guestToken}
@@ -1121,6 +1160,12 @@ const REFLECT_Q = {
   70: [[(n) => `한 번뿐인 삶에서, ${iga(n)} 가장 소중히 여긴 것은 무엇이었을까요?`, () => '가족과 함께한 저녁'],
   [() => '당신은 어떤 사람으로 기억되고 싶나요?', () => '곁에 있으면 편했던 사람']],
 };
+
+// 목적격 조사 (받침 있으면 '을', 없으면 '를')
+function eul(w) {
+  const ch = String(w || '').trim().slice(-1).charCodeAt(0);
+  return ch >= 0xac00 && ch <= 0xd7a3 && (ch - 0xac00) % 28 !== 0 ? '을' : '를';
+}
 
 function ReflectModal({ life, aliveNow, countryName, auto, speed, onClose }) {
   const age = life.currentAge;

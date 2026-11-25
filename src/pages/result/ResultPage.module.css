@@ -1,33 +1,133 @@
-/* C18 인생 결과 화면 */
-.result { max-width: 760px; }
+/* C18 인생 기록 화면 (11/25 다시 그림) - 진행 화면처럼 넓은 두 단 */
+.page { min-height: 100vh; padding: 28px 20px 64px; }
+.wrap { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.flag { display: inline-block; vertical-align: -2px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08); }
 
-.head { text-align: center; }
-.head h1 { margin: var(--sp-2) 0; }
+/* ① 머리 */
+.hero { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; padding: 22px 26px;
+  background: var(--glass); backdrop-filter: var(--glass-blur); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
+.portrait { width: 104px; height: 104px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, var(--panel), var(--panel-2)); border: 2px solid var(--primary-line); }
+.portrait svg { width: 70px; height: auto; image-rendering: pixelated; }
+.heroText { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { margin: 0; font-size: 12.5px; letter-spacing: 0.06em; color: var(--ink-light); }
+.name { margin: 0; font-family: var(--font-display); font-size: 34px; line-height: 1.15; color: var(--ink); }
+.where { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 15px; color: var(--ink-sub); }
+.where b { color: var(--ink); font-weight: 600; }
+.hist { padding: 1px 8px; border-radius: 999px; background: var(--panel-2); font-size: 12px; color: var(--ink-light); }
+.dot { color: var(--line-strong); }
+.moved { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--blue); }
+.cause { margin: 0; font-size: 13.5px; color: var(--ink-light); }
+.heroActs { display: flex; flex-direction: column; gap: 8px; align-items: stretch; min-width: 200px; }
 
-.bigRow {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--sp-3);
-  text-align: center;
+/* ② 숫자 4칸 */
+.nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.num { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; }
+.numLabel { font-size: 12px; color: var(--ink-light); }
+.numVal { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-size: 28px; font-weight: 400; color: var(--ink); line-height: 1.2; }
+.numVal small { font-size: 15px; color: var(--ink-sub); }
+.numSub { font-size: 12px; color: var(--ink-sub); line-height: 1.5; }
+.numSub em { font-style: normal; font-weight: 600; }
+.up { color: var(--green); }
+.down { color: var(--red); }
+.lifeBar { position: relative; height: 6px; margin-top: 4px; border-radius: 999px; background: var(--panel-2); }
+.lifeBar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--primary); }
+.lifeBar s { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); text-decoration: none; }
+
+/* 두 단 */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.main, .side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.side { position: sticky; top: 76px; }
+
+/* 인생 지도 */
+.map { display: block; width: 100%; height: auto; }
+.mapPin { cursor: pointer; }
+.mapPin:hover circle { fill: var(--primary-hover); }
+.mapLegend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; font-size: 11.5px; color: var(--ink-light); }
+.mapLegend span { display: inline-flex; align-items: center; gap: 5px; }
+.mapLegend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.mapLegend .pinDot { border-radius: 50%; background: var(--primary); }
+
+/* 인생의 큰 장면 */
+.moments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.moments li { display: grid; grid-template-columns: 26px 64px 1fr auto auto; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 12px; background: var(--panel-2); cursor: pointer; border: 1px solid transparent; }
+.moments li:hover, .moments li.picked { border-color: var(--primary-line); background: var(--primary-light); }
+.mNo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-size: 11.5px; font-weight: 700; }
+.mAge { display: flex; flex-direction: column; font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+.mAge small { font-size: 11px; font-weight: 400; color: var(--ink-light); }
+.mText { font-size: 14px; color: var(--ink); line-height: 1.5; }
+.mTag { padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-size: 11.5px; color: var(--ink-sub); white-space: nowrap; }
+
+/* 능력치 */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2) var(--sp-4); margin-bottom: var(--sp-3); }
+
+/* 인생 기록: 나이대 탭 + 나이별 줄 */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tabs button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line-strong);
+  background: var(--panel); color: var(--ink-sub); font: inherit; font-size: 12.5px; cursor: pointer; }
+.tabs button small { font-size: 10.5px; color: var(--ink-light); }
+.tabs button[aria-selected='true'] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tabs button[aria-selected='true'] small { color: var(--bg); opacity: 0.7; }
+.logs { list-style: none; margin: 0 0 8px; padding: 0; }
+.logs li { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; padding: 4px 0; font-size: 13.5px; line-height: 1.6; }
+.logs li.newAge { border-top: 1px solid var(--line); padding-top: 9px; margin-top: 4px; }
+.logs li:first-child { border-top: 0; margin-top: 0; }
+.logs li.bigLine .lText { color: var(--ink); font-weight: 600; }
+.logs li.bigLine .lAge { color: var(--primary); }
+.lAge { display: flex; flex-direction: column; font-weight: 600; color: var(--ink-sub); line-height: 1.3; }
+.lAge small { font-size: 10.5px; font-weight: 400; color: var(--ink-light); }
+.lText { color: var(--ink-sub); min-width: 0; }
+.lChoice { display: block; font-style: normal; font-size: 12px; color: var(--teal); }
+.lAi { align-self: start; padding: 0 6px; border-radius: 6px; background: var(--primary-light); color: var(--primary); font-size: 10.5px; font-weight: 700; }
+
+/* ④ 오른쪽 */
+.facts { display: grid; grid-template-columns: 78px 1fr; gap: 10px 10px; margin: 0; font-size: 13.5px; }
+.facts dt { color: var(--ink-light); }
+.facts dd { margin: 0; color: var(--ink); min-width: 0; }
+.note { color: var(--ink-light); }
+.jobs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.jobs li { display: flex; flex-direction: column; line-height: 1.35; }
+.jobs li b { font-weight: 600; }
+.jobs li span { font-size: 11.5px; color: var(--ink-light); }
+.lands { display: flex; flex-direction: column; gap: 4px; }
+.lands span { display: inline-flex; align-items: center; gap: 6px; }
+.lands small { font-size: 11.5px; color: var(--ink-light); }
+.quests { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+.quests li { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; color: var(--ink-sub); }
+.quests li b { font-size: 12px; font-weight: 600; color: var(--ink-light); }
+.quests li.qOk { color: var(--ink); }
+.quests li.qOk span:first-child, .quests li.qOk b { color: var(--green); }
+.deeper { display: flex; flex-direction: column; gap: 8px; }
+.deepBtn { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 12px 14px; border-radius: 14px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink); font: inherit; }
+.deepBtn b { font-size: 14px; font-weight: 600; }
+.deepBtn span { font-size: 12px; color: var(--ink-light); line-height: 1.5; }
+.deepBtn:hover { border-color: var(--primary); }
+.deepBtn[aria-pressed='true'] { border-color: var(--primary); background: var(--primary-light); }
+
+@media (max-width: 980px) {
+  .grid { grid-template-columns: 1fr; }
+  .side { position: static; }
+  .nums { grid-template-columns: 1fr 1fr; }
+  .hero { grid-template-columns: auto 1fr; }
+  .heroActs { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; min-width: 0; }
 }
-
-.stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-2) var(--sp-4);
-  margin-bottom: var(--sp-3);
-}
-
-.quest {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-}
-.quest span:first-child { color: var(--primary); }
-.quest span:nth-child(2) { flex: 1; }
-
-@media (max-width: 600px) {
-  .bigRow, .stats { grid-template-columns: 1fr; }
+@media (max-width: 560px) {
+  .nums { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .num { padding: 12px 14px; border-radius: 14px; }
+  .numVal { font-size: 22px; }
+  .numSub { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .heroActs { justify-content: center; }
+  .where, .moved { justify-content: center; }
+  .stats { grid-template-columns: 1fr; }
+  .moments li { grid-template-columns: 22px 1fr auto; row-gap: 2px; }
+  .moments li .mNo { grid-row: 1 / 3; }
+  .moments li .mAge { flex-direction: row; align-items: baseline; gap: 6px; }
+  .moments li .mText { grid-column: 2; font-size: 13.5px; }
+  .moments li .mCam { grid-column: 3; grid-row: 1 / 3; }
+  .mTag { display: none; }
 }
 
 /* C19 AI 인생 이야기 */
@@ -83,3 +183,50 @@
   margin-top: var(--sp-3);
 }
 .qaForm input { flex: 1; }
+
+/* C18-6 추모관에 올리기 창 */
+.memo { display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+.memo textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--bg); color: var(--ink); font: inherit; font-size: 14px; resize: vertical; }
+.memo textarea:focus { outline: none; border-color: var(--primary); }
+.memoFoot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
+.memoErr { color: var(--red); }
+.memoActs { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* 숫자 칸: 가장 행복했던 때 (11/25) */
+.numMini { margin-left: 4px; font-family: var(--font-body, inherit); font-size: 12px; color: var(--stat-happiness); font-weight: 600; }
+.clip { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--ink); }
+
+/* 큰 장면: 사진 아이콘 */
+.moments li { cursor: pointer; }
+.moments li:focus-visible { outline: 2px solid var(--primary-line); outline-offset: 2px; }
+.mCam { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--ink-light); transition: color 0.15s, background 0.15s; }
+.moments li:hover .mCam, .moments li.picked .mCam { color: var(--primary); background: var(--panel); }
+
+/* 인생 지도 마우스 칸 + 말풍선 (play 인생 지도 말풍선과 같은 모양) */
+.mapHit { fill: transparent; cursor: pointer; }
+.mapHit:hover { fill: var(--ink); fill-opacity: 0.06; }
+.mapTip { position: fixed; z-index: 150; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: var(--panel); color: var(--ink-sub); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); font-size: 12.5px; line-height: 1.55; pointer-events: none; }
+.mapTip b { color: var(--ink); }
+.tipNo { display: inline-grid; place-items: center; width: 17px; height: 17px; margin-left: 6px; border-radius: 50%; vertical-align: 1px;
+  background: var(--primary); color: var(--on-primary); font-size: 9.5px; font-weight: 700; }
+.tipStats { color: var(--ink-sub); }
+.tipLine { color: var(--ink); }
+.tipHint { margin-top: 2px; font-size: 11px; color: var(--primary); }
+
+/* 탭: 인생 기록 · 이야기 · 묻기 (11/25) */
+.mainTabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px; margin-top: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px; }
+.mainTabs button { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 10px 14px; border: none; border-radius: 999px;
+  background: transparent; color: var(--ink-sub); font: inherit; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.mainTabs button b { font-size: 15px; font-weight: 600; }
+.mainTabs button small { font-size: 11.5px; color: var(--ink-light); }
+.mainTabs button:hover { background: var(--panel-2); }
+.mainTabs button[aria-selected='true'] { background: var(--ink); color: var(--bg); }
+.mainTabs button[aria-selected='true'] small { color: inherit; opacity: 0.7; }
+@media (max-width: 640px) {
+  .mainTabs { border-radius: 16px; }
+  .mainTabs button { padding: 9px 6px; border-radius: 12px; }
+  .mainTabs button small { display: none; }
+}

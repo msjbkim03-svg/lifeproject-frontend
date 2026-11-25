@@ -419,7 +419,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
   const P = (ms) => fa(b, ms, ms + 700);       // ms 부터 0.7초 동안 나타남
   const y = 1 - fa(b, K - 700, K);              // 끝 0.7초 사라짐
   const F = (ms) => P(ms) * y;
-  const next = segs[u + 1];
+  const next = segs.slice(u + 1).find((s) => s.t1 > s.t0); // 길이 0 구간(사고사가 아닐 때의 마지막 밤)은 건너뜀
   const x = next && (next.kind === 'moment' || next.kind === 'death') ? 1 : y; // 다음이 장면이면 그림은 겹쳐 넘어감
   const prev = segs[u - 1];
   const D = film.age;
@@ -482,7 +482,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
         <T y={136} size={22} w={500} align="left" x={58} max={700} color="#e2dbcf" op={P(s) * w} shadow>
           {`${a}세 · ${film.placeName(m.v.countryCode)}`}
         </T>
-        <Sub f={m.f} op={P(s + 400) * w} />
+        <Sub f={m.f} op={P(s + 400) * w} op2={P(s + 800) * w} />
       </>
     );
   } else if (m.kind === 'death') {
@@ -507,6 +507,10 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
       </>
     );
   } else if (m.kind === 'funeral') {
+    // 합친 장례 (사고사가 아니면 마지막 밤 장면 없이): 처음 3초는 떠난 해 · 사망 원인, 이어서 배웅 (11/25 동현님)
+    const mg = !!m.merged;
+    const s0 = mg ? 2800 : 0; // 합친 장례: 떠난 해 · 사망 원인이 사라진 뒤 배웅 자막 (11/25: '곁을 지켰다'가 너무 빨리 지나감)
+    const hd = mg ? 1 - fa(b, 2600, 3200) : 0;
     shots.push(
       <Shot key={u} idx={u} seg={m} tt={b} op={P(0) * y} cam={camOf('funeral', p)} tint={[58, 72, 104]} arch={0}
         fills={fillsOf(m.v.countryCode)} cls="funeral" shade={false}
@@ -514,9 +518,15 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     );
     over = (
       <>
+        {mg && ( // 영정을 가리지 않게 아래쪽 (배웅 자막과 같은 자리, 차례로 나옴)
+          <Stack bottom={670}>
+            <T inline size={40} w={700} font="d" op={P(300) * hd} shadow>{film.head}</T>
+            <T inline gap={10} size={28} color={C.r} op={P(700) * hd} max={620} lh={42} shadow>{film.died}</T>
+          </Stack>
+        )}
         <Stack bottom={670}>
-          <T inline size={29} w={500} op={F(600)} max={620} lh={44} shadow>{film.funeral}</T>
-          <T inline gap={14} size={24} color={C.r} op={F(1800)} max={620} lh={38} shadow>{film.attend}</T>
+          <T inline size={29} w={500} op={F(600 + s0)} max={620} lh={44} shadow>{film.funeral}</T>
+          <T inline gap={14} size={24} color={C.r} op={F(1400 + s0)} max={620} lh={38} shadow>{film.attend}</T>
         </Stack>
       </>
     );
@@ -621,11 +631,13 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
 
 // 아래 자막 (원작 filmSub)
 // 자막은 화면 위쪽 (장면 사람들이 화면 아래 78~88% 에 서 있어서 아래 자막이 얼굴을 가렸음, 11/24)
-function Sub({ f, op, top = 168 }) {
+//   둘째 줄(f.sub): 그 사건이 삶에서 어떤 의미였는지 (11/25 동현님: 자막이 부실함) - 조금 늦게 · 작게 · 연한 금색
+function Sub({ f, op, top = 168, op2 }) {
   if (!f || !f.t) return null;
   return (
     <Stack top={top}>
       <T inline size={30} w={500} op={op} max={1000} lh={44} shadow>{f.t}</T>
+      {f.sub && <T inline gap={10} size={23} w={500} color={C.d} op={op2 ?? op} max={900} lh={34} shadow>{f.sub}</T>}
     </Stack>
   );
 }
