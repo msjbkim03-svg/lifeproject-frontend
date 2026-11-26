@@ -25,7 +25,7 @@ function MyPageSide({ active, nickname, loginId, my }) {
   const look = lookOf({
     gender: my?.gender || "M",
     age: my?.currentAge ?? 25,
-    costume: { hair: my?.hair, top: my?.top, hat: my?.hat },
+    costume: { hair: my?.hair, top: my?.top, hat: my?.hat, ride: my?.ride },
   });
 
   return (
