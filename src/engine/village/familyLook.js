@@ -15,7 +15,8 @@ const TOPS = {
   kid: ['tee', 'stripe', 'hoodie', 'school'],
   adultM: ['tee', 'stripe', 'hoodie', 'suit'],
   adultF: ['tee', 'stripe', 'hoodie', 'dress'],
-  elder: ['tee', 'suit', 'hanbok'],
+  elderM: ['tee', 'suit', 'hanbok'],
+  elderF: ['tee', 'dress', 'hanbok'], // 정장은 남자만
 };
 
 // 글자 → 숫자 (FNV-1a 해시): 같은 글자면 항상 같은 숫자
@@ -44,7 +45,10 @@ export function familyLook({ seed, gender, age }) {
   }
 
   const teen = look.group === 'adult' && age != null && age < 20; // 13~19세: 몸은 어른 크기, 옷은 아이 목록 (정장·원피스 X, 교복 O)
-  const tops = teen ? TOPS.kid : look.group === 'adult' ? (female ? TOPS.adultF : TOPS.adultM) : TOPS[look.group];
+  const tops = teen ? TOPS.kid
+    : look.group === 'adult' ? (female ? TOPS.adultF : TOPS.adultM)
+      : look.group === 'elder' ? (female ? TOPS.elderF : TOPS.elderM)
+        : TOPS[look.group];
   const style = pick(tops, h, 3);
   look.top = { style, color: pick(style === 'suit' ? SUIT_COLORS : TOP_COLORS, h, 4) };
   return look;
