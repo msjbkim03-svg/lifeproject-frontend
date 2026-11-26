@@ -232,3 +232,7 @@
   .v-caption { display: none; }
   .v-edge { font-size: 11px; padding: 3px 8px; }
 }
+
+/* 집 앞에 세워 둔 코스튬 탈것 (Figure ParkedRide) - 발밑 기준을 사람과 같게, 사람보다 뒤 */
+.v-parked { position: absolute; width: 0; height: 0; z-index: 3; }
+.v-parked .v-ride { display: block; transform: translate(-50%, calc(-100% - 14px)); }

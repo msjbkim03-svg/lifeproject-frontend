@@ -18,9 +18,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { COUNTRIES, THEMES, PLACES, MIN_X, MAX_X, EDGE, DOOR_X, GROUND_Y, SPEED, SKY_STARS, HOUSE_KINDS, moodOf } from './villageData';
 import { useTheme } from '../../common/theme';
-import Figure from './Figure';
+import Figure, { ParkedRide } from './Figure';
 import Pet from './Pet';
-import { lookOf, ageGroup } from './costumeData';
+import { lookOf, ageGroup, COSTUMES } from './costumeData';
 import { familyLook } from './familyLook';
 import './village.css';
 
@@ -33,9 +33,11 @@ const UNIFORM = {
   prison: { top: { style: 'stripe', color: '#7d8794' }, hat: null, pants: '#6b7380', shoe: '#3a3a3a' },
   barracks: { top: { style: 'army', color: '#5a6b3a' }, hat: { style: 'army', color: '#5a6b3a' }, pants: '#4e5f36', shoe: '#2b2a28' },
 };
-function myLook({ gender, age, costume, kind }) {
+// parked: 집에 서 있을 때는 탈것에서 내림 (탈것은 집 앞에 세워 둠) / 교도소·군 부대에서는 탈것 없음
+function myLook({ gender, age, costume, kind, parked }) {
   const look = lookOf({ gender, age, costume });
   const u = UNIFORM[kind];
+  if (parked || u) look.ride = null;
   return u ? { ...look, ...u } : look;
 }
 
@@ -1029,6 +1031,7 @@ function FamilyPerson({ m, i }) {
 
 // 반려동물 (우리 집 화면에만): 마당을 천천히 오가고, 가는 방향을 바라봄 (CSS v-wander · v-pet-face)
 const PET_X = 40;
+const PARK_X = 82; // 집 앞에 세워 둔 코스튬 탈것 자리 (%)
 function PetWalker({ pet }) {
   return (
     <div className="v-person pet" style={{ left: PET_X + '%', top: GROUND_Y + '%' }}>
@@ -1177,6 +1180,10 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
   const prev = PLACES[scene - 1];
   const next = PLACES[scene + 1];
   const atDoor = Math.abs(x - DOOR_X) < 14;
+  // 코스튬 탈것(C21): 우리 집 화면에서는 기본 모습(탈것은 집 앞에 세워 둠), 다른 장소 화면에서만 타고 다님
+  const parked = here.id === 'home';
+  const ride = !away && costume && COSTUMES[costume.ride];
+  const homeVehicle = ride ? null : vehicle; // 코스튬 탈것이 없을 때만 예전 가진 물건(owns) 탈것을 집 앞에
 
   return (
     <div ref={boxRef} className={'village ' + mode + ' mood-' + mood} style={{ background: c.sky }}
@@ -1197,7 +1204,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
           <rect x="0" y="92" width="320" height="38" fill={c.ground} />
           <rect x="0" y="104" width="320" height="12" fill={c.road} />
           <path d="M0 110 H320" stroke="#ffffff" strokeOpacity={mode === 'dark' ? 0.25 : 0.6} strokeDasharray="8 7" strokeWidth="1" />
-          <Scene place={here.id} c={c} t={t} urban={urban} house={house} vehicle={vehicle} industry={industry} dark={mode === 'dark'} />
+          <Scene place={here.id} c={c} t={t} urban={urban} house={house} vehicle={homeVehicle} industry={industry} dark={mode === 'dark'} />
         </svg>
 
         {/* 우리 집 가족 (우리 집 화면에만) */}
@@ -1205,6 +1212,13 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
 
         {/* 반려동물 (우리 집 화면에만, 강아지·고양이) */}
         {here.id === 'home' && !away && pet && <PetWalker pet={pet} />}
+
+        {/* 집 앞에 세워 둔 코스튬 탈것 (우리 집 화면에만, 사람 뒤) - 그림은 Figure 의 탈것을 크게 */}
+        {parked && ride && (
+          <div className="v-parked" style={{ left: PARK_X + '%', top: GROUND_Y + '%' }}>
+            <ParkedRide style={ride.style} color={ride.color} />
+          </div>
+        )}
 
         {/* 같은 나라 접속자 (흐린 실루엣, C15) - 같은 장소에 있는 사람만, 우리 집은 가족만 있는 공간이라 안 보임 */}
         {here.id !== 'home' && others.filter((o) => (o.place || 'home') === here.id).slice(0, 8).map((o) => (
@@ -1220,7 +1234,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
       {/* 나 */}
       <div className={'v-person me ' + ageGroup(age) + ' ' + dir + (walking ? ' walking' : '')} style={{ left: x + '%', top: GROUND_Y + '%' }}>
         {myMessage && <div className="v-bubble mine">{myMessage}</div>}
-        <Figure look={myLook({ gender, age, costume, kind: house.kind })} />
+        <Figure look={myLook({ gender, age, costume, kind: house.kind, parked })} />
         <div className="v-name mine">나{age != null && ', ' + age + '세'}</div>
       </div>
 
