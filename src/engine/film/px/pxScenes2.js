@@ -1205,6 +1205,18 @@ export function award(px, t, v) {
   confetti(px, t, 3300, 50, 'aw');
 }
 
+// 복권 TV 숫자 (5×7 점을 2배로): 7 7 7 슬롯처럼
+const LOT_GLYPH = {
+  7: ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+  1: ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+  3: ['11110', '00001', '00001', '01110', '00001', '00001', '11110'],
+  5: ['11111', '10000', '11110', '00001', '00001', '10001', '01110'],
+  8: ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+};
+function lotGlyph(px, d, x, y, color) {
+  LOT_GLYPH[d].forEach((row, r) => { for (let c2 = 0; c2 < 5; c2++) if (row[c2] === '1') px.rect(x + c2 * 2, y + r * 2, 2, 2, color); });
+}
+
 function lottery(px, t, v) {
   const c = paletteOf(v);
   const k = castOf(v);
@@ -1216,10 +1228,26 @@ function lottery(px, t, v) {
   px.rect(sx, 40, 120, G - 40, '#f2e6d0'); px.rect(sx - 2, 36, 124, 4, '#c9544a');
   px.rect(sx + 20, 42, 80, 12, '#d84a4a'); for (let i = 0; i < 5; i++) px.disc(sx + 34 + i * 13, 48, 4, ['#f2c230', '#3f6aa8', '#e8584c', '#7ab65a', '#ffffff'][i]);
   for (let i = 0; i < 120; i += 6) px.rect(sx + i, 56, 3, 6, i % 12 ? '#ffffff' : '#f2c230');
-  // 진열창 TV (추첨 번호가 하나씩)
-  px.rect(sx + 8, 66, 52, G - 70, '#a8c8e8'); px.rect(sx + 14, 70, 40, 26, '#1e2430');
-  const shown = Math.min(6, Math.floor(seg(t, 400, 2600) * 6.99));
-  for (let i = 0; i < shown; i++) { px.disc(sx + 19 + i * 6, 83, 2, ['#f2c230', '#3f6aa8', '#e8584c', '#7ab65a', '#c4a8ec', '#ffffff'][i]); }
+  // 진열창 TV: 숫자 세 칸이 빙글빙글 돌다 하나씩 7에서 멈춤 → 7 7 7 이 되면 화면이 번쩍번쩍 (11/26 동현님)
+  px.rect(sx + 8, 66, 52, G - 70, '#a8c8e8');
+  const all7 = t > 2300;
+  const blink = all7 && Math.floor((t - 2300) / 180) % 2 === 0;
+  px.rect(sx + 14, 70, 40, 26, blink ? '#4a1e2e' : '#1e2430');
+  for (let i = 0; i < 3; i++) {
+    const x0 = sx + 16 + i * 13;
+    const y0 = 76;
+    px.rect(x0 - 1, y0 - 2, 12, 18, blink ? '#5e2a3a' : '#2a3242'); // 칸
+    const stop = 1100 + i * 550; // 칸마다 멈추는 때
+    if (t >= stop) {
+      lotGlyph(px, '7', x0, y0, blink ? '#fff4b0' : '#ffd23a');
+    } else {
+      // 도는 중: 숫자가 빠르게 바뀌고 위아래로 흐린 줄
+      const d = '13587'[Math.floor(t / 70 + i * 2) % 5];
+      lotGlyph(px, d, x0, y0 + (Math.floor(t / 35) % 3) - 1, '#c8d0e0');
+      px.alpha(0.35, () => { px.hl(x0, x0 + 9, y0 - 1, '#ffffff'); px.hl(x0, x0 + 9, y0 + 14, '#ffffff'); });
+    }
+  }
+  if (all7) { sparkle(px, sx + 15, 71, t); sparkle(px, sx + 52, 93, t + 250); }
   door(px, sx + 76, G, 16, 28, '#5a6a7a', 0.3, '#3a3440');
   ground(px, c, false, G - 6, 'lt', true);
   // 나: 진열창 앞에서 복권과 화면을 번갈아 봄 → 손이 떨림(!) → 폴짝 · 지폐
