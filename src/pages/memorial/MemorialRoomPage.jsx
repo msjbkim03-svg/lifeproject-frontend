@@ -129,6 +129,9 @@ function MemorialRoomPage() {
         <Link to="/memorial">전생의 집</Link>
         <span>›</span>
         <b>{room.name}의 방</b>
+        <Button size="sm" style={{ marginLeft: "auto" }} onClick={() => navi(`/result/${lifeId}?detail=1`)}>
+          인생 기록 보기
+        </Button>
       </div>
 
       <div className={s.layout}>
@@ -160,6 +163,7 @@ function MemorialRoomPage() {
         <p>당신은 80억 명 가운데 어디에서, 누구로 태어날까요?</p>
         <div className="row" style={{ justifyContent: "center" }}>
           <Button type="primary" onClick={() => navi("/")}>나도 태어나 보기</Button>
+          <Button onClick={() => navi(`/result/${lifeId}?detail=1`)}>인생 기록 보기</Button>
           <Button onClick={copyLink}>링크 복사</Button>
           <Button onClick={() => navi("/memorial")}>다른 추모관 둘러보기</Button>
         </div>

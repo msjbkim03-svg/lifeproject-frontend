@@ -1211,7 +1211,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
           <div key={o.id} className={'v-person other ' + ageGroup(o.age) + ' ' + (o.dir || 'right') + (o.walking ? ' walking' : '')}
             style={{ left: o.x + '%', top: GROUND_Y + '%' }}>
             {o.message && <div className="v-bubble">{o.message}</div>}
-            <Figure look={lookOf({ gender: o.gender, age: o.age })} />
+            <Figure look={lookOf({ gender: o.gender, age: o.age, costume: o.costume })} />
             <div className="v-name">{o.name}{o.age != null && ', ' + o.age + '세'}</div>
           </div>
         ))}
