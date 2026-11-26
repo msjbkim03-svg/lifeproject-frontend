@@ -130,6 +130,7 @@ function useChat(countryCode, me) {
   const hair = me.costume?.hair || null;
   const top = me.costume?.top || null;
   const hat = me.costume?.hat || null;
+  const ride = me.costume?.ride || null;
   useEffect(() => {
     if (!connected || !stompRef.current) return;
     const currentToken = localStorage.getItem("token");
@@ -138,10 +139,10 @@ function useChat(countryCode, me) {
       body: JSON.stringify({
         token: currentToken, memberId: myId, guestToken: currentToken ? null : localStorage.getItem("guestToken"),
         clientId: clientIdRef.current,
-        age: me.age, gender: me.gender, costume: { hair, top, hat }, ...myPos.current,
+        age: me.age, gender: me.gender, costume: { hair, top, hat, ride }, ...myPos.current,
       }),
     });
-  }, [connected, myId, countryCode, me.age, me.gender, hair, top, hat]);
+  }, [connected, myId, countryCode, me.age, me.gender, hair, top, hat, ride]);
 
   useEffect(() => {
     const ends = messages.filter((m) => m.at + BUBBLE_MS > now).map((m) => m.at + BUBBLE_MS);

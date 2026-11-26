@@ -62,7 +62,7 @@ function MemorialListPage() {
         <div className={s.cardGrid}>
           {list.map((c) => (
             <button key={c.lifeId} className={`panel ${s.card}`} onClick={() => navi(`/memorial/${c.lifeId}`)}>
-              <MemorialPortrait gender={c.gender} age={c.deathAge} costume={{ hair: c.hair, top: c.top, hat: c.hat }}
+              <MemorialPortrait gender={c.gender} age={c.deathAge} costume={{ hair: c.hair, top: c.top, hat: c.hat, ride: c.ride }}
                 className={s.cardPortrait} />
               <b className={s.cardName}>{c.name}</b>
               <span className={s.mono}>{c.birthYear} – {c.deathYear} · {c.deathAge}세</span>

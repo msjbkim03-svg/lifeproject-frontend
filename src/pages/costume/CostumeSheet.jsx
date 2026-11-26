@@ -9,7 +9,7 @@ import client from "../../api/api";
 import Button from "../../common/ui/Button";
 import { won } from "../../engine/play/lifeText";
 import Figure from "../../engine/village/Figure";
-import { lookOf } from "../../engine/village/costumeData";
+import { COSTUMES, lookOf } from "../../engine/village/costumeData";
 import "../../common/ui/ui.css";
 import styles from "./CostumeSheet.module.css";
 
@@ -17,6 +17,7 @@ const PARTS = [
   { part: "HAT", key: "hat", label: "모자" },
   { part: "HAIR", key: "hair", label: "머리" },
   { part: "CLOTHES", key: "top", label: "옷" },
+  { part: "RIDE", key: "ride", label: "탈것" },
 ];
 
 const errText = (err) => {
@@ -75,9 +76,16 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
   const items = data?.items || [];
   const lookWith = (costume) => lookOf({ gender: life.gender, age: life.currentAge, costume });
 
-  const button = (c) => {
+  const button = (c, minAge, locked) => {
     if (c.equipped === "Y") {
       return <Button size="sm" pill disabled={busy} onClick={() => send(c.costumeId, "unequip")}>벗기</Button>;
+    }
+    if (locked) {
+      return (
+        <Button size="sm" pill disabled title={`${minAge}세부터 이용할 수 있어요`}>
+          🔒 {minAge}세부터
+        </Button>
+      );
     }
     if (c.owned === "Y") {
       return <Button size="sm" pill disabled={busy} onClick={() => send(c.costumeId, "equip")}>착용</Button>;
@@ -122,16 +130,28 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
           {data && PARTS.filter(({ part }) => part === tab).map(({ part, key }) => (
             <section key={part}>
               <ul className={styles.list}>
-                {items.filter((c) => c.part === part).map((c) => (
-                  <li key={c.costumeId} className={styles.row + (c.equipped === "Y" ? " " + styles.on : "")}>
-                    <span className={styles.preview}>
-                      <Figure look={lookWith({ ...wear, [key]: c.look })} />
-                    </span>
-                    <b className={styles.name}>{c.costumeName}</b>
-                    <span className={styles.price}>{c.owned === "Y" ? (c.equipped === "Y" ? "착용 중" : "가진 것") : won(c.price, k)}</span>
-                    {button(c)}
-                  </li>
-                ))}
+                {items.filter((c) => c.part === part).map((c) => {
+                  const minAge = COSTUMES[c.look]?.minAge || 0;
+                  const locked = life.currentAge < minAge;
+                  return (
+                    <li key={c.costumeId} className={styles.row + (c.equipped === "Y" ? " " + styles.on : "") + (locked ? " " + styles.locked : "")}>
+                      <span className={styles.preview}>
+                        <Figure look={lookWith({ ...wear, [key]: c.look })} />
+                        {locked && <span className={styles.lockOverlay} aria-hidden="true">🔒</span>}
+                      </span>
+                      <span className={styles.nameBox}>
+                        <b className={styles.name}>{c.costumeName}</b>
+                        {minAge > 0 && (
+                          <small className={locked ? styles.ageLock : styles.ageOk}>
+                            {locked ? `🔒 ${minAge}세 이상 이용 가능 (현재 ${life.currentAge}세)` : `${minAge}세 이상`}
+                          </small>
+                        )}
+                      </span>
+                      <span className={styles.price}>{c.owned === "Y" ? (c.equipped === "Y" ? "착용 중" : "가진 것") : won(c.price, k)}</span>
+                      {button(c, minAge, locked)}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}
