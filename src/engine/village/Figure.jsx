@@ -53,7 +53,7 @@ function Top({ style, color }) {
 }
 
 // 탈것 (자전거 · 오토바이 · 말 · 슈퍼카 · UFO) — 오른쪽 진행 방향 기준 옆모습 (왼쪽 이동 시 자동 좌우 반전)
-function Ride({ style, color, pants = PANTS, shoe = SHOE }) {
+function Ride({ style, color, pants = PANTS, shoe = SHOE, rider = true }) {
   if (style === 'bike') {
     return (
       <g>
@@ -73,10 +73,10 @@ function Ride({ style, color, pants = PANTS, shoe = SHOE }) {
         <P x={18} y={14} w={4} h={4} c={OUT} /><P x={19} y={15} w={2} h={2} c="#e2c27a" />
         {/* 옆모습으로 페달 밟고 있는 다리 + 크랭크 기어 */}
         <P x={6} y={20} w={3} h={3} c={OUT} /><P x={7} y={21} c="#d8dee9" />
-        <g className="fa leg">
+        {rider && <g className="fa leg">
           <P x={6} y={17} w={4} h={3} c={OUT} /><P x={7} y={18} w={2} c={pants} />
           <P x={8} y={19} w={3} h={3} c={OUT} /><P x={9} y={19} h={2} c={pants} /><P x={9} y={21} w={2} c={shoe} />
-        </g>
+        </g>}
       </g>
     );
   }
@@ -100,8 +100,10 @@ function Ride({ style, color, pants = PANTS, shoe = SHOE }) {
         <P x={15} y={11} w={5} h={4} c={OUT} /><P x={16} y={12} w={3} h={2} c="#9ee7ff" /><P x={17} y={12} c="#ffffff" />
         <P x={20} y={15} w={3} h={3} c={OUT} /><P x={21} y={16} w={2} c="#fff9b0" />
         {/* 옆모습 탑승자 구부린 다리 + 부츠 */}
-        <P x={6} y={17} w={4} h={3} c={OUT} /><P x={7} y={18} w={2} c={pants} />
-        <P x={6} y={19} w={3} h={3} c={OUT} /><P x={7} y={20} w={2} c={shoe} />
+        {rider && <>
+          <P x={6} y={17} w={4} h={3} c={OUT} /><P x={7} y={18} w={2} c={pants} />
+          <P x={6} y={19} w={3} h={3} c={OUT} /><P x={7} y={20} w={2} c={shoe} />
+        </>}
       </g>
     );
   }
@@ -147,9 +149,11 @@ function Ride({ style, color, pants = PANTS, shoe = SHOE }) {
         {/* 재갈과 고삐 줄 (말 입에서 기수 손까지 연결) */}
         <P x={13} y={11} w={9} c="#f2c230" />
         {/* 옆모습 기수의 구부린 다리 + 등자(발걸이) */}
-        <P x={6} y={16} w={4} h={3} c={OUT} /><P x={7} y={17} w={2} c={pants} />
-        <P x={7} y={18} w={3} h={4} c={OUT} /><P x={8} y={18} h={2} c={pants} /><P x={8} y={20} w={2} c={shoe} />
-        <P x={8} y={21} w={2} c="#f2c230" />
+        {rider && <>
+          <P x={6} y={16} w={4} h={3} c={OUT} /><P x={7} y={17} w={2} c={pants} />
+          <P x={7} y={18} w={3} h={4} c={OUT} /><P x={8} y={18} h={2} c={pants} /><P x={8} y={20} w={2} c={shoe} />
+          <P x={8} y={21} w={2} c="#f2c230" />
+        </>}
       </g>
     );
   }
@@ -404,6 +408,16 @@ function Figure({ look }) {
         </>
       )}
       {look.hat && <Hat {...look.hat} />}
+    </svg>
+  );
+}
+
+// 집 앞에 세워 둔 탈것 (C23 마을 우리 집): 사람 없이 탈것만, Ride 그림을 그대로 크게
+//   viewBox 는 탈것 5종이 모두 들어가는 범위 (x -11 ~ 27, y 4 ~ 25) / 1칸 = 2.5px
+export function ParkedRide({ style, color }) {
+  return (
+    <svg className="v-ride" viewBox="-11 4 38 21" width="95" height="53" style={{ overflow: 'visible' }} shapeRendering="crispEdges" aria-hidden="true">
+      <Ride style={style} color={color} rider={false} />
     </svg>
   );
 }

@@ -19,6 +19,7 @@ function VillageTest() {
   const [hair, setHair] = useState('');
   const [top, setTop] = useState('');
   const [hat, setHat] = useState('');
+  const [ride, setRide] = useState('');
   const [industry, setIndustry] = useState('');
   const [urban, setUrban] = useState(true);
   const [pet, setPet] = useState('');
@@ -83,7 +84,7 @@ function VillageTest() {
         <select className="input" value={age} onChange={(e) => setAge(Number(e.target.value))}>
           {[1, 8, 34, 70].map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
-        {[['hair', '머리', hair, setHair], ['top', '옷', top, setTop], ['hat', '모자', hat, setHat]].map(([part, label, value, set]) => (
+        {[['hair', '머리', hair, setHair], ['top', '옷', top, setTop], ['hat', '모자', hat, setHat], ['ride', '탈것(코스튬)', ride, setRide]].map(([part, label, value, set]) => (
           <label key={part} className="row">
             {label}
             <select className="input" value={value} onChange={(e) => set(e.target.value)}>
@@ -131,7 +132,7 @@ function VillageTest() {
           <Village countryCode={code} age={age} gender={gender} place={place}
             caption={code + ` · 테스트 (${age}세)`}
             myMessage={sent} others={others} house={{ tier, kind }} vehicle={vehicle || null}
-            costume={{ hair: hair || null, top: top || null, hat: hat || null }}
+            costume={{ hair: hair || null, top: top || null, hat: hat || null, ride: ride || null }}
             industry={industry || null} urban={urban}
             pet={pet ? { kind: pet[0], name: pet === 'd' ? '복찬' : '콩', coat: pet.split('-')[1] } : null}
             happiness={happy}
