@@ -2,7 +2,7 @@
 //   GET /api/engine/live 를 5초마다 다시 읽음 (서버가 '몇 초 전'을 계산해서 보내서 시계가 달라도 맞음)
 //   새로 들어온 줄은 fresh → 목록에서 미끄러져 들어오고, 지구본에서 별이 퍼짐
 //   위치는 나라 가운데 (COUNTRY_POS) 근처에 조금씩 흩어 놓음 (같은 나라가 여러 명이면 겹치지 않게)
-//   예시 데이터(useLiveStats.js)는 그대로 두고 메인에서 이 훅으로 바꿔 씀
+//   (예전 예시 목록 useLiveFeed 는 11/26 지움, useLiveStats.js 에는 '지금 아시아' 숫자 계산만 남음)
 import { useEffect, useRef, useState } from 'react';
 import client from '../api/api';
 import { COUNTRY_POS, ASIA_CENTER } from '../common/ui/countryPos';

@@ -1,4 +1,4 @@
-import { spoonOf } from './spoon';
+import { spoonOf } from './spoon.js';
 import './ui.css';
 
 // 수저 그림 + 이름 (예: 은수저). size: 그림 높이(px)

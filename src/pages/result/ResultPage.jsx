@@ -22,7 +22,7 @@ import Spoon from '../../common/ui/Spoon.jsx';
 import Figure from '../../engine/village/Figure';
 import { lookOf } from '../../engine/village/costumeData';
 import { COUNTRIES } from '../../engine/village/villageData';
-import { won, ro } from '../../engine/play/lifeText';
+import { won, ro, histNote } from '../../engine/play/lifeText';
 import { bigMoments, buildFilm, retireAge, stagesOf } from '../../engine/film/filmPlan';
 import StatChart from './StatChart';
 import MomentPhoto from './MomentPhoto';
@@ -298,7 +298,7 @@ function ResultView() {
   const view = useMemo(() => {
     if (!result) return null;
     const r = result;
-    let moments = [];
+    let moments;
     try { moments = bigMoments(r); } catch { moments = []; }
     const jobs = jobRuns(r.years, retireAge(r.events, r.years));
     const lands = countryRuns(r.years).map((l) => ({ ...l, name: l.name || (l.cc === r.birthCountry ? r.countryName : l.cc === r.currentCountry ? r.currentCountryName : l.cc) }));
@@ -357,7 +357,7 @@ function ResultView() {
             <p className={styles.where}>
               <Flag cc={r.birthCountry} size={24} />
               <b>{r.countryName}</b>
-              {r.histName && !r.histName.includes(r.countryName) && <span className={styles.hist}>당시 {r.histName}</span>}
+              {histNote(r.countryName, r.histName) && <span className={styles.hist}>{histNote(r.countryName, r.histName)}</span>}
               <span className={styles.dot}>·</span>
               <span>{r.birthYear} – {r.deathYear}</span>
               <span className={styles.dot}>·</span>

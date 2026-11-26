@@ -203,3 +203,25 @@ export const ro = (word) => {
   const jong = (c - 0xac00) % 28;
   return word + (jong === 0 || jong === 8 ? '로' : '으로');
 };
+
+// 당시 국가명 한 마디 (11/26 점검: '베트남 (당시 베트남 (남북 분단기))'처럼 괄호가 겹쳐 나왔음)
+//   '조선' → '당시 조선', '베트남 (남북 분단기)' → '당시 남북 분단기', 지금 이름과 같으면 null
+//   '베트남 (남북 분단기)' → '당시 남북 분단기' / '라오스 왕국' → '당시 라오스 왕국' / '조선' → '당시 조선'
+//   '인도 공화국'처럼 지금 이름에 '공화국'만 붙은 정식 국호는 같은 나라라서 표시 안 함 (11/26 최종 점검: '당시 공화국'으로 나왔음)
+export const histNote = (name, hist) => {
+  if (!hist || !name || hist.trim() === name) return null;
+  let h = hist.trim();
+  if (h.startsWith(name)) {
+    const rest = h.slice(name.length).trim();
+    const paren = rest.match(/^\((.*)\)$/);
+    if (paren) h = paren[1].trim();
+    else if (!rest || rest === '공화국') return null;
+  } else h = h.replace(/\s*\(([^)]*)\)\s*$/, ' · $1');
+  return h ? `당시 ${h}` : null;
+};
+
+// 나라 이름 + 당시 국가명: '대한민국 (당시 조선)'
+export const countryWithHist = (name, hist) => {
+  const n = histNote(name, hist);
+  return n ? `${name} (${n})` : name;
+};

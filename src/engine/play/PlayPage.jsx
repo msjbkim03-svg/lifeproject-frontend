@@ -26,7 +26,7 @@ import EffectChips from '../../common/ui/EffectChips';
 import Button from '../../common/ui/Button';
 import Modal from '../../common/ui/Modal';
 import Spoon from '../../common/ui/Spoon.jsx';
-import { SPOONS } from '../../common/ui/spoon';
+import { SPOONS } from '../../common/ui/spoon.js';
 import ChatVillage from '../../pages/chat/ChatVillage';
 import Figure from '../village/Figure';
 import { lookOf } from '../village/costumeData';
@@ -35,7 +35,7 @@ import { survivalCurve } from './lifeCurve';
 import useBgm from './useBgm';
 import ShopSheet from './ShopSheet';
 import CostumeSheet from '../../pages/costume/CostumeSheet';
-import { won, ppp, PPP_TIP, rankStr, splitMoney, feedKind, belongings, commute, traitLine, ro, iga, ownNames } from './lifeText';
+import { won, ppp, PPP_TIP, rankStr, splitMoney, feedKind, belongings, commute, traitLine, ro, iga, ownNames, countryWithHist } from './lifeText';
 import { TRAIT_VIEW } from '../../utils/traits';
 import './play.css';
 
@@ -137,7 +137,9 @@ const errText = (err) => {
 const schoolText = (life) => {
   if (life.schoolStatus === 'ENROLLED' && SCHOOL[life.eduLevel]) return SCHOOL[life.eduLevel] + ' 재학';
   if (life.currentAge < 6 && (!life.eduLevel || life.eduLevel === 'NONE')) return '취학 전';
-  return (EDU[life.eduLevel] || '학력 없음') + (life.schoolStatus === 'DROPPED' ? ' (중퇴)' : '');
+  // 중퇴는 그 학교 이름으로 ('중졸 (중퇴)'처럼 졸업한 것처럼 보였음, 11/26)
+  if (life.schoolStatus === 'DROPPED' && SCHOOL[life.eduLevel]) return SCHOOL[life.eduLevel] + ' 중퇴';
+  return EDU[life.eduLevel] || '학력 없음';
 };
 const jobText = (life) => {
   if (life.jobStatus === 'EMPLOYED') return life.jobName || '일하는 중';
@@ -671,9 +673,10 @@ function PlayPage() {
   };
 
   // 생존 곡선 (같은 해 태어난 사람 중 생존 비율)
+  //   서버가 준 값(life.survival: 그해 통계로 한 해씩 계산, 인생 기록의 '15세. … 약 n%' 줄과 같은 값)을 쓰고, 없으면 화면 근사
   const curve = useMemo(
-    () => (life ? survivalCurve(life.lifeExpectancy || 70, life.infantMortality || 30) : null),
-    [life?.lifeExpectancy, life?.infantMortality], // eslint-disable-line react-hooks/exhaustive-deps
+    () => (life ? (life.survival?.length ? life.survival : survivalCurve(life.lifeExpectancy || 70, life.infantMortality || 30)) : null),
+    [life?.survival, life?.lifeExpectancy, life?.infantMortality], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // ───────── 화면 ─────────
@@ -695,7 +698,7 @@ function PlayPage() {
 
   const year = life.birthYear + life.currentAge;
   const countryName = life.countryName || life.currentCountry;
-  const countryText = life.histName && life.histName !== countryName ? `${countryName} (당시 ${life.histName})` : countryName;
+  const countryText = countryWithHist(countryName, life.histName);
   // 학교·일 없는 6~17세(YOUTH)는 13세부터 '청소년 시절'
   const stageText = (life.stageCode === 'YOUTH' && life.currentAge >= 13 ? '청소년 시절' : STAGE[life.stageCode])
     || (life.currentAge < 6 ? '아기 시절' : '');

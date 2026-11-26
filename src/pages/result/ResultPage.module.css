@@ -75,7 +75,9 @@
 .logs li:first-child { border-top: 0; margin-top: 0; }
 .logs li.bigLine .lText { color: var(--ink); font-weight: 600; }
 .logs li.bigLine .lAge { color: var(--primary); }
-.lAge { display: flex; flex-direction: column; font-weight: 600; color: var(--ink-sub); line-height: 1.3; }
+.lAge { display: flex; flex-direction: column; font-weight: 600; color: var(--ink-sub); line-height: 1.3; height: 1.6em; overflow: visible; }
+/* 나이 밑 연도가 첫 줄 높이를 늘려 첫 줄과 둘째 줄 사이만 벌어지던 것 (11/26 최종 점검) → 연도는 옆 칸이 빈 둘째 줄 자리로, 그해 기록이 한 줄뿐이면 원래 높이 */
+.logs li.newAge:last-child .lAge, .logs li.newAge:has(+ li.newAge) .lAge { height: auto; }
 .lAge small { font-size: 10.5px; font-weight: 400; color: var(--ink-light); }
 .lText { color: var(--ink-sub); min-width: 0; }
 .lChoice { display: block; font-style: normal; font-size: 12px; color: var(--teal); }
