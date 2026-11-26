@@ -14,6 +14,7 @@ function EditPage() {
 
   // 내 정보는 MyPageLayout 이 넘겨 줌 (setMy 로 바꾸면 왼쪽 메뉴 닉네임도 같이 바뀜)
   const { my, setMy } = useOutletContext();
+  const isGoogle = Boolean(my.loginId && my.loginId.startsWith("g_"));
 
   // 입력칸 값 (처음엔 내 정보로 채워 둠)
   const [nickname, setNickname] = useState(my.nickname);
@@ -94,9 +95,9 @@ function EditPage() {
     if (busy) return;
     setMessage("");
     setError("");
-    if (!currentPassword) return setError("현재 비밀번호를 입력해 주세요.");
-    if (newPassword && newPassword !== newPasswordCheck) return setError("새 비밀번호 확인이 맞지 않아요.");
-    if (emailChanged && !emailCode) return setError("이메일을 바꾸려면 새 이메일로 받은 인증번호를 입력해 주세요.");
+    if (!isGoogle && !currentPassword) return setError("현재 비밀번호를 입력해 주세요.");
+    if (!isGoogle && newPassword && newPassword !== newPasswordCheck) return setError("새 비밀번호 확인이 맞지 않아요.");
+    if (!isGoogle && emailChanged && !emailCode) return setError("이메일을 바꾸려면 새 이메일로 받은 인증번호를 입력해 주세요.");
     if (!/^01[0-9]{8,9}$/.test(phone.replace(/-/g, ""))) return setError("전화번호를 올바르게 입력해 주세요. (예: 010-1234-5678)");
 
     setBusy(true);
@@ -132,10 +133,10 @@ function EditPage() {
     }
   };
 
-  // 5. 회원 탈퇴 버튼 → 비밀번호 입력했는지 보고 확인 창 열기
+  // 5. 회원 탈퇴 버튼 → 비밀번호 입력했는지 보고 확인 창 열기 (구글 계정은 비밀번호 없이 바로 확인 창)
   const openConfirm = () => {
     setWithdrawError("");
-    if (!withdrawPw) return setWithdrawError("비밀번호를 입력해 주세요.");
+    if (!isGoogle && !withdrawPw) return setWithdrawError("비밀번호를 입력해 주세요.");
     setConfirmOpen(true);
   };
 
@@ -163,7 +164,11 @@ function EditPage() {
     <>
       <main className={common.main}>
         <h1 className={common.title}>개인정보 수정</h1>
-        <p className={common.lead}>저장하려면 현재 비밀번호를 꼭 입력해 주세요. 아이디는 바꿀 수 없어요.</p>
+        <p className={common.lead}>
+          {isGoogle
+            ? "Google 소셜 로그인으로 연동된 계정이에요. 닉네임과 전화번호를 수정할 수 있어요."
+            : "저장하려면 현재 비밀번호를 꼭 입력해 주세요. 아이디는 바꿀 수 없어요."}
+        </p>
 
         {/* ===== 개인정보 수정 (M05) ===== */}
         {/* 카드 안을 [입력칸 | 안내 상자] 두 칸으로 나눔 */}
@@ -172,7 +177,7 @@ function EditPage() {
           <div className={styles.form}>
           <div className={styles.row}>
             <label>아이디</label>
-            <input className={styles.input} value={my.loginId} disabled />
+            <input className={styles.input} value={isGoogle ? "Google 소셜 연동 계정" : my.loginId} disabled />
           </div>
 
           <div className={styles.row}>
@@ -183,30 +188,34 @@ function EditPage() {
           </div>
           {nickMsg && <p className={styles.hint}>{nickMsg}</p>}
 
-          <div className={styles.row}>
-            <label>현재 비밀번호</label>
-            <input className={styles.input} type="password" value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)} />
-          </div>
+          {!isGoogle && (
+            <>
+              <div className={styles.row}>
+                <label>현재 비밀번호</label>
+                <input className={styles.input} type="password" value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)} />
+              </div>
 
-          <div className={styles.row}>
-            <label>새 비밀번호</label>
-            <input className={styles.input} type="password" value={newPassword}
-              placeholder="바꾸지 않으려면 비워 두세요"
-              onChange={(e) => setNewPassword(e.target.value)} />
-          </div>
+              <div className={styles.row}>
+                <label>새 비밀번호</label>
+                <input className={styles.input} type="password" value={newPassword}
+                  placeholder="바꾸지 않으려면 비워 두세요"
+                  onChange={(e) => setNewPassword(e.target.value)} />
+              </div>
 
-          <div className={styles.row}>
-            <label>새 비밀번호 확인</label>
-            <input className={styles.input} type="password" value={newPasswordCheck}
-              onChange={(e) => setNewPasswordCheck(e.target.value)} />
-          </div>
+              <div className={styles.row}>
+                <label>새 비밀번호 확인</label>
+                <input className={styles.input} type="password" value={newPasswordCheck}
+                  onChange={(e) => setNewPasswordCheck(e.target.value)} />
+              </div>
+            </>
+          )}
 
           <div className={styles.row}>
             <label>이메일</label>
-            <input className={styles.input} value={email}
+            <input className={styles.input} value={email} disabled={isGoogle}
               onChange={(e) => { setEmail(e.target.value); setEmailMsg(""); setEmailSent(false); setEmailCode(""); }} />
-            <Button onClick={checkEmail}>중복 확인</Button>
+            {!isGoogle && <Button onClick={checkEmail}>중복 확인</Button>}
           </div>
 
           {/* 이메일을 바꿨을 때만: 새 이메일로 인증번호 받기 */}
@@ -262,11 +271,19 @@ function EditPage() {
           {/* 수정 카드와 같은 모양: [입력칸 | 안내 상자] */}
           <div className={styles.editGrid}>
             <div className={styles.form}>
-              <p className={common.desc}>탈퇴하면 다시 로그인할 수 없어요. 비밀번호를 입력해 본인 확인을 해 주세요.</p>
+              <p className={common.desc}>
+                {isGoogle
+                  ? "탈퇴하면 다시 로그인할 수 없어요. 아래 버튼을 눌러 탈퇴를 진행할 수 있어요."
+                  : "탈퇴하면 다시 로그인할 수 없어요. 비밀번호를 입력해 본인 확인을 해 주세요."}
+              </p>
               <div className={styles.row}>
-                <label>비밀번호</label>
-                <input className={styles.input} type="password" value={withdrawPw} placeholder="지금 비밀번호"
-                  onChange={(e) => setWithdrawPw(e.target.value)} />
+                {!isGoogle && (
+                  <>
+                    <label>비밀번호</label>
+                    <input className={styles.input} type="password" value={withdrawPw} placeholder="지금 비밀번호"
+                      onChange={(e) => setWithdrawPw(e.target.value)} />
+                  </>
+                )}
                 <Button type="danger" onClick={openConfirm}>회원 탈퇴</Button>
               </div>
               {withdrawError && <div className={styles.error}>{withdrawError}</div>}
