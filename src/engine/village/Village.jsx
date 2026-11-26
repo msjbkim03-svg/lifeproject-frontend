@@ -1031,7 +1031,7 @@ function FamilyPerson({ m, i }) {
 
 // 반려동물 (우리 집 화면에만): 마당을 천천히 오가고, 가는 방향을 바라봄 (CSS v-wander · v-pet-face)
 const PET_X = 40;
-const PARK_X = 76; // 집 앞에 세워 둔 코스튬 탈것 자리 (%)
+const PARK_X = 82; // 집 앞에 세워 둔 코스튬 탈것 자리 (%)
 function PetWalker({ pet }) {
   return (
     <div className="v-person pet" style={{ left: PET_X + '%', top: GROUND_Y + '%' }}>
