@@ -1,6 +1,6 @@
 // C22 엔딩 크레딧 픽셀 장면 부품 - 방 · 침대 · 건물 · 바깥 · 소품 (pxScenes.js 가 씀)
 // 모두 256 × 144 칸 기준, 한 칸씩 찍음. 색은 장면마다 마을 권역 색(c = THEMES light)에서 가져옴
-import { W, H, mix, dk, lt, rng, wave, lerp } from './pxCore';
+import { W, H, mix, dk, lt, rng, wave } from './pxCore';
 import { figure } from './pxFigure';
 
 // ───────── 사람 (숨 쉬듯 들썩 · 가끔 눈 깜빡 · 걸음) ─────────

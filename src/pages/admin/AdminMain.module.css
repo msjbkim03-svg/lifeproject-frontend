@@ -34,6 +34,7 @@
 .miniRows s { position: absolute; left: 0; top: 0; bottom: 0; background: var(--green); text-decoration: none; }
 .miniRows b { text-align: right; font-size: 12.5px; color: var(--ink); }
 .miniRows .t_warn em, .miniRows .t_warn b { color: var(--yellow); }
+.miniRows .miniNone i { background: var(--panel-2); } /* 끝난 인생이 아직 없으면 빈 막대 */
 .lifeBar { position: relative; height: 6px; margin: 4px 0 2px; border-radius: 3px; background: var(--panel-2); }
 .lifeBar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--primary); }
 .lifeBar s { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); text-decoration: none; }
@@ -159,12 +160,12 @@
 
 /* ── 퀘스트 ── */
 /* 위 기준선 글자 (10% · 80%) - 아래 막대 칸과 같은 칸 나눔 */
-.qScale, .qList li { display: grid; grid-template-columns: minmax(120px, 190px) 1fr 112px; gap: 16px; align-items: center; }
+.qScale, .qList li { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 14px; align-items: center; }
 .qScale { height: 16px; padding: 0 6px; }
 .qScaleBar { position: relative; height: 100%; }
 .qScaleBar i { position: absolute; top: 0; transform: translateX(-50%); font-style: normal; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-light); }
 .qList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.qList li { min-height: 44px; padding: 0 6px; border-bottom: 1px solid var(--line); }
+.qList li { min-height: 48px; padding: 0 6px; border-bottom: 1px solid var(--line); }
 .qList li:last-child { border-bottom: 0; }
 .qList li, .cList li, .rList li { cursor: default; transition: background 0.12s; } /* 줄 밑선이 휘어 보이지 않게 둥근 모서리는 안 씀 */
 .qList li:hover, .cList li:hover, .rList li:hover { background: var(--panel-2); }
@@ -179,16 +180,15 @@
 .q_mid { background: linear-gradient(90deg, color-mix(in srgb, var(--teal) 70%, transparent), var(--teal)); }
 .q_easy { background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 70%, transparent), var(--blue)); }
 .q_hard { background: linear-gradient(90deg, color-mix(in srgb, var(--red) 70%, transparent), var(--red)); }
-.qVal { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; white-space: nowrap; }
+.qVal { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; white-space: nowrap; } /* 달성률 위 · 몇 명 아래 → 막대 자리가 넓어짐 */
 .qVal b { font-family: var(--font-mono); font-size: 16px; color: var(--ink); }
 .qVal b small { font-size: 11.5px; margin-left: 1px; }
-.qVal em { min-width: 58px; text-align: right; font-style: normal; font-family: var(--font-mono); font-size: 12px; color: var(--ink-light); }
+.qVal em { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); }
 .qt_easy { color: var(--blue) !important; }
 .qt_hard { color: var(--red) !important; }
 .qKey { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; font-size: 12.5px; color: var(--ink-light); }
 .qKey span { display: inline-flex; align-items: center; gap: 6px; }
 .qKey i { width: 16px; height: 8px; border-radius: 999px; display: inline-block; }
-.qKeyFew { margin-left: auto; }
 
 /* ── 사망 원인 · 수명 분포 ── */
 .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
@@ -236,7 +236,7 @@
 
 /* ── 최근 끝난 인생 ── */
 .rList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.rList li { display: grid; grid-template-columns: 20px 1fr auto 48px; gap: 12px; align-items: center; min-height: 50px; border-bottom: 1px solid var(--line); }
+.rList li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto 80px; gap: 12px; align-items: center; min-height: 50px; border-bottom: 1px solid var(--line); }
 .rList li:last-child { border-bottom: 0; }
 .rWho { display: flex; flex-direction: column; min-width: 0; }
 .rWho b { font-size: 14.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -291,10 +291,9 @@
   .tHead > span:nth-child(3), .tHead > span:nth-child(4), .tRow > span:nth-child(3), .tRow > span:nth-child(4) { display: none; }
   .axis i:first-child, .axis i:last-child { visibility: hidden; }
   .tabNote { display: none; }
-  .qList li { grid-template-columns: 1fr 100px; row-gap: 6px; padding: 9px 4px; }
+  .qList li { grid-template-columns: 1fr 70px; row-gap: 6px; padding: 9px 4px; }
   .qTrack { grid-column: 1 / -1; grid-row: 2; }
   .qScale { display: none; }
-  .qKeyFew { margin-left: 0; }
   .dChart { grid-template-columns: 30px 1fr; gap: 6px; }
   .dLabel { font-size: 10px; }
   .dCol:nth-child(odd of .dCol) .dLabel { visibility: hidden; } /* 좁으면 날짜를 하루 걸러 (오늘은 보이게) */

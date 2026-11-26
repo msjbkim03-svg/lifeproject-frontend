@@ -99,14 +99,14 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
       .finally(() => setAsking(''));
   };
 
-  const Avatar = () => <span className={styles.avatar} aria-hidden="true"><Figure look={look} /></span>;
+  const avatar = <span className={styles.avatar} aria-hidden="true"><Figure look={look} /></span>;
 
   return (
     <div className={styles.box}>
       <div className={styles.chat}>
         {/* 첫인사 */}
         <div className={styles.them}>
-          <Avatar />
+          {avatar}
           <div>
             <span className={styles.who}>{who}</span>
             <div className={styles.bubble}>
@@ -121,7 +121,7 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
           <div key={qa.qaId} className={styles.pair}>
             <div className={styles.me}><div className={styles.bubble}>{qa.question}</div></div>
             <div className={styles.them}>
-              <Avatar />
+              {avatar}
               <div>
                 <span className={styles.who}>{who}</span>
                 <div className={styles.bubble}>
@@ -145,7 +145,7 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
           <div className={styles.pair}>
             <div className={styles.me}><div className={styles.bubble}>{asking}</div></div>
             <div className={styles.them}>
-              <Avatar />
+              {avatar}
               <div><span className={styles.who}>{who}</span><div className={styles.bubble + ' ' + styles.typing}><i /><i /><i /></div></div>
             </div>
           </div>

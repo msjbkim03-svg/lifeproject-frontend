@@ -92,10 +92,12 @@
   color: #f2ede4; font: 600 2.2cqh var(--font-body); cursor: pointer;
 }
 .ef-skip:hover { background: rgba(0, 0, 0, 0.6); }
+/* 멈춤 표시: 가운데에 두면 자막을 가려서 (11/26 점검) 왼쪽 아래 작은 알약으로 */
 .ef-paused {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  font-size: 7cqh; color: rgba(255, 255, 255, 0.8); pointer-events: none;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  position: absolute; left: 3%; bottom: 4%; z-index: 3;
+  padding: 0.8cqh 2.2cqh; border-radius: 999px; pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(0, 0, 0, 0.45);
+  color: #f2ede4; font: 600 2.2cqh var(--font-body); letter-spacing: 0.04em;
 }
 .ef-endbox {
   position: absolute; left: 0; right: 0; bottom: 14%; z-index: 3;

@@ -2,7 +2,7 @@
 // draw(px, t, v): px = Px(캔버스), t = 장면 시작부터 ms, v = 장면 정보 (filmPlan sceneAt: 나 · 가족 · 나라 · 나이 …)
 import { W, H, Spr, cached, mix, dk, lt, rng, seg, ease, lerp, wave } from './pxCore';
 import { figure, lookOf } from './pxFigure';
-import { actor, room, window2, frame, clock, plant, rug, shelf, lamp, bed, lieIn, skyline, hills, ground, cloudsRow, bricks, bwin, roof, door, treeAt, bush, bench, lampPost } from './pxArt';
+import { actor, room, frame, clock, plant, rug, shelf, lamp, bed, lieIn, skyline, hills, ground, cloudsRow, bricks, bwin, roof, door, treeAt, bush, bench, lampPost } from './pxArt';
 import { COUNTRIES, THEMES } from '../../village/villageData';
 
 // ───────── 공용 부품 ─────────
@@ -689,7 +689,7 @@ export function fly(px, t, v) {
   px.rect(140, 62, 116, 44, '#dfe7ee'); px.rect(140, 62, 116, 8, '#5b86c9'); px.rect(140, 70, 116, 1, '#3a5a8a');
   for (let x = 146; x < 252; x += 10) { px.rect(x, 74, 8, 18, '#9fc7e0'); px.line(x + 1, 90, x + 5, 76, '#cfe9f6'); }
   px.rect(184, 92, 24, 14, '#3a4a5e'); px.rect(195, 92, 1, 14, '#9fc7e0');
-  [150, 158, 166, 174].forEach((x, i) => px.rect(x, 64, 5, 4, '#ffffff'));
+  [150, 158, 166, 174].forEach((x) => px.rect(x, 64, 5, 4, '#ffffff'));
   px.rect(236, 30, 6, 32, '#dfe7ee'); px.rect(232, 24, 14, 8, '#9fc7e0'); px.rect(232, 23, 14, 1, '#5a6070');
   const go = seg(t, 400, 2600);
   const fam = [k.pt, ...k.kids.slice(0, 2)].filter(Boolean);

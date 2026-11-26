@@ -10,6 +10,7 @@
 //   그때 같이 있던 사람(그 나이의 가족)을 같이 세움. 맞는 그림이 없으면 그 나이의 마을
 // 사용: const film = buildFilm(result, data)   result = GET /api/result/{lifeId},  data = GET /api/engine/film + wear
 import { familyLook } from '../village/familyLook';
+import { histNote } from '../play/lifeText';
 
 export const FILM_W = 1280;  // 필름 크기 (가로 16:9), 글자 크기·자리는 이 크기 기준 px
 export const FILM_H = 720;
@@ -721,7 +722,7 @@ export function buildFilm(r, data) {
     age: D,
     birthCountry: r.birthCountry,
     countryName: r.countryName,
-    histName: r.histName && r.histName !== r.countryName ? r.histName : null,
+    histName: histNote(r.countryName, r.histName), // '당시 조선' (없으면 null)
     head: `${by + D}년, ${D}세`,
     died: r.deathCause ? `${ro(r.deathCause)} 세상을 떠났다.` : '세상을 떠났다.',
     funeral,

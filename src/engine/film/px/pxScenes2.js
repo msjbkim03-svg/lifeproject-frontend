@@ -9,7 +9,7 @@ import { W, H, mix, dk, lt, rng, seg, ease, lerp, wave } from './pxCore';
 import { figure, lookOf } from './pxFigure';
 import { actor, room, frame, clock, plant, rug, shelf, lamp, bed, lieIn, hills, skyline, ground, bricks, bwin, roof, door, treeAt, bush, bench, lampPost } from './pxArt';
 import {
-  bubble, draw, skyBands, sun, cloud, birds, tree, grass, bloom, lights, heartPop, floatHeart,
+  bubble, skyBands, sun, cloud, birds, tree, grass, bloom, heartPop, floatHeart,
   castOf, extra, paletteOf, dressed, mourn, other, bub, sparkle, roomSky, skyCols, bundleAt, smoke,
 } from './pxScenes';
 
@@ -122,7 +122,7 @@ export function cert(px, t, v) {
   for (let y = G - 4; y < H; y += 5) px.hl(0, W, y, dk(c.ground, 0.06));
   for (let y = G - 4; y < H; y += 5) for (let x = (y / 5) % 2 ? 0 : 6; x < W; x += 12) px.vl(x, y + 1, y + 4, dk(c.ground, 0.05));
   treeAt(px, 112, G - 4, c, 1, false, 'ct1'); treeAt(px, 14, G - 6, c, 1.2, false, 'ct2');
-  [130, 146, 226, 242].forEach((x, i) => bush(px, x, G - 1, c));
+  [130, 146, 226, 242].forEach((x) => bush(px, x, G - 1, c));
   // 게시판 (다리 · 지붕 · 종이 석 장 · 이름 줄)
   const bx = 70;
   const top = G - 46;
@@ -196,7 +196,6 @@ export function cert(px, t, v) {
 // 갑작스러운 죽음: 저녁 식탁에 내 밥그릇 김이 오르는 빈 의자 → 전화가 울림 → 배우자가 받고 그대로 굳음 → 김이 사라지고 아이가 욺 · 창밖에 비
 export function last(px, t, v) {
   if (v.arg === 'sudden') return lastSudden(px, t, v);
-  const c = paletteOf(v);
   const k = castOf(v);
   const sick = v.arg === 'sick';
   const G = 112;
@@ -283,7 +282,6 @@ export function last(px, t, v) {
 // 갑작스러운 죽음: 기다리던 저녁
 //   식탁 뒤에 가족이 앉아 기다림 (식탁이 앞을 가림) · 오른쪽 끝 내 자리는 빈 의자, 내 그릇에서만 김이 오름
 function lastSudden(px, t, v) {
-  const c = paletteOf(v);
   const k = castOf(v);
   const G = 112;
   room(px, { wall: '#efe0c8', floor: '#b8946e', paper: 'dot', win: [[24, 18]], night: true, sky: ['#2a2a52', '#5a4a6a'], curtain: '#c8885a', t, G });
@@ -483,7 +481,6 @@ function cap(px, x, headY, tassel = '#f2c230') { px.rect(x - 6, headY - 2, 13, 2
 // 이른 아침 산실(도시는 병원, 시골은 집). 엄마가 침대에 기대 앉아 있고 산파가 아기를 안고 와 건넴 → 엄마 품에서 반짝 ·
 // 문이 열리며 아빠가 뛰어 들어와 침대 곁에서 만세 → 할머니 · 형제자매가 꽃다발 들고 들어옴 · 풍선 · 창밖 해돋이
 export function born(px, t, v) {
-  const c = paletteOf(v);
   const k = castOf(v);
   const urban = !!v.urban;
   const G = 112;
@@ -508,7 +505,6 @@ export function born(px, t, v) {
   px.rect(bx - 22, G - 15, 54, 7, urban ? '#cfe3f0' : '#f0b8b0'); px.hl(bx - 22, bx + 31, G - 15, lt(urban ? '#cfe3f0' : '#f0b8b0', 0.3));
   for (let x = bx - 20; x < bx + 30; x += 6) px.vl(x, G - 14, G - 10, dk(urban ? '#cfe3f0' : '#f0b8b0', 0.1));
   // 산파(간호사)가 아기를 안고 와 건넴
-  const baby = k.me;
   const bcol = (v.gender || 'F') === 'M' ? '#9fc7e0' : '#f6a5bd';
   const nw = walkX(t, 0, 1000, 190, bx + 14);
   const nurse = dressed(extra(6, { gender: 'F', age: 40 }), { style: 'tee', color: urban ? '#ffffff' : '#c9a07a' });
@@ -563,7 +559,7 @@ export function school(px, t, v) {
   px.line(144, G - 38, 204, G - 38, '#8a8478');
   px.rect(152, G - 37, 44, 7, '#fffaf0'); for (let i = 0; i < 8; i++) px.rect(155 + i * 5, G - 35, 3, 3, ['#d84a4a', '#3f6aa8'][i % 2]);
   // 벚나무 · 화단
-  [[22, 1.3], [100, 1.1], [236, 1.2]].forEach(([x, sc], i) => tree(px, x, G - 2, Math.round(sc), [dk('#f39ab0', 0.15), '#f39ab0', lt('#f39ab0', 0.4), '#8a5a4a'], 'round', 'right'));
+  [[22, 1.3], [100, 1.1], [236, 1.2]].forEach(([x, sc]) => tree(px, x, G - 2, Math.round(sc), [dk('#f39ab0', 0.15), '#f39ab0', lt('#f39ab0', 0.4), '#8a5a4a'], 'round', 'right'));
   [126, 222].forEach((x) => { px.rect(x - 8, G - 4, 16, 6, '#a86a4a'); for (let i = -6; i <= 6; i += 3) bloom(px, x + i, G - 7, ['#ffd37a', '#f05a7e', '#ffffff'][(i + 6) % 3]); });
   // 다른 아이들 (가방 메고 뛰어 들어감)
   for (let i = 0; i < 3; i++) {
@@ -767,7 +763,6 @@ export function newborn(px, t, v) {
 // 낮 병실 (커튼 칸막이 · 옆 침대 · 휠체어 · 창밖 나무). 누운 사람에게 가족이 과일 바구니와 꽃을 들고 들어옴 →
 // 의사가 차트를 들고 와 설명(말줄임) → 가족은 손을 꼭 잡고 걱정(땀) → 누운 사람이 웃어 보이자(하트) 조금 안심
 export function hosp(px, t, v) {
-  const c = paletteOf(v);
   const k = castOf(v);
   const G = 112;
   const who = v.arg === 'kid' ? (k.kids[0] || extra(4, { age: 6 })) : v.arg === 'pt' ? (k.pt || other(k.me)) : v.arg === 'par' ? (k.par[0] || extra(9, { age: 70 })) : k.me;
@@ -822,7 +817,6 @@ export function hosp(px, t, v) {
 // 고개 숙여 절 · 눈물 → 가랑비가 내리기 시작하고 곁의 사람이 우산을 씌워 줌 · 까마귀가 날아감
 //   arg: par 부모님 (가족이 함께) · pt 배우자 (혼자, 자녀가 뒤에서) · fr 친구
 export function loss(px, t, v) {
-  const c = paletteOf(v);
   const k = castOf(v);
   const G = 112;
   skyBands(px, ['#9aa0b4', '#b4b8c8', '#c8c8d2', '#d6d4da'], 98);
@@ -985,7 +979,6 @@ export function flee(px, t, v) {
 // 밤비 내리는 버스 정류장 (불 켜진 가게 창 · 젖은 길에 비친 불빛 · 지나가는 차 헤드라이트와 물보라). 우산을 쓰고 걸어와 정류장 의자에 앉아 고개 숙임 →
 // 차가 지나가며 물을 튀김 → (실직이면) 가족이 우산을 들고 와 곁에 앉아 어깨를 기댐 · (이혼이면) 혼자 남아 버스 불빛만
 export function rain(px, t, v) {
-  const c = paletteOf(v);
   const k = castOf(v);
   const alone = /각자의 길|이혼|헤어/.test(v.text || '') || v.divorced === true;
   const G = 108;
@@ -1047,7 +1040,6 @@ export function rain(px, t, v) {
 // 저녁 거실. 시대에 맞는 라디오(1960년 전) · 흑백 TV(1980년 전) · 컬러 TV 앞에 가족이 모여 앉음 → 1.4초 속보(빨간 띠 깜빡) →
 // 어른들이 놀라 일어서고(!), 아이는 엄마 품으로 · 할아버지는 창가로 가 밖을 내다봄 (전쟁이면 창밖 멀리 섬광)
 export function news(px, t, v) {
-  const c = paletteOf(v);
   const k = castOf(v);
   const G = 112;
   const yr = v.year || 2000;
@@ -1274,7 +1266,7 @@ export function party(px, t, v) {
   // 대표 (감사패 → 악수)
   const boss = dressed(extra(3, { gender: 'M', age: 58 }), { style: 'suit', color: '#2f3b5c' });
   const bw = walkX(t, 800, 1800, 236, 150);
-  const br = actor(px, t, 9, boss, bw.x, G + 14, { walk: bw.walk, gaze: -1, pose: t > 1800 && t < 3000 ? 'hold' : 'stand' });
+  actor(px, t, 9, boss, bw.x, G + 14, { walk: bw.walk, gaze: -1, pose: t > 1800 && t < 3000 ? 'hold' : 'stand' });
   if (t > 1800 && t < 2600) { px.rect(bw.x - 9, G - 6, 8, 6, '#8a5a3b'); px.rect(bw.x - 8, G - 5, 6, 4, '#f2c230'); }
   // 나 (가운데 · 감사패 · 꽃다발 → 손 흔듦)
   const got = t > 2600;

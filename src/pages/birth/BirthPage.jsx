@@ -8,6 +8,7 @@ import Spoon from '../../common/ui/Spoon.jsx';
 import { COUNTRY_POS, ASIA_CENTER } from '../../common/ui/countryPos';
 import Figure from '../../engine/village/Figure';
 import { lookOf } from '../../engine/village/costumeData';
+import { countryWithHist } from '../../engine/play/lifeText';
 import styles from './BirthPage.module.css';
 
 // ───────────────────────────────────────────────
@@ -157,11 +158,7 @@ function BirthPage() {
 
   const landed = phase === 'landed';
   const genderText = life?.gender === 'M' ? '남자' : '여자';
-  const countryText = life
-    ? life.histName && life.histName !== life.countryName
-      ? `${life.countryName} (당시 ${life.histName})`
-      : life.countryName
-    : '';
+  const countryText = life ? countryWithHist(life.countryName, life.histName) : '';
 
   return (
     <div className={styles.page}>

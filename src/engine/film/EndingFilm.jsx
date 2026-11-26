@@ -281,12 +281,18 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     return () => ro.disconnect();
   }, [film]);
 
+  // 필름이 준비되면 바로 재생 (렌더 중에 한 번만 바꿈 - effect 안에서 setState 하지 않게)
+  const [startedFor, setStartedFor] = useState(null);
+  if (film && startedFor !== film) {
+    setStartedFor(film);
+    setPlaying(true);
+  }
+
   // 음악
   useEffect(() => {
     if (!film) return undefined;
     audio.current = makeFilmAudio(lifeId);
     if (audio.current) audio.current.setMuted(muted);
-    setPlaying(true);
     return () => { audio.current?.close(); audio.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [film, lifeId]);
@@ -425,7 +431,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
   const D = film.age;
 
   const shots = [];
-  let over = null;
+  let over;
 
   // 앞 장면이 겹쳐 남아 있는 동안 (0.9초)
   const prevShot = (into) => {
@@ -448,7 +454,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
     over = (
       <>
         <T y={250} size={26} w={600} color={C.d} op={F(3300)} shadow>
-          {film.countryName}{film.histName ? ` (당시 ${film.histName})` : ''}
+          {film.countryName}{film.histName ? ` (${film.histName})` : ''}
         </T>
         <T y={580} size={30} op={F(400)} max={1100} lh={46} shadow>그해 지구에서는 약 1억 3천만 명의 아기가 태어났습니다.</T>
         <T y={640} size={30} op={F(2100)} max={1100} lh={46} shadow>이것은 그중 한 사람의 이야기입니다.</T>
@@ -606,7 +612,7 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
             </div>
           )}
           {blocked && playing && <div className="ef-sound">🔈 화면을 누르면 소리가 나요</div>}
-          {!playing && !ended && <div className="ef-paused" aria-hidden="true">❚❚</div>}
+          {!playing && !ended && <div className="ef-paused" aria-hidden="true">❚❚ 멈춤</div>}
         </div>
 
         <div className="ef-bar">
