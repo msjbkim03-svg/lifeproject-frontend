@@ -5,7 +5,7 @@ import useChat from "./useChat";
 import ChatBox from "./ChatBox";
 
 function ChatVillage(props) {
-  const chat = useChat(props.countryCode, { age: props.age, gender: props.gender, place: props.place });
+  const chat = useChat(props.countryCode, { age: props.age, gender: props.gender, place: props.place, costume: props.costume });
 
   return (
     <>

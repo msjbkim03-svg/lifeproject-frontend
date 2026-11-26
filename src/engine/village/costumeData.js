@@ -27,12 +27,18 @@ export const COSTUMES = {
   TOP_08: { part: 'top', style: 'hero', color: '#d0383f', name: '히어로 슈트' },
   TOP_09: { part: 'top', style: 'pajama', color: '#9ec5f0', name: '줄무늬 잠옷' },
   TOP_10: { part: 'top', style: 'space', color: '#e9ecf2', name: '우주복' },
+  RIDE_01: { part: 'ride', style: 'bike', color: '#e8584c', name: '자전거', minAge: 7 },
+  RIDE_02: { part: 'ride', style: 'moto', color: '#e02430', name: '오토바이', minAge: 18 },
+  RIDE_03: { part: 'ride', style: 'horse', color: '#9c5a32', name: '말', minAge: 15 },
+  RIDE_04: { part: 'ride', style: 'supercar', color: '#e02430', name: '슈퍼카', minAge: 19 },
+  RIDE_05: { part: 'ride', style: 'ufo', color: '#7ef9ff', name: 'UFO', minAge: 20 },
   HAT_04: { part: 'hat', style: 'crown', color: '#f2c230', name: '황금 왕관' },
   HAT_05: { part: 'hat', style: 'tophat', color: '#2b2d33', name: '신사 모자' },
   HAT_06: { part: 'hat', style: 'beret', color: '#c9544a', name: '빨간 베레모' },
   HAT_07: { part: 'hat', style: 'ribbon', color: '#f07aa8', name: '분홍 리본' },
   HAT_08: { part: 'hat', style: 'bunny', color: '#ffffff', name: '토끼 머리띠' },
   HAT_09: { part: 'hat', style: 'hardhat', color: '#f2b22e', name: '노란 안전모' },
+  HAT_10: { part: 'hat', style: 'alien', color: '#5effa3', name: '외계인 더듬이' },
 };
 
 // 나이 → 몸 크기 (아기 · 아이 · 어른 · 노인), 나이를 모르면 어른
@@ -57,13 +63,14 @@ export function lookOf({ gender, age, costume, soft = false }) {
     hair: group === 'baby' ? null : { style: female ? 'long' : 'short', color: group === 'elder' ? ELDER_HAIR : '#3a2c26' },
     top: { style: 'tee', color: female ? (soft ? '#e9a0b4' : '#e98aa6') : (soft ? '#8fb0ec' : '#6f95e8') },
     hat: null,
+    ride: null,
   };
   if (typeof costume === 'string') {
     look.top = { ...look.top, color: costume };
     return look;
   }
   if (!costume) return look;
-    for (const part of ['hair', 'top', 'hat']) {
+    for (const part of ['hair', 'top', 'hat', 'ride']) {
     const item = COSTUMES[costume[part]];
     if (item && item.part === part) look[part] = { style: item.style, color: item.color };
   }

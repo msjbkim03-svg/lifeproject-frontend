@@ -40,7 +40,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  grid-template-columns: 68px minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   padding: 6px 12px;
@@ -51,16 +51,38 @@
 .row.on { border-color: var(--primary); }
 
 .preview {
-  width: 44px;
+  position: relative;
+  width: 68px;
   height: 64px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .preview svg { width: 36px; height: 60px; }
 
+.locked { opacity: 0.68; }
+.locked .preview svg { filter: grayscale(0.6); }
+.lockOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.nameBox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 .name { font-size: 14px; font-weight: 600; }
+.ageLock { font-size: 11.5px; color: var(--red, #e8584c); }
+.ageOk { font-size: 11.5px; color: var(--ink-light); }
 .price { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
 /* 사기 · 착용 · 벗기 · 닫기 버튼 = 공통 Button (common/ui) */

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
+import Figure from "../../engine/village/Figure";
+import { lookOf } from "../../engine/village/costumeData";
 import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (main, card, stats, life …)
 import styles from "./LivesPage.module.css"; // 표·페이지 번호만
 
@@ -57,6 +59,11 @@ function LivesPage() {
   const lastPage = Math.max(1, Math.ceil(data.total / data.size));
   const pages = [];
   for (let i = 1; i <= lastPage; i++) pages.push(i);
+  const look = lookOf({
+    gender: my.gender || "M",
+    age: my.currentAge ?? 25,
+    costume: { hair: my.hair, top: my.top, hat: my.hat, ride: my.ride },
+  });
 
   return (
     <main className={common.main}>
@@ -75,7 +82,7 @@ function LivesPage() {
         <div className={common.cardHead}><span className={common.cardTitle}>진행 중인 인생</span></div>
         {my.lifeId ? (
           <div className={common.life}>
-            <div className={common.character}>캐릭터</div>
+            <div className={common.character} aria-hidden="true"><Figure look={look} /></div>
             <div className={common.lifeText}>
               <b>{my.lifeName}</b>
               <span>{my.currentCountryName} · {my.currentAge}살</span>
@@ -84,7 +91,7 @@ function LivesPage() {
           </div>
         ) : (
           <div className={common.life}>
-            <div className={common.character}>캐릭터</div>
+            <div className={common.character} aria-hidden="true"><Figure look={look} /></div>
             <div className={common.lifeText}>
               <b>진행 중인 인생이 없어요</b>
               <span>메인에서 새 인생을 시작해 보세요.</span>

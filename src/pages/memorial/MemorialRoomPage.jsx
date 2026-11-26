@@ -71,6 +71,18 @@ function MemorialRoomPage() {
     }
   };
 
+  // 본인 추모관 글 닫기(삭제) — 달린 방명록·촛불 기록도 함께 삭제
+  const closeRoom = async () => {
+    try {
+      await client.delete(`/api/memorials/${lifeId}/open`);
+      setNotice("추모관을 닫았어요.");
+      load();
+    } catch (e) {
+      if (e.response?.status === 401) return goLogin();
+      setNotice(e.response?.data?.message ?? "추모관을 닫지 못했어요.");
+    }
+  };
+
   // 2. 촛불 켜기 (회원당 1개)
   const lightCandle = async () => {
     if (!isLogin) return goLogin();
@@ -129,10 +141,13 @@ function MemorialRoomPage() {
         <Link to="/memorial">전생의 집</Link>
         <span>›</span>
         <b>{room.name}의 방</b>
+        <Button size="sm" style={{ marginLeft: "auto" }} onClick={() => navi(`/result/${lifeId}?detail=1`)}>
+          인생 기록 보기
+        </Button>
       </div>
 
       <div className={s.layout}>
-        <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} />
+        <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} onCloseRoom={closeRoom} />
 
         <Panel className={s.main}>
           {/* 탭 줄: 지금 주소와 같은 탭이 강조됨 (NavLink 가 알아서 on) */}
@@ -160,6 +175,7 @@ function MemorialRoomPage() {
         <p>당신은 80억 명 가운데 어디에서, 누구로 태어날까요?</p>
         <div className="row" style={{ justifyContent: "center" }}>
           <Button type="primary" onClick={() => navi("/")}>나도 태어나 보기</Button>
+          <Button onClick={() => navi(`/result/${lifeId}?detail=1`)}>인생 기록 보기</Button>
           <Button onClick={copyLink}>링크 복사</Button>
           <Button onClick={() => navi("/memorial")}>다른 추모관 둘러보기</Button>
         </div>

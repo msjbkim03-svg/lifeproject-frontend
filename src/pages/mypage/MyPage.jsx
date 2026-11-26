@@ -1,5 +1,7 @@
 import { useNavigate, useOutletContext } from "react-router-dom";
 import Button from "../../common/ui/Button";
+import Figure from "../../engine/village/Figure";
+import { lookOf } from "../../engine/village/costumeData";
 import { formatPhone } from "../../utils/phone";
 import styles from "./MyPage.module.css";
 
@@ -9,6 +11,11 @@ function MyPage() {
   const navi = useNavigate();
   // 내 정보는 MyPageLayout 이 서버에서 받아서 넘겨 줌 (여기서는 꺼내 쓰기만)
   const { my } = useOutletContext();
+  const look = lookOf({
+    gender: my.gender || "M",
+    age: my.currentAge ?? 25,
+    costume: { hair: my.hair, top: my.top, hat: my.hat, ride: my.ride },
+  });
 
   return (
     // 오른쪽 내용만 (왼쪽 메뉴는 MyPageLayout)
@@ -45,7 +52,7 @@ function MyPage() {
           </div>
           {my.lifeId ? (
             <div className={styles.life}>
-              <div className={styles.character}>캐릭터</div>
+              <div className={styles.character} aria-hidden="true"><Figure look={look} /></div>
               <div className={styles.lifeText}>
                 <b>{my.lifeName}</b>
                 <span>{my.currentCountryName} · {my.currentAge}살</span>
@@ -56,7 +63,7 @@ function MyPage() {
             </div>
           ) : (
             <div className={styles.life}>
-              <div className={styles.character}>캐릭터</div>
+              <div className={styles.character} aria-hidden="true"><Figure look={look} /></div>
               <div className={styles.lifeText}>
                 <b>진행 중인 인생이 없어요</b>
                 <span>메인에서 새 인생을 시작해 보세요.</span>

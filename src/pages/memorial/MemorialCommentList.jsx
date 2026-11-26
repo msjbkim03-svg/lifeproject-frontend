@@ -8,13 +8,14 @@ import s from "./MemorialRoom.module.css";
 function MemorialCommentList({ list }) {
   const { deleteComment } = useOutletContext();
   const [busy, setBusy] = useState(false); // 지우는 중 (연타 막기)
+  const [askId, setAskId] = useState(null); // 지우기 확인 중인 방명록 번호
 
-  // 지우기: 한 번 더 물어보고 → 서버에 지우기 → 끝나면 다시 누를 수 있게
+  // 지우기: 인라인 확인 후 서버에 삭제 요청
   const remove = async (commentId) => {
     if (busy) return;
-    if (!window.confirm("이 방명록을 지울까요? 지우면 되돌릴 수 없어요.")) return;
     setBusy(true);
     await deleteComment(commentId);
+    setAskId(null);
     setBusy(false);
   };
 
@@ -27,7 +28,16 @@ function MemorialCommentList({ list }) {
           <b>{c.nickname}</b>
           <span>{c.content}</span>
           <small>{c.createdAt}</small>
-          {c.mine && <Button type="ghost" size="sm" disabled={busy} onClick={() => remove(c.commentId)}>지우기</Button>}
+          {c.mine && (
+            askId === c.commentId ? (
+              <>
+                <Button size="sm" disabled={busy} onClick={() => setAskId(null)}>취소</Button>
+                <Button type="danger" size="sm" disabled={busy} onClick={() => remove(c.commentId)}>삭제</Button>
+              </>
+            ) : (
+              <Button type="ghost" size="sm" disabled={busy} onClick={() => setAskId(c.commentId)}>지우기</Button>
+            )
+          )}
         </li>
       ))}
     </ul>

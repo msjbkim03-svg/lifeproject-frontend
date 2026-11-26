@@ -95,7 +95,7 @@ function JoinPage() {
       const resp = await client.get(urls[field]); // 서버에 물어보기
       if (formRef.current[field] !== value) return; // 기다리는 사이 값을 고쳤으면 이 응답은 버림
       if (resp.data.available) setHint(field, true, "사용할 수 있어요.");
-      else setHint(field, false, "이미 사용 중이에요.");
+      else setHint(field, false, resp.data.message || "이미 사용 중이에요.");
     } catch {
       setHint(field, false, "서버에 연결할 수 없어요.");
     }

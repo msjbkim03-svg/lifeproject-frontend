@@ -1,121 +1,204 @@
-/* 퀘스트 설정 (C01) - 밤하늘 디자인 (design.css 변수 사용)
-   카드 = 공통 Panel, 체크 = 공통 CheckItem, 특성 = 공통 LevelDots, 버튼 = 공통 Button */
+
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--sp-5) var(--sp-4) var(--sp-6);
+  padding: var(--sp-6) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--fs-xl);
-  color: var(--ink);
 }
 
 .lead {
-  margin: var(--sp-2) 0 var(--sp-4);
-  font-size: var(--fs-sm);
+  margin: calc(var(--sp-2) * -1) 0 var(--sp-2);
   color: var(--ink-sub);
-}
-
-/* 왼쪽 목록 넓게 + 오른쪽 360px */
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: var(--sp-4);
-  align-items: start;
 }
 
 .sub {
-  font-size: var(--fs-xs);
-  color: var(--ink-light);
-}
-
-/* 퀘스트 목록 */
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.desc {
-  margin: 4px 0 0 calc(18px + var(--sp-3) * 2);
-  font-size: var(--fs-xs);
-  color: var(--ink-light);
-}
-
-/* 오른쪽 세로로 쌓기 */
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.empty {
-  margin: 0;
   font-size: var(--fs-sm);
-  color: var(--ink-light);
+  color: var(--ink-sub);
 }
 
-.pickedList {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
+/* ===== 위: 목표 3칸 + 최대 포인트 ===== */
+.goals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 200px;
   gap: var(--sp-2);
 }
 
-.pickedList li {
-  padding: 10px 12px;
-  background: var(--panel-2);
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 0 14px;
+  border: 1px solid var(--primary-line);
   border-radius: var(--radius);
-  font-size: var(--fs-sm);
+  background: var(--primary-light);
 }
 
-.pickedList b {
+.slot b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
   color: var(--primary);
 }
 
-/* 최대 획득 포인트 */
+.slotName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.remove {
+  border: none;
+  background: none;
+  color: var(--ink-light);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.remove:hover {
+  color: var(--primary);
+}
+
+/* 빈칸: 점선 */
+.slot.empty {
+  border: 1.5px dashed var(--line-strong);
+  background: transparent;
+  color: var(--ink-light);
+  font-size: var(--fs-sm);
+}
+
+.slot.empty b {
+  color: var(--ink-light);
+}
+
 .point {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-sm);
-  color: var(--ink-sub);
+  justify-content: space-between;
+  padding: 0 var(--sp-3);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-light);
 }
 
 .point b {
   font-family: var(--font-display);
-  font-size: var(--fs-lg);
+  font-weight: 400;
+  font-size: var(--fs-xl);
   color: var(--primary);
 }
 
-.traits {
-  display: flex;
-  flex-direction: column;
+/* ===== 가운데: 퀘스트 카드 3열 (공통 choice-card) ===== */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--sp-2);
 }
 
-.traitBtn {
-  margin-top: var(--sp-3);
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--panel-2);
+  font-size: 24px;
+}
+
+.card:global(.on) .icon {
+  background: var(--panel);
+}
+
+.cardText {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardText :global(.choice-card-desc) {
+  display: block;
+}
+
+/* 고른 순서 번호 (오른쪽 위 동그라미) */
+.num {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--font-display);
+  box-shadow: var(--glow);
+}
+
+/* ===== 아래: 특성 레벨 한 줄 ===== */
+.strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+}
+
+.strip :global(.level) {
+  gap: 10px;
+}
+
+.space {
+  flex: 1;
 }
 
 .error {
   margin: 0;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   color: var(--red);
+  text-align: right;
 }
 
-/* 좁은 화면: 한 줄로 쌓기 */
-@media (max-width: 860px) {
-  .grid {
+/* ===== 버튼 (오른쪽) ===== */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+/* ===== 화면이 좁을 때 ===== */
+@media (max-width: 900px) {
+  .goals {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .goals,
+  .cards {
     grid-template-columns: 1fr;
+  }
+  .actions {
+    flex-direction: column-reverse;
   }
 }

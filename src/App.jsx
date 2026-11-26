@@ -21,6 +21,7 @@ import AdminMain from './pages/admin/AdminMain';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminHistReview from './pages/admin/AdminHistReview';
 import AdminMembers from './pages/admin/AdminMembers';
+import AdminChat from './pages/admin/AdminChat';
 import MemorialListPage from './pages/memorial/MemorialListPage';
 import MemorialRoomPage from './pages/memorial/MemorialRoomPage';
 import MemorialRoomTab from './pages/memorial/MemorialRoomTab';
@@ -81,6 +82,7 @@ function App() {
         <Route path="/admin/events" element={<AdminEvents />} />
         <Route path="/admin/hist-review" element={<AdminHistReview />} />
         <Route path="/admin/members" element={<AdminMembers />} />
+        <Route path="/admin/chat" element={<AdminChat />} />
         {/* 디자인 가이드 (공통) */}
         <Route path="/design-guide" element={<DesignGuide />} />
         {/* C08 마을 이동 테스트 (엔진) */}

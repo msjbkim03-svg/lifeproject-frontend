@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import Figure from "../../engine/village/Figure";
+import { lookOf } from "../../engine/village/costumeData";
 import styles from "./MyPage.module.css";
 
 // 마이페이지 왼쪽 메뉴 - 두 묶음으로 나눔
@@ -16,15 +18,22 @@ const LIFE_MENUS = [
   { key: "traits", label: "특성 강화", path: "/life/traits" },
 ];
 
-function MyPageSide({ active, nickname, loginId }) {
+function MyPageSide({ active, nickname, loginId, my }) {
   const navi = useNavigate();
   // 지금 메뉴가 어느 묶음인지 보고 그 묶음만 보여 줌
   const menus = active === "lives" || active === "traits" ? LIFE_MENUS : HOME_MENUS;
+  const look = lookOf({
+    gender: my?.gender || "M",
+    age: my?.currentAge ?? 25,
+    costume: { hair: my?.hair, top: my?.top, hat: my?.hat, ride: my?.ride },
+  });
 
   return (
     <aside className={styles.side}>
       <div className={styles.profile}>
-        <div className={styles.character}>캐릭터</div>
+        <div className={styles.character} aria-hidden="true">
+          <Figure look={look} />
+        </div>
         <div>
           <div className={styles.profileName}>{nickname}</div>
           <div className={styles.profileSub}>{loginId}</div>

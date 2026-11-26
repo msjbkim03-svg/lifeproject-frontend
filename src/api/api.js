@@ -15,6 +15,14 @@ const isExpired = (token) => {
   }
 };
 
+// 처음 화면을 열었을 때 이미 만료된 토큰이 남아 있으면 바로 정리 (/login · /join 에서 튕기지 않게)
+const savedToken = localStorage.getItem('token');
+if (savedToken && isExpired(savedToken)) {
+  localStorage.removeItem('token');
+  localStorage.removeItem('nickname');
+  localStorage.removeItem('memberRole');
+}
+
 // 회원 전용 요청인지 확인 (백엔드 WebConfig 의 LoginValidator 와 같은 기준)
 // → 비회원도 쓰는 주소(메인·추모관 보기·로그인·가입·중복확인·찾기 등)는 만료된 토큰만 지우고 요청을 그대로 보냄
 const isMemberOnly = (url = '') => {
