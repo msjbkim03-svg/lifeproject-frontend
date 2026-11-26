@@ -124,7 +124,7 @@ function rankTier(rank) {
 // 우리 집 단계 tier 1(흙수저)~5(다이아수저) + 종류 kind
 // - 내 집이 없고, 미혼이고, 부모님이 살아 계시면 → 부모님 집 (가정형편 wealthClass 그대로)
 // - 내 집(HOUSE)이 있으면 → 내 집 (소득 위치 단계, 최소 3)
-// - 결혼했거나 부모님이 안 계신데 내 집이 없으면 → 셋집 (소득 위치 단계, 최대 3)
+// - 결혼했거나 부모님이 안 계신데 내 집이 없으면 → 셋집 (소득 위치 단계 그대로, 신원 기록 색과 같음)
 // - 소득 위치(incomeRankCountry)는 15세 이상·소득 있을 때만 와서, 없으면 가정형편으로 대신
 export function houseOf(life) {
   if (!life) return { tier: 3, kind: 'parents' };
@@ -138,7 +138,7 @@ export function houseOf(life) {
 
   const rank = rankTier(life.incomeRankCountry) ?? born; // ?? : 앞이 null·undefined 면 뒤 값
   if (mine) return { tier: Math.max(3, rank), kind: 'own' };
-  return { tier: Math.min(3, rank), kind: life.isUrban === 'Y' ? 'apt' : 'rent' }; // 도시 셋집은 아파트
+  return { tier: rank, kind: life.isUrban === 'Y' ? 'apt' : 'rent' }; // 도시 셋집은 아파트
 }
 
 // 현역 복무 중: owns 의 'SVC-ON-전역나이-종류-개월' (엔진 병역), 종류 S(보충역)는 집에서 출퇴근이라 제외
