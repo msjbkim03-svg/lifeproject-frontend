@@ -1,0 +1,156 @@
+/* A02 관리자 채팅 · 방명록 · 금칙어 관리 */
+.admin { max-width: 1100px; }
+
+/* 금칙어 추가 줄 */
+.wordTop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.wordForm {
+  display: flex;
+  flex: 1;
+  min-width: 260px;
+  gap: var(--sp-2);
+}
+.wordForm input { flex: 1; }
+.wordFilter { width: 220px; }
+
+/* 금칙어 칩 목록 */
+.wordList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.wordChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  background: var(--bg-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+}
+.wordChip b { font-weight: 600; }
+.wordDel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-sub);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.wordDel:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+/* 탭 · 검색 줄 */
+.tabBar { margin-bottom: var(--sp-3); }
+.search {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.search input { flex: 1; }
+
+.select {
+  height: 40px;
+  padding: 0 var(--sp-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  background: var(--bg-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.message {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--green);
+}
+
+.error {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--red);
+}
+
+/* 목록 표 */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.table th {
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink-sub);
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+.table td {
+  padding: 10px 8px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.table tbody tr:hover { background: var(--panel-2); }
+
+.contentCell {
+  max-width: 380px;
+  white-space: normal !important;
+  word-break: break-word;
+}
+.subText { color: var(--ink-light); }
+.link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.link:hover { text-decoration: underline; }
+
+/* 삭제된 채팅 줄은 흐리게 */
+.out td { color: var(--ink-sub); }
+.out .contentCell { text-decoration: line-through; }
+
+/* 페이지 번호 */
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-3);
+}
+
+/* 삭제 확인 모달 안 글 상자 */
+.quoteBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+}
+.quoteBox small { color: var(--ink-light); }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
