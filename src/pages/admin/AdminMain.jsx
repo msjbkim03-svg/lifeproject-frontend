@@ -301,7 +301,7 @@ function QuestList({ quests, hov }) {
               </span>
               <span className={styles.qVal}>
                 <b className={styles['qt_' + kind]}>{q.rate}<small>%</small></b>
-                <em>{fmt(q.achieved)}/{fmt(q.picked)}</em>
+                <em>{fmt(q.achieved)}/{fmt(q.picked)}명</em>
               </span>
             </li>
           );
@@ -311,7 +311,7 @@ function QuestList({ quests, hov }) {
         <span><i className={styles.q_hard} />너무 어려움 {HARD}% 이하</span>
         <span><i className={styles.q_mid} />적당</span>
         <span><i className={styles.q_easy} />너무 쉬움 {EASY}% 이상</span>
-        <span className={styles.qKeyFew}>흐린 줄 = 고른 인생 {FEW_Q}명 미만</span>
+        <span>흐린 줄: 고른 인생 {FEW_Q}명 미만</span>
       </div>
       {none.length > 0 && (
         <p className={styles.note}>아직 판정된 인생이 없는 퀘스트 {none.length}개: {none.map((q) => q.questName).join(', ')}</p>
@@ -322,7 +322,9 @@ function QuestList({ quests, hov }) {
 
 // ───────── 최근 14일 ─────────
 // 하루 합계 (회원 + 비회원)
+//   끝까지 삶 · 중간에 나감 · 진행 중은 모두 '그날 시작한 인생' 기준 → 셋을 더하면 하루 합계 (11/26)
 const dayTotal = (x) => x.memberStarts + x.guestStarts;
+const playingOf = (x) => x.playing ?? Math.max(0, dayTotal(x) - x.ended - x.abandoned); // 예전 서버는 playing 이 없음
 const mmdd = (day) => `${+day.slice(5, 7)}/${+day.slice(8, 10)}`;
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 const weekday = (day) => WEEK[new Date(day + 'T00:00:00').getDay()];
@@ -367,7 +369,7 @@ function niceTicks(max, want = 4) {
 }
 const short = (n) => (n >= 10000 ? round1(n / 10000) + '만' : n >= 1000 ? round1(n / 1000) + '천' : String(n)); // 눈금 글자
 
-// 최근 14일 하루 시작된 인생 (아래 회원 · 위 비회원 쌓은 막대) + 끝까지 산 인생(초록 꺾은선 · 점)
+// 최근 14일 하루 시작된 인생 (아래 회원 · 위 비회원 쌓은 막대) + 그 가운데 끝까지 산 인생(초록 꺾은선 · 점)
 //   막대에 마우스를 올리면 그날 말풍선
 function DailyChart({ days, hov }) {
   if (!days?.length) return <p className={styles.empty}>날짜별 기록이 없어요.</p>;
@@ -397,12 +399,14 @@ function DailyChart({ days, hov }) {
               {...hov(
                 <TipBody
                   title={`${x.day === today ? '오늘 · ' : ''}${mmdd(x.day)} (${wk})`}
+                  sub="그날 시작한 인생이 지금 어떻게 됐나"
                   rows={[
                     ['시작된 인생', `${fmt(tot)}명`, null, true],
                     ['  회원', `${fmt(x.memberStarts)}명`],
                     ['  비회원', `${fmt(x.guestStarts)}명`],
-                    ['끝까지 산 인생', `${fmt(x.ended)}명`, 'ok'],
+                    ['끝까지 삶', `${fmt(x.ended)}명`, 'ok'],
                     ['중간에 나감', `${fmt(x.abandoned)}명`, x.abandoned ? 'bad' : null],
+                    ['아직 진행 중', `${fmt(playingOf(x))}명`],
                   ]}
                   note={prev != null ? `전날보다 ${tot === prev ? '같음' : `${tot > prev ? '▲' : '▼'} ${fmt(Math.abs(tot - prev))}명`}` : null}
                 />,
@@ -451,8 +455,7 @@ function CauseList({ causes, hov }) {
         ))}
       </ul>
       <p className={styles.note}>
-        끝까지 산 인생 {fmt(total)}명 기준 · 오른쪽 끝은 그 원인으로 떠난 사람들의 평균 수명
-        {rest > 0 && ` · 그 밖의 원인 ${fmt(rest)}명`}
+        끝까지 산 인생 {fmt(total)}명 기준 · 오른쪽 끝 = 평균 수명{rest > 0 && ` · 그 밖의 원인 ${fmt(rest)}명`}
       </p>
     </>
   );
@@ -540,12 +543,15 @@ function AgeHist({ ages, gameAge, realAge, hov }) {
 }
 
 // ───────── 최근 끝난 인생 ─────────
-// 끝난 시각 'MM-DD HH:MI' → 오늘이면 '16:00', 아니면 '11-24'
+// 끝난 시각 'MM-DD HH:MI' → 오늘이면 '16:00', 어제면 '어제 16:00', 그 전이면 '11/24'
+const mdOf = (date) => `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 function whenOf(t) {
   if (!t) return '';
   const now = new Date();
-  const today = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  return t.startsWith(today) ? t.slice(6) : t.slice(0, 5);
+  const yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (t.startsWith(mdOf(now))) return t.slice(6);
+  if (t.startsWith(mdOf(yest))) return '어제 ' + t.slice(6);
+  return `${+t.slice(0, 2)}/${+t.slice(3, 5)}`;
 }
 
 function RecentList({ list, hov }) {
@@ -643,7 +649,7 @@ export function Dashboard({ d, loadedAt, onReload, loading }) {
           {/* 회원 · 비회원 완료율 작은 막대 (진행 중은 빼고 셈) */}
           <div className={styles.miniRows}>
             {(d.completion || []).map((x) => (
-              <span key={x.startType} className={x.ended + x.abandoned && x.abandonedRate >= QUIT ? styles.t_warn : ''}
+              <span key={x.startType} className={(x.ended + x.abandoned === 0 ? styles.miniNone + ' ' : '') + (x.ended + x.abandoned && x.abandonedRate >= QUIT ? styles.t_warn : '')}
                 {...hov(
                   <TipBody
                     title={`${TYPE_NAME[x.startType] || x.startType} 인생`}
@@ -652,8 +658,8 @@ export function Dashboard({ d, loadedAt, onReload, loading }) {
                   />,
                 )}>
                 <em>{TYPE_NAME[x.startType] || x.startType}</em>
-                <i><s style={{ width: x.endedRate + '%' }} /></i>
-                <b className={styles.mono}>{Math.round(x.endedRate)}%</b>
+                <i>{x.ended + x.abandoned > 0 && <s style={{ width: x.endedRate + '%' }} />}</i>
+                <b className={styles.mono}>{x.ended + x.abandoned > 0 ? `${Math.round(x.endedRate)}%` : '-'}</b>
               </span>
             ))}
           </div>
@@ -678,7 +684,7 @@ export function Dashboard({ d, loadedAt, onReload, loading }) {
       {/* 최근 14일 */}
       <Section
         title="최근 14일"
-        desc="하루에 시작된 인생 (막대) · 끝까지 산 인생 (초록 선) · 한국 날짜 기준 · 막대에 마우스를 올리면 자세히"
+        desc="하루에 시작된 인생 (막대) · 그 가운데 끝까지 산 인생 (초록 선) · 한국 날짜 기준 · 막대에 마우스를 올리면 자세히"
         right={(
           <div className={styles.legendRow}>
             <span><i className={styles.kMember} />회원</span>
