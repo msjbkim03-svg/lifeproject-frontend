@@ -4,11 +4,11 @@
 import { useEffect, useState } from 'react';
 import client from '../../api/api';
 import AdminNav from './AdminNav';
-import EventForm, { EMPTY_EVENT } from './EventForm';
+import EventForm from './EventForm';
 import Panel from '../../common/ui/Panel';
 import Button from '../../common/ui/Button';
 import Badge from '../../common/ui/Badge';
-import { errMsg } from './adminUtil';
+import { errMsg, EMPTY_EVENT } from './adminUtil';
 import styles from './AdminEvents.module.css';
 import ChoiceEditor from './ChoiceEditor';
 import TemplateCard from './TemplateCard';

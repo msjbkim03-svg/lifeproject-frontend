@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import client from '../../api/api';
 import Button from '../../common/ui/Button';
-import { Field } from './EventForm';
+import Field from './Field';
 import { errMsg } from './adminUtil';
 import styles from './AdminEvents.module.css';
 

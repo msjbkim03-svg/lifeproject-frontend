@@ -5,20 +5,11 @@ import { useState } from 'react';
 import client from '../../api/api';
 import Button from '../../common/ui/Button';
 import { errMsg } from './adminUtil';
+import Field from './Field';
 import styles from './AdminEvents.module.css';
 
 // 숫자로 보낼 칸 (빈칸은 null)
 const NUM_FIELDS = ['effectScale', 'intensity', 'minAge', 'maxAge', 'minWealth', 'maxWealth', 'probability', 'effWealthRate'];
-
-// 새 이벤트 기본값 (서버 등록 기본값과 같게)
-export const EMPTY_EVENT = {
-  eventId: '', eventType: 'LIFE', templateId: '', varValue: '', title: '', baseText: '',
-  histEventId: '', histTypeCode: '', intensity: '',
-  minAge: '', maxAge: '', gender: '', minWealth: '', maxWealth: '',
-  requiredExpId: '', excludedExpId: '', isOnce: 'N',
-  effectScale: '1', probability: '', effWealthRate: '',
-  isChoice: 'N', aiNarrate: 'N', isReviewed: 'Y',
-};
 
 // 서버 값 → 입력칸 값 (null 은 빈칸, 숫자는 글자로)
 function toForm(e) {
@@ -33,17 +24,6 @@ function toBody(f) {
     else body[k] = NUM_FIELDS.includes(k) ? Number(v) : v;
   }
   return body;
-}
-
-// 이름표 + 입력칸 한 칸 (wide: 한 줄 전체)
-export function Field({ label, hint, wide, children }) {
-  return (
-    <label className={wide ? `${styles.field} ${styles.wide}` : styles.field}>
-      <span className={styles.fieldLabel}>{label}</span>
-      {children}
-      {hint && <small className="sub">{hint}</small>}
-    </label>
-  );
 }
 
 function YN({ value, onChange }) {
