@@ -122,3 +122,26 @@
 .ms-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #e8584c; animation: ms-blink 1.6s ease-in-out infinite; }
 @keyframes ms-blink { 50% { opacity: 0.25; } }
 .ms-empty { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-light); }
+
+/* 실시간 목록 꾸밈 (11/26) */
+.ms-c1 .feed li, .ms-c2 .feed li { padding: 12px 0; }
+.feed-sub { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* 사망 원인이 길어도 한 줄 */
+.feed-flag { width: 18px; height: 12px; margin-right: 7px; border-radius: 2px; vertical-align: -1px; object-fit: cover; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08); }
+/* 방금 시작된 인생: 수저 그림 + 지금 상태 */
+.ms-born-side { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; }
+.ms-born-side .spoon { font-size: 12.5px; color: var(--ink-sub); }
+.ms-now { padding: 1px 8px; border-radius: 999px; font-size: 11px; line-height: 1.6; }
+.ms-now.alive { background: var(--green-line); color: var(--ink); }
+.ms-now.died { background: var(--panel-2); color: var(--ink-light); }
+.ms-now.quit { background: var(--panel-2); color: var(--ink-light); }
+/* 방금 끝난 인생: 수명을 크게 + 생몰년 */
+.ms-died-side { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
+.ms-died-side b { font-family: var(--font-display); font-weight: 400; font-size: 22px; line-height: 1.1; color: var(--ink); }
+.ms-died-side b small { margin-left: 1px; font-family: var(--font-body); font-size: 12px; color: var(--ink-sub); }
+.ms-died-side > small { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); }
+/* 제목 옆 추모관 바로가기 */
+.ms-more { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line-strong);
+  font-size: 12.5px; color: var(--ink-sub); text-decoration: none; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+.ms-more:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+.ms-more span { transition: transform 0.15s; }
+.ms-more:hover span { transform: translateX(2px); }

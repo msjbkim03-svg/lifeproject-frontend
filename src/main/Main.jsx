@@ -5,9 +5,11 @@
 //   - 진행 중인 인생이 있는데 태어나기를 누르면 확인 창 (새로 태어나면 그 인생은 포기됨, 엔진 C02가 처리)
 //   - 아무 시대에나 태어나기: 궤도를 몇 번 빠르게 돌린 뒤 무작위 시대로 멈춤 → 잠깐 보여 주고 그 시대로 태어나기
 //   - 실시간 목록: useRealFeed() = 실제 플레이어 인생 (GET /api/engine/live, 5초마다, 11/25 동현님)
+//     방금 시작된 인생: 국기 · 나라 태어난 해 / 이름 · 성별 | 오른쪽 수저 그림 + 지금 상태(지금 N세 · N세에 떠남 · 그만둠) (11/26)
+//     방금 끝난 인생: 국기 · 이름 / 나라 · 사망 원인 | 오른쪽 큰 글자 수명 + 생몰년, 제목 옆 '추모관 →' (11/26)
 //   - 실시간 숫자: useAsiaCounter() = 유엔 세계인구전망 2024 아시아 통계로 계산 (그대로 써도 됨)
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import client from '../api/api';
 import Button from '../common/ui/Button';
 import Modal from '../common/ui/Modal';
@@ -15,6 +17,7 @@ import Panel from '../common/ui/Panel';
 import FeedList from '../common/ui/FeedList';
 import BigStat from '../common/ui/BigStat';
 import StarIcon from '../common/ui/StarIcon';
+import Spoon from '../common/ui/Spoon.jsx'; // .jsx 꼭 붙이기: 윈도우는 대소문자를 안 가려서 'Spoon' 이 spoon.js 로 잡힘
 import OrbitGlobe from '../common/ui/OrbitGlobe';
 import { DECADES } from '../common/ui/decades';
 import { useAsiaCounter } from './useLiveStats';
@@ -122,12 +125,28 @@ function Main() {
         </Panel>
 
         <Panel title="방금 시작된 인생" right={<span className="ms-live">실시간</span>} className="ms-c1">
-          <FeedList items={feed.born} />
+          <FeedList items={feed.born.map((it) => ({
+            ...it,
+            side: (
+              <span className="ms-born-side">
+                <Spoon level={it.wealth} size={16} />
+                <small className={'ms-now ' + it.now.kind}>{it.now.text}</small>
+              </span>
+            ),
+          }))} />
           {feed.ok && !feed.born.length && <p className="ms-empty">아직 태어난 사람이 없어요. 첫 번째로 태어나 보세요.</p>}
           {feed.ok === false && <p className="ms-empty">목록을 불러오지 못했어요.</p>}
         </Panel>
-        <Panel title="방금 끝난 인생" right={<a href="/memorial">추모관</a>} className="ms-c2">
-          <FeedList items={feed.died} />
+        <Panel title="방금 끝난 인생" right={<Link to="/memorial" className="ms-more">추모관 <span aria-hidden="true">→</span></Link>} className="ms-c2">
+          <FeedList items={feed.died.map((it) => ({
+            ...it,
+            side: (
+              <span className="ms-died-side">
+                <b>{it.deathAge}<small>세</small></b>
+                <small>{it.years}</small>
+              </span>
+            ),
+          }))} />
           {feed.ok && !feed.died.length && <p className="ms-empty">아직 삶을 마친 사람이 없어요.</p>}
         </Panel>
         <Panel className="ms-c3">
@@ -156,4 +175,4 @@ function Main() {
   );
 }
 
-export default Main;
+export default Main;
