@@ -3,28 +3,39 @@ import { useNavigate } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
 import Badge from "../../common/ui/Badge";
+import Chips from "../../common/ui/Chips";
 import MemorialPortrait from "./MemorialPortrait";
 import s from "./MemorialRoom.module.css";
 
 // 추모관 목록 (B01)  주소: /memorial
 // 들어오는 곳: 위 헤더 [추모관], 메인 "방금 끝난 인생" 칸의 [추모관]
-// 열린 추모관을 최신순으로 12개씩 카드로 보여 주고, 카드를 누르면 그 방(/memorial/:lifeId)으로 감
+// 열린 추모관을 최신순·촛불 많은 순으로 12개씩 카드로 보여 주고, 카드를 누르면 그 방(/memorial/:lifeId)으로 감
+const SORTS = [
+  { value: "recent", label: "최신순" },
+  { value: "tribute", label: "촛불 많은 순" },
+];
 
 function MemorialListPage() {
   const navi = useNavigate();
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState("recent");
   const [data, setData] = useState(null);           // { total, size, list }
   const [loadError, setLoadError] = useState(false);
 
-  // 페이지가 바뀔 때마다 서버에 다시 물어봄
+  // 페이지·정렬이 바뀔 때마다 서버에 다시 물어봄
   useEffect(() => {
-    client.get("/api/memorials", { params: { page } })
+    client.get("/api/memorials", { params: { page, sort } })
       .then((resp) => {
         setData({ ...resp.data, list: resp.data.list ?? [] });
         setLoadError(false);
       })
       .catch(() => setLoadError(true));
-  }, [page]);
+  }, [page, sort]);
+
+  const changeSort = (next) => {
+    setSort(next);
+    setPage(1);
+  };
 
   const list = data?.list ?? [];
   const lastPage = data ? Math.max(1, Math.ceil(data.total / data.size)) : 1;
@@ -34,8 +45,11 @@ function MemorialListPage() {
   return (
     <main className={`page ${s.page}`}>
       <div className={s.listHead}>
-        <h1 className={s.listTitle}>전생의 집</h1>
-        <p className="sub">끝난 인생들이 잠든 곳이에요. 방에 들어가 촛불을 켜고 한마디를 남길 수 있어요.</p>
+        <div>
+          <h1 className={s.listTitle}>전생의 집</h1>
+          <p className="sub">끝난 인생들이 잠든 곳이에요. 방에 들어가 촛불을 켜고 한마디를 남길 수 있어요.</p>
+        </div>
+        <Chips items={SORTS} selected={sort} onPick={changeSort} />
       </div>
 
       {loadError ? (

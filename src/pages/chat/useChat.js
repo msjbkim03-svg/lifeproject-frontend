@@ -6,6 +6,7 @@
 //   듣기   /topic/chat/{나라}         새 말 / /players 접속자 / /move 누가 움직임 / /user/queue/chatError 내 안내
 // 사용법: ChatVillage 안에서 씀
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import client from "../../api/api";
 
@@ -36,8 +37,11 @@ function useChat(countryCode, me) {
   const myPos = useRef({ place: me.place, x: 50, dir: "right", walking: false });
   const lastMove = useRef({ at: 0, walking: false });
 
+  const location = useLocation();
   const [guestId] = useState(()=> -1 - Math.floor(Math.random() * 1000000000));
+  // 인게임 로그인 팝업(AuthModal)으로 로그인해 주소(location)가 돌아올 때도 토큰을 즉시 다시 읽음
   const token = localStorage.getItem("token");
+  void location.key;
   const myId = token ? myIdOf(token) : guestId;
   const clientIdRef = useRef("");
 

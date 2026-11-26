@@ -42,9 +42,17 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
   }, [lifeId, guestToken]);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.code === "Space" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [onClose]);
 
   const send = async (costumeId, action) => {
