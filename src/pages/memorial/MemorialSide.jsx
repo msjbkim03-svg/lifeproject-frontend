@@ -10,9 +10,10 @@ const CANDLE_COUNT = 7;
 // 추모관 왼쪽 카드: 초상 · 이름 · 생몰년 · 나라 · 한 줄 요약 · 행복 막대 · 촛불 (안 열린 내 방이면 열기 칸)
 // 초상 = 마을 캐릭터 그림(Figure)을 세상을 떠난 나이의 모습 + 그 생에 입은 옷(C21)으로
 // 예: <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} />
-function MemorialSide({ room, film, onCandle, onOpen }) {
+function MemorialSide({ room, film, onCandle, onOpen, onCloseRoom }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false); // 서버 처리 중 (연속 클릭 막기)
+  const [askClose, setAskClose] = useState(false); // 추모관 닫기 확인
 
   // 열기·촛불 공통: 처리 중이면 무시 → 끝나면 다시 누를 수 있게
   const run = async (action) => {
@@ -82,10 +83,30 @@ function MemorialSide({ room, film, onCandle, onOpen }) {
             {room.tributeCount === 0
               ? "아직 아무도 촛불을 켜지 않았어요."
               : `${room.tributeCount}명이 촛불을 켜 두었어요.`}
+            {room.viewCount != null && <><br /><small>👁 다녀간 사람 {room.viewCount.toLocaleString()}명</small></>}
           </p>
           <Button type="primary" disabled={busy || room.myCandle} onClick={() => run(onCandle)}>
             {room.myCandle ? "촛불을 켰어요" : "촛불 켜기"}
           </Button>
+          {room.mine && onCloseRoom && (
+            askClose ? (
+              <div className={s.closeAsk}>
+                <small>달린 방명록과 촛불도 함께 지워져요. 정말 닫을까요?</small>
+                <div className="row" style={{ justifyContent: "center", gap: "var(--sp-1)" }}>
+                  <Button size="sm" disabled={busy} onClick={() => setAskClose(false)}>취소</Button>
+                  <Button size="sm" type="danger" disabled={busy} onClick={() => run(async () => { await onCloseRoom(); setAskClose(false); })}>
+                    추모관 닫기
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginTop: "var(--sp-2)" }}>
+                <Button size="sm" type="ghost" disabled={busy} onClick={() => setAskClose(true)}>
+                  내 추모관 닫기
+                </Button>
+              </div>
+            )
+          )}
         </div>
       )}
     </Panel>

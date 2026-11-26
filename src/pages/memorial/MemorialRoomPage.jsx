@@ -71,6 +71,18 @@ function MemorialRoomPage() {
     }
   };
 
+  // 본인 추모관 글 닫기(삭제) — 달린 방명록·촛불 기록도 함께 삭제
+  const closeRoom = async () => {
+    try {
+      await client.delete(`/api/memorials/${lifeId}/open`);
+      setNotice("추모관을 닫았어요.");
+      load();
+    } catch (e) {
+      if (e.response?.status === 401) return goLogin();
+      setNotice(e.response?.data?.message ?? "추모관을 닫지 못했어요.");
+    }
+  };
+
   // 2. 촛불 켜기 (회원당 1개)
   const lightCandle = async () => {
     if (!isLogin) return goLogin();
@@ -135,7 +147,7 @@ function MemorialRoomPage() {
       </div>
 
       <div className={s.layout}>
-        <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} />
+        <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} onCloseRoom={closeRoom} />
 
         <Panel className={s.main}>
           {/* 탭 줄: 지금 주소와 같은 탭이 강조됨 (NavLink 가 알아서 on) */}

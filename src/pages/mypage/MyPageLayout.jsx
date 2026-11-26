@@ -55,7 +55,7 @@ function MyPageLayout() {
 
   return (
     <div className={`${styles.container} ${styles.containerAligned}`}>
-      <MyPageSide active={active} nickname={my.nickname} loginId={my.loginId} />
+      <MyPageSide active={active} nickname={my.nickname} loginId={my.loginId} my={my} />
       {/* 아래 화면들은 useOutletContext() 로 my, setMy 를 꺼내 씀 */}
       <Outlet context={{ my, setMy }} />
     </div>

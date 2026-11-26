@@ -55,19 +55,25 @@
   color: var(--ink);
 }
 
-/* 캐릭터 자리 (코스튬 C21 붙기 전까지 네모 상자) */
+/* 캐릭터 자리 */
 .character {
   width: 60px;
   height: 60px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--bg-deep);
   color: var(--ink-light);
   font-size: var(--fs-xs);
+  overflow: hidden;
+}
+.character svg {
+  width: auto;
+  height: 86%;
+  image-rendering: pixelated;
 }
 
 /* ===== 왼쪽 메뉴 = 공통 .panel + 세로 줄 ===== */

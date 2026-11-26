@@ -18,9 +18,16 @@ function AuthModal({ children }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+      const tag = e.target?.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && (e.code === "Space" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.stopPropagation();
+      }
     };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
     // 뒤 화면 스크롤 막기 (스크롤바 자리는 ui.css의 scrollbar-gutter가 비워 둬서 화면이 안 밀림)
     document.body.style.overflow = "hidden";
 
@@ -32,7 +39,7 @@ function AuthModal({ children }) {
     }
 
     return () => {
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = "";
       // 로그인 ↔ 찾기 팝업으로 넘어갈 때는 계속 멈춰 두고, 팝업이 완전히 닫혔을 때만 다시 진행
       setTimeout(() => {

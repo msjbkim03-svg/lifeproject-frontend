@@ -52,7 +52,7 @@ function EditPage() {
     if (nick.length < 2 || nick.length > 10) return setNickMsg("닉네임은 2~10자로 입력해 주세요.");
     try {
       const resp = await client.get("/api/members/checkNickname", { params: { nickname } });
-      setNickMsg(resp.data.available ? "사용할 수 있는 닉네임이에요." : "이미 사용 중인 닉네임이에요.");
+      setNickMsg(resp.data.available ? "사용할 수 있는 닉네임이에요." : (resp.data.message || "이미 사용 중인 닉네임이에요."));
     } catch {
       setNickMsg("중복 확인을 하지 못했어요. 잠시 뒤 다시 시도해 주세요.");
     }
