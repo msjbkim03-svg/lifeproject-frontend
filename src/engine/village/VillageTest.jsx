@@ -23,13 +23,22 @@ function VillageTest() {
   const [urban, setUrban] = useState(true);
   const [pet, setPet] = useState('');
   const [happy, setHappy] = useState(50);
+  const [crowd, setCrowd] = useState(false); // 접속자 많이 (집 8명 + 공원 10명)
+  const [cutFirst, setCutFirst] = useState(false); // 지금 useChat처럼 장소 안 보고 앞 8명 자르기
 
   // 같은 나라 접속자 예시 (place = 있는 장소, x = 그 화면 안 위치 %)
-  const others = [
+  const base = [
     { id: 1, name: '라훌', age: 30, place: 'home', x: 30, message: '안녕하세요!' },
     { id: 2, name: '프리야', age: 27, place: 'park', x: 70, message: '저도 1950년대생이에요' },
     { id: 3, name: '아밋', age: 41, place: 'work', x: 35 },
   ];
+  // 접속자 많을 때: 명단 앞쪽에 집 8명, 뒤쪽에 공원 10명
+  const crowdList = [
+    ...Array.from({ length: 8 }, (_, i) => ({ id: 101 + i, name: '집' + (i + 1), age: 20 + i, place: 'home', x: 20 + i * 8 })),
+    ...Array.from({ length: 10 }, (_, i) => ({ id: 201 + i, name: '공원' + (i + 1), age: 25 + i, place: 'park', x: 8 + i * 9, message: i === 0 ? '여기 보여요?' : undefined })),
+  ];
+  const all = crowd ? crowdList : base;
+  const others = cutFirst ? all.slice(0, 8) : all;
 
   return (
     <div className="page col">
@@ -108,6 +117,12 @@ function VillageTest() {
         </select>
         <label className="row">
           <input type="checkbox" checked={urban} onChange={(e) => setUrban(e.target.checked)} /> 도시
+        </label>
+        <label className="row">
+          <input type="checkbox" checked={crowd} onChange={(e) => setCrowd(e.target.checked)} /> 접속자 많이
+        </label>
+        <label className="row">
+          <input type="checkbox" checked={cutFirst} onChange={(e) => setCutFirst(e.target.checked)} /> 앞 8명 자르기 (지금 useChat)
         </label>
       </div>
 
