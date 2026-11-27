@@ -25,6 +25,40 @@ const errText = (err) => {
   return err.response ? "서버에서 오류가 났어요." : "서버에 연결할 수 없어요.";
 };
 
+// 잠금 표시용 철제 자물쇠 SVG 아이콘 (미리보기 오버레이 · 안내 문구 · 버튼 공용)
+function PadlockIcon({ size = 24 }) {
+  const height = Math.round((size * 30) / 26);
+  return (
+    <svg width={size} height={height} viewBox="0 0 26 30" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      {/* 윗쪽 강철 고리(샤클) - 몸체 중심(x=13)과 정확히 일치 */}
+      <path
+        d="M7.5 13V9C7.5 5.962 9.962 3.5 13 3.5C16.038 3.5 18.5 5.962 18.5 9V13"
+        stroke="#cbd5e1"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7.5 13V9C7.5 5.962 9.962 3.5 13 3.5C16.038 3.5 18.5 5.962 18.5 9V13"
+        stroke="#475569"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      {/* 자물쇠 몸체 */}
+      <rect x="3" y="12" width="20" height="15" rx="3.5" fill="#64748b" stroke="#1e293b" strokeWidth="1.5" />
+      <rect x="4.5" y="13.5" width="17" height="3" rx="1.5" fill="#e2e8f0" opacity="0.35" />
+      {/* 금속 리벳 4개 */}
+      <circle cx="6.2" cy="15.2" r="1" fill="#334155" />
+      <circle cx="19.8" cy="15.2" r="1" fill="#334155" />
+      <circle cx="6.2" cy="24" r="1" fill="#334155" />
+      <circle cx="19.8" cy="24" r="1" fill="#334155" />
+      {/* 열쇠 구멍 */}
+      <circle cx="13" cy="18.6" r="2.2" fill="#0f172a" />
+      <path d="M12 20L11.3 23.6H14.7L14 20H12Z" fill="#0f172a" />
+    </svg>
+  );
+}
+
 function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -83,7 +117,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
     if (locked) {
       return (
         <Button size="sm" pill disabled title={`${minAge}세부터 이용할 수 있어요`}>
-          🔒 {minAge}세부터
+          <PadlockIcon size={13} /> {minAge}세부터
         </Button>
       );
     }
@@ -105,7 +139,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
         </div>
         <div className={styles.body}>
           <div className={styles.top}>
-            <div className={styles.mirror}>
+            <div className={styles.mirror + (wear.ride ? " " + styles.mirrorRide : "")}>
               <Figure look={lookWith(wear)} />
             </div>
             <div>
@@ -133,17 +167,22 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
                 {items.filter((c) => c.part === part).map((c) => {
                   const minAge = COSTUMES[c.look]?.minAge || 0;
                   const locked = life.currentAge < minAge;
+                  const hasRide = Boolean(key === "ride" ? c.look : wear.ride);
                   return (
                     <li key={c.costumeId} className={styles.row + (c.equipped === "Y" ? " " + styles.on : "") + (locked ? " " + styles.locked : "")}>
-                      <span className={styles.preview}>
+                      <span className={styles.preview + (hasRide ? " " + styles.previewRide : "")}>
                         <Figure look={lookWith({ ...wear, [key]: c.look })} />
-                        {locked && <span className={styles.lockOverlay} aria-hidden="true">🔒</span>}
+                        {locked && (
+                          <span className={styles.lockOverlay} aria-hidden="true">
+                            <PadlockIcon size={24} />
+                          </span>
+                        )}
                       </span>
                       <span className={styles.nameBox}>
                         <b className={styles.name}>{c.costumeName}</b>
                         {minAge > 0 && (
                           <small className={locked ? styles.ageLock : styles.ageOk}>
-                            {locked ? `🔒 ${minAge}세 이상 이용 가능 (현재 ${life.currentAge}세)` : `${minAge}세 이상`}
+                            {locked ? <><PadlockIcon size={12} /> {minAge}세 이상 이용 가능 (현재 {life.currentAge}세)</> : `${minAge}세 이상`}
                           </small>
                         )}
                       </span>
