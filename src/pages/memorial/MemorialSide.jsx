@@ -12,6 +12,7 @@ const CANDLE_COUNT = 7;
 // 예: <MemorialSide room={room} film={film} onCandle={lightCandle} onOpen={openRoom} />
 function MemorialSide({ room, film, onCandle, onOpen, onCloseRoom }) {
   const [message, setMessage] = useState("");
+  const [openError, setOpenError] = useState(""); // 추모관 열기 실패 안내 (금칙어 등)
   const [busy, setBusy] = useState(false); // 서버 처리 중 (연속 클릭 막기)
   const [askClose, setAskClose] = useState(false); // 추모관 닫기 확인
 
@@ -64,9 +65,21 @@ function MemorialSide({ room, film, onCandle, onOpen, onCloseRoom }) {
             value={message}
             maxLength={100}
             placeholder="마지막 한마디 (100자)"
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => { setMessage(e.target.value); if (openError) setOpenError(""); }}
           />
-          <Button type="primary" block disabled={busy || !message.trim()} onClick={() => run(() => onOpen(message.trim()))}>
+          {openError && <p className={s.writeErr} role="alert">{openError}</p>}
+          <Button
+            type="primary"
+            block
+            disabled={busy || !message.trim()}
+            onClick={() => run(async () => {
+              const res = await onOpen(message.trim());
+              if (res?.error) {
+                setOpenError(res.error);
+                setMessage(""); // 입력칸을 처음처럼 비움
+              }
+            })}
+          >
             추모관 열기
           </Button>
         </div>
