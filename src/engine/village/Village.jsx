@@ -1221,7 +1221,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
         )}
 
         {/* 같은 나라 접속자 (흐린 실루엣, C15) - 같은 장소에 있는 사람만, 우리 집은 가족만 있는 공간이라 안 보임 */}
-        {here.id !== 'home' && others.filter((o) => (o.place || 'home') === here.id).slice(0, 8).map((o) => (
+        {here.id !== 'home' && others.filter((o) => (o.place || 'home') === here.id).map((o) => (
           <div key={o.id} className={'v-person other ' + ageGroup(o.age) + ' ' + (o.dir || 'right') + (o.walking ? ' walking' : '')}
             style={{ left: o.x + '%', top: GROUND_Y + '%' }}>
             {o.message && <div className="v-bubble">{o.message}</div>}
