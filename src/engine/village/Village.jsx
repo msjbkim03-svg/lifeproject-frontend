@@ -1101,7 +1101,7 @@ function VillageScene({ countryCode, age, gender = 'M', place = 'home', urban = 
     let frame;
     let last = performance.now();
     const step = (now) => {
-      const dt = Math.min(0.25, (now - last) / 1000); // 프레임이 느려도 걷는 속도는 같게
+      const dt = Math.min(0.25, Math.max(0, (now - last) / 1000)); // 프레임이 느려도 걷는 속도는 같게 (첫 프레임 시각이 시작보다 앞서면 음수 → 0, 반대로 걷지 않게)
       last = now;
       const tg = target.current;
       const sc = sceneRef.current;
