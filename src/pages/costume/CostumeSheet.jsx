@@ -100,7 +100,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
     <div className="dec-back" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby="costumeTitle">
         <div className="dec-hd">
-          <span>옷 가게</span>
+          <span>상점</span>
           <span>{life.currentAge}세 · {life.birthYear + life.currentAge}년</span>
         </div>
         <div className={styles.body}>
@@ -110,7 +110,7 @@ function CostumeSheet({ life, guestToken, waitIdle, onDone, onClose }) {
             </div>
             <div>
               <h2 id="costumeTitle" className={styles.title}>
-                {data ? (data.assets < 0 ? `빚 ${won(-data.assets, k)}` : `모은 돈 ${won(data.assets, k)}`) : msg ? "옷 가게를 열지 못했어요" : "불러오는 중…"}
+                {data ? (data.assets < 0 ? `빚 ${won(-data.assets, k)}` : `모은 돈 ${won(data.assets, k)}`) : msg ? "상점을 열지 못했어요" : "불러오는 중…"}
               </h2>
               <p className={styles.sub}>값은 이 나라 형편에 맞춘 한국 체감 금액이에요. 산 것은 이번 인생 동안 언제든 바꿔 착용할 수 있어요.</p>
             </div>

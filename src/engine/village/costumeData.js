@@ -32,6 +32,7 @@ export const COSTUMES = {
   RIDE_03: { part: 'ride', style: 'horse', color: '#9c5a32', name: '말', minAge: 15 },
   RIDE_04: { part: 'ride', style: 'supercar', color: '#e02430', name: '슈퍼카', minAge: 19 },
   RIDE_05: { part: 'ride', style: 'ufo', color: '#7ef9ff', name: 'UFO', minAge: 20 },
+  RIDE_06: { part: 'ride', style: 'car', color: '#3b82f6', name: '자동차', minAge: 19 },
   HAT_04: { part: 'hat', style: 'crown', color: '#f2c230', name: '황금 왕관' },
   HAT_05: { part: 'hat', style: 'tophat', color: '#2b2d33', name: '신사 모자' },
   HAT_06: { part: 'hat', style: 'beret', color: '#c9544a', name: '빨간 베레모' },
