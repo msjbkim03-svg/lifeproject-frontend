@@ -1,7 +1,7 @@
 /* A04 관리자 대시보드 (11/25 다시 그림 - 가독성 · 할 일 위주)
    규칙: 글자 13px 이상 · 숫자는 고정폭(mono) 오른쪽 맞춤 · 색은 상태에만(빨강 손볼, 노랑 주의, 초록 정상) · 구역 설명은 제목 밑 한 줄 */
-.page { min-height: 100vh; padding: 24px 20px 72px; }
-.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.page { min-height: 100vh; }
+.wrap { display: flex; flex-direction: column; gap: 16px; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .r { text-align: right; }
 .dim { color: var(--ink-light); }
@@ -280,7 +280,6 @@
   .tHead, .tRow { grid-template-columns: minmax(120px, 1fr) 48px 54px 54px minmax(140px, 1.4fr) 68px; column-gap: 10px; }
 }
 @media (max-width: 640px) {
-  .page { padding: 16px 12px 56px; }
   .card { padding: 18px 16px; }
   .numVal { font-size: 26px; }
   .num { padding: 14px 16px; }

@@ -158,8 +158,8 @@ function AdminChat() {
     }
   };
 
-  if (error && !data) return <div className="page"><p>{error}</p></div>;
-  if (!data) return <div className="page"><p className="sub">불러오는 중…</p></div>;
+  if (error && !data) return <div className="page col"><AdminNav /><p>{error}</p></div>;
+  if (!data) return <div className="page col"><AdminNav /><p className="sub">불러오는 중…</p></div>;
 
   const filteredWords = wordFilter.trim()
     ? words.filter((w) => w.toLowerCase().includes(wordFilter.trim().toLowerCase()))
