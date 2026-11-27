@@ -19,6 +19,7 @@ import Panel from '../../common/ui/Panel';
 import Button from '../../common/ui/Button';
 import Modal from '../../common/ui/Modal';
 import Spoon from '../../common/ui/Spoon.jsx';
+import { SPOONS } from '../../common/ui/spoon.js';
 import Figure from '../../engine/village/Figure';
 import { lookOf } from '../../engine/village/costumeData';
 import { COUNTRIES } from '../../engine/village/villageData';
@@ -57,6 +58,93 @@ function marriedText(r) {
 
 // 사망 원인 분류 이름 → 문장에 넣을 말 ('기타 질환으로 세상을 떠났어요' → '병으로 …', 백엔드 LifeEvidence.causeText 와 같게)
 const causeText = (c) => (!c || c === '기타 질환' || c === '질병' ? '병' : c === '기타 사고·손상' ? '사고' : c);
+
+// 카카오톡 공유용 JavaScript 키 (환경변수 VITE_KAKAO_JS_KEY 가 있으면 카카오톡 카드 공유, 없으면 모바일 공유창 / 링크 복사로 동작)
+const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY || '';
+// 카카오 제품 링크 관리에는 localhost 를 등록할 수 없어서, 로컬 테스트 중일 땐 VITE_SHARE_ORIGIN(배포 주소)을 링크 기준으로 씀
+const SHARE_ORIGIN = import.meta.env.VITE_SHARE_ORIGIN || '';
+
+// 사망 원인을 카톡 공유 카드용 짧은 감성 문구로
+function poeticEnd(cause, age) {
+  const c = String(cause || '');
+  if (/노환|자연사/.test(c)) return '평온히 잠듦';
+  if (/전쟁|내전|폭격|분쟁/.test(c)) return '거친 시대 속에서';
+  if (/지진|홍수|재난|기근|가뭄|화재/.test(c)) return '거친 바람 속에서';
+  if (/사고|손상|추락|익사|교통/.test(c)) return '갑작스러운 이별';
+  if (age != null && age < 5) return '짧은 숨을 남기고';
+  if (/암|종양|심장|뇌|호흡|폐렴|결핵|감염|질환|병|말라리아/.test(c)) return '긴 투병 끝에';
+  return '조용히 눈을 감음';
+}
+
+// 어른(19세 이상)은 본인 평균 소득 위치(상위/하위 N%), 18세 이하는 태어난 집 수저 (여권 카드 규칙과 같게)
+function shareTierText(r) {
+  if ((r.deathAge ?? 0) <= 18) {
+    return SPOONS[Math.max(1, Math.min(5, r.originClass || 3))]?.name || '보통 집안';
+  }
+  if (r.avgIncome && r.incomeTopPct != null) {
+    const p = r.incomeTopPct;
+    return p > 50 ? `소득 하위 ${Math.round((100 - p) * 10) / 10}%` : `소득 상위 ${p}%`;
+  }
+  return '소박한 살림';
+}
+
+// 카카오톡 공유용 대표 배너 이미지를 카카오 CDN 에 올려서 URL 을 받아 둠 (로컬 테스트 중에도 이미지가 깨지지 않음)
+const BANNER_CACHE_KEY = 'kakaoShareBannerUrl_v1';
+let bannerUploadPromise = null;
+async function getKakaoBannerUrl(kakao, fallbackUrl) {
+  try {
+    const cached = localStorage.getItem(BANNER_CACHE_KEY);
+    if (cached) return cached;
+  } catch { /* 무시 */ }
+  if (!kakao?.Share?.uploadImage) return fallbackUrl;
+  if (!bannerUploadPromise) {
+    bannerUploadPromise = fetch('/share-banner.jpg')
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (!blob) return null;
+        const file = new File([blob], 'share-banner.jpg', { type: 'image/jpeg' });
+        return kakao.Share.uploadImage({ file: [file] });
+      })
+      .then((res) => {
+        const url = res?.infos?.original?.url || null;
+        if (url) {
+          try { localStorage.setItem(BANNER_CACHE_KEY, url); } catch { /* 무시 */ }
+        }
+        return url;
+      })
+      .catch(() => null)
+      .finally(() => { bannerUploadPromise = null; });
+  }
+  return (await bannerUploadPromise) || fallbackUrl;
+}
+
+function loadKakaoSdk() {
+  if (typeof window === 'undefined' || !KAKAO_JS_KEY) return Promise.resolve(null);
+  if (window.Kakao) {
+    if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY);
+    return Promise.resolve(window.Kakao);
+  }
+  return new Promise((resolve) => {
+    const existing = document.getElementById('kakao-js-sdk');
+    if (existing) {
+      existing.addEventListener('load', () => {
+        if (window.Kakao && !window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY);
+        resolve(window.Kakao || null);
+      }, { once: true });
+      return;
+    }
+    const s = document.createElement('script');
+    s.id = 'kakao-js-sdk';
+    s.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js';
+    s.async = true;
+    s.onload = () => {
+      if (window.Kakao && !window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY);
+      resolve(window.Kakao || null);
+    };
+    s.onerror = () => resolve(null);
+    document.head.appendChild(s);
+  });
+}
 
 // 국기 (flagcdn, 출생 화면 · 진행 화면과 같은 그림)
 function Flag({ cc, size = 20 }) {
@@ -235,6 +323,7 @@ function ResultView() {
   const [memoText, setMemoText] = useState('');
   const [memoBusy, setMemoBusy] = useState(false);
   const [memoErr, setMemoErr] = useState('');
+  const [shareMsg, setShareMsg] = useState('');
   const openMemorial = () => {
     const text = memoText.trim();
     if (!text) { setMemoErr('한마디를 적어 주세요.'); return; }
@@ -259,17 +348,14 @@ function ResultView() {
       });
   }, [lifeId, guestParam]);
 
-  // 큰 장면 사진 재료: 엔딩 크레딧과 같은 GET /api/engine/film + 입은 옷 (인생 기록 화면에서만)
+  // 큰 장면 사진 재료: 엔딩 크레딧과 같은 GET /api/engine/film (착장 wear 포함)
   useEffect(() => {
     if (!detail) return undefined;
     const isLogin = !!localStorage.getItem('token');
     const guestToken = guestParam || (isLogin ? null : localStorage.getItem('guestToken'));
     let alive = true;
-    Promise.all([
-      client.get('/api/engine/film', { params: { lifeId, guestToken } }),
-      client.get('/api/costumes', { params: { lifeId, guestToken } }).catch(() => null),
-    ])
-      .then(([f, c]) => { if (alive) setFilmData({ ...f.data, wear: c?.data?.wear || null }); })
+    client.get('/api/engine/film', { params: { lifeId, guestToken } })
+      .then((f) => { if (alive) setFilmData(f.data); })
       .catch((err) => console.log('장면 사진 재료 불러오기 실패', err.response?.data));
     return () => { alive = false; };
   }, [lifeId, guestParam, detail]);
@@ -282,17 +368,26 @@ function ResultView() {
     return () => window.removeEventListener('scroll', off);
   }, [tip]);
 
+  // 공유 안내 문구는 2.5초 뒤 사라짐
+  useEffect(() => {
+    if (!shareMsg) return undefined;
+    const t = setTimeout(() => setShareMsg(''), 2500);
+    return () => clearTimeout(t);
+  }, [shareMsg]);
+
+  const filmWear = useMemo(() => (filmData?.wear ? { ...filmData.wear, ride: null } : null), [filmData]);
+
   const filmSegs = useMemo(() => {
     if (!filmData || !result) return null;
     try {
       return buildFilm(result, filmData).seg
         .filter((s) => s.kind === 'moment')
-        .map((s) => (filmData.wear && s.v ? { ...s, v: { ...s.v, costume: filmData.wear } } : s));
+        .map((s) => (filmWear && s.v ? { ...s, v: { ...s.v, costume: filmWear } } : s));
     } catch (e) {
       console.warn('[result] 장면 사진', e);
       return null;
     }
-  }, [filmData, result]);
+  }, [filmData, filmWear, result]);
 
   // 화면용 계산 (결과가 오기 전에도 훅 순서가 같게 여기서)
   const view = useMemo(() => {
@@ -307,6 +402,90 @@ function ResultView() {
     return { moments, jobs, lands, stages, bigAges, peaks: peaksOf(r.years) };
   }, [result]);
 
+  const shareLife = async (toFilm = false) => {
+    if (!result) return;
+    const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+    const origin = isLocal && SHARE_ORIGIN ? SHARE_ORIGIN.replace(/\/+$/, '') : window.location.origin;
+    const hasMemorial = !!result.memorialPostId;
+    const shareUrl = hasMemorial
+      ? `${origin}/memorial/${lifeId}`
+      : `${origin}/result/${lifeId}${toFilm ? '' : '?detail=1'}`;
+    const btnTitle = hasMemorial ? '🌼 추모하러 가기' : '🌼 인생 보러 가기';
+    const flagCode = COUNTRIES[result.birthCountry]?.[0] || 'kr';
+    const flagImg = `https://flagcdn.com/w320/${flagCode}.png`;
+    const flagThumb = `https://flagcdn.com/w80/${flagCode}.png`;
+
+    // 카톡 말풍선 카드 요약 표(itemContent): 왼쪽 항목은 5글자 이내, 감성 톤으로 정리
+    const tierText = shareTierText(result);
+    const leVal = result.lifeExpectancy ? Math.round(result.lifeExpectancy) : null;
+    const leDiffVal = leVal != null ? result.deathAge - leVal : null;
+    const lifeSpanText = leDiffVal == null
+      ? `${result.deathAge}세`
+      : `${result.deathAge}세 (기대수명 ${leDiffVal >= 0 ? `+${leDiffVal}` : leDiffVal}년)`;
+    const topJob = view?.jobs?.length ? [...view.jobs].sort((a, b) => b.years - a.years)[0] : null;
+    const jobLine = topJob ? `${topJob.name} (${topJob.years}년)` : result.deathAge < 18 ? '꿈을 키우던 시절' : '조용한 나날';
+    const happyLine = view?.peaks ? `${view.peaks.hi.age}세 (행복 ${view.peaks.hi.happiness})` : '-';
+    const famBase = marriedText(result);
+    const famLine = famBase === '안 함' && !result.childCount
+      ? '홀로 걸은 길'
+      : `${famBase}${result.childCount ? ` · 자녀 ${result.childCount}명` : ''}`;
+    const endLine = poeticEnd(result.deathCause, result.deathAge);
+    const migratedLife = result.currentCountry !== result.birthCountry;
+    const title = `${result.name}, 한 사람의 계절이 저물었습니다`;
+    const desc = migratedLife
+      ? `${result.birthYear}년 ${result.countryName}에서 태어나 ${result.currentCountryName}에서 ${result.deathAge}년의 계절을 건너 별이 되었습니다.`
+      : `${result.birthYear}년 ${result.countryName}에서 태어나 ${result.deathAge}년의 계절을 건너, 이제 별이 되었습니다.`;
+
+    const kakao = await loadKakaoSdk();
+    if (kakao?.Share) {
+      const bannerUrl = await getKakaoBannerUrl(kakao, flagImg);
+      kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title,
+          description: desc,
+          imageUrl: bannerUrl,
+          imageWidth: 800,
+          imageHeight: 450,
+          link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+        },
+        itemContent: {
+          profileText: `환승인생 · ${result.countryName}`,
+          profileImageUrl: flagThumb,
+          titleImageText: `${result.name} (${result.birthYear}–${result.deathYear})`,
+          titleImageCategory: `${tierText} · ${result.deathAge}세`,
+          items: [
+            { item: '생애', itemOp: lifeSpanText },
+            { item: '걸어온 일', itemOp: jobLine },
+            { item: '빛나던 때', itemOp: happyLine },
+            { item: '곁의 사람', itemOp: famLine },
+            { item: '떠난 길', itemOp: endLine },
+          ],
+          sum: '머문 계절',
+          sumOp: `${result.deathAge}년`,
+        },
+        buttons: [
+          { title: btnTitle, link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+        ],
+      });
+      return;
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: desc, url: shareUrl });
+        return;
+      } catch {
+        // 공유 창을 닫은 경우 링크 복사로 이어짐
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${title}\n${desc}\n${shareUrl}`);
+      setShareMsg('공유 링크를 복사했어요! 카카오톡에 붙여넣어 공유해 보세요.');
+    } catch {
+      setShareMsg('링크를 복사하지 못했어요.');
+    }
+  };
+
   if (error) {
     return (
       <div className="page col">
@@ -320,11 +499,15 @@ function ResultView() {
   // C22 엔딩 크레딧 (기본): 결과 화면 대신 바로 재생
   if (!detail) {
     return (
-      <EndingFilm lifeId={lifeId} result={result} guestToken={guestParam} onClose={() => navigate('/')}
-        actions={[
-          { label: '다시 태어나기', onClick: () => navigate('/') },
-          { label: '인생 기록 보기', onClick: () => navigate(`/result/${lifeId}?detail=1${guestQ}`) },
-        ]} />
+      <>
+        {shareMsg && <div className={styles.shareToast} role="status">{shareMsg}</div>}
+        <EndingFilm lifeId={lifeId} result={result} guestToken={guestParam} onClose={() => navigate('/')}
+          actions={[
+            { label: '다시 태어나기', onClick: () => navigate('/') },
+            { label: '인생 기록 보기', onClick: () => navigate(`/result/${lifeId}?detail=1${guestQ}`) },
+            ...(result?.mine ? [{ label: '카카오톡 공유', onClick: () => shareLife(true) }] : []),
+          ]} />
+      </>
     );
   }
 
@@ -333,7 +516,7 @@ function ResultView() {
   }
 
   const r = result;
-  const isMember = r.startType === 'MEMBER' && !!localStorage.getItem('token');
+  const isMember = r.startType === 'MEMBER' && !!localStorage.getItem('token') && r.mine;
   const k = r.krwPerUsd;
   const money = (usd) => (usd == null ? '-' : k ? won(usd, k) : '$' + Math.round(usd).toLocaleString('ko-KR'));
   const migrated = r.currentCountry !== r.birthCountry;
@@ -349,7 +532,7 @@ function ResultView() {
         {/* ① 머리 */}
         <header className={styles.hero}>
           <div className={styles.portrait} aria-hidden="true">
-            <Figure look={lookOf({ gender: r.gender, age: r.deathAge, costume: filmData?.wear })} />
+            <Figure look={lookOf({ gender: r.gender, age: r.deathAge, costume: filmWear })} />
           </div>
           <div className={styles.heroText}>
             <p className={styles.eyebrow}>한 사람의 일생이 끝났어요</p>
@@ -370,6 +553,7 @@ function ResultView() {
           </div>
           <div className={styles.heroActs}>
             <Button type="primary" pill onClick={() => navigate(filmUrl)}>▶ 엔딩 크레딧 다시 보기</Button>
+            {r.mine && <Button pill onClick={() => shareLife(false)}>카카오톡 공유하기</Button>}
             {isMember && !r.memorialPostId && (
               <Button pill onClick={() => { setMemoText(''); setMemoErr(''); setMemoOpen(true); }}>추모관에 올리기</Button>
             )}
@@ -377,6 +561,7 @@ function ResultView() {
             <Button pill onClick={() => navigate('/')}>다시 태어나기</Button>
           </div>
         </header>
+        {shareMsg && <div className={styles.shareToast} role="status">{shareMsg}</div>}
 
         {/* ② 숫자 4칸 */}
         <section className={styles.nums}>
@@ -442,7 +627,7 @@ function ResultView() {
               <StoryPanel lifeId={lifeId} guestToken={guestParam} moments={view.moments} segs={filmSegs} onPhoto={setPick} />
             )}
             {tab === 'ask' && (
-              <QnaPanel lifeId={lifeId} guestToken={guestParam} r={r} happyAge={view.peaks?.hi.age} costume={filmData?.wear} />
+              <QnaPanel lifeId={lifeId} guestToken={guestParam} r={r} happyAge={view.peaks?.hi.age} costume={filmWear} />
             )}
             {tab === 'log' && (<>
             <Panel title="인생 지도" right={<span className="sub">한 칸 = 1년 · 높이 = 행복</span>}>
