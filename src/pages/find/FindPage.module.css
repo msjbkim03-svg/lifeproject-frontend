@@ -18,3 +18,16 @@
 .result {
   margin-top: var(--sp-4);
 }
+
+
+.timer {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.timerUrgent {
+  color: var(--red);
+}

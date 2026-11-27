@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
@@ -35,12 +35,24 @@ function FindPage() {
   const [error, setError] = useState("");       // 오류 문구 (빨강)
   const [foundId, setFoundId] = useState("");   // 찾은 아이디 (msj***)
   const [busy, setBusy] = useState(false);      // 서버에 요청 보내는 중 (연타 막기)
+  const [leftSec, setLeftSec] = useState(0);    // 인증번호 남은 시간 (초, 5분 = 300초)
+
+  // 인증번호를 받은 뒤 1초마다 카운트다운 (인증 완료되거나 0초가 되면 멈춤)
+  useEffect(() => {
+    if (!sent || verified) return undefined;
+    const id = setInterval(() => {
+      setLeftSec((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [sent, verified]);
+
+  const timeText = `${String(Math.floor(leftSec / 60)).padStart(2, "0")}:${String(leftSec % 60).padStart(2, "0")}`;
 
   // 인증번호를 받은 뒤 아이디·이메일을 고치면 → 인증을 처음부터 다시
   const editInput = (setter) => (e) => {
     setter(e.target.value);
     if (sent) {
-      setSent(false); setVerified(false); setCode(""); setInfo("");
+      setSent(false); setVerified(false); setCode(""); setInfo(""); setLeftSec(0);
     }
   };
 
@@ -49,7 +61,7 @@ function FindPage() {
     setTab(t);
     setLoginId(""); setEmail(""); setCode("");
     setNewPassword(""); setNewPasswordCheck("");
-    setSent(false); setVerified(false); setInfo(""); setError(""); setFoundId("");
+    setSent(false); setVerified(false); setInfo(""); setError(""); setFoundId(""); setLeftSec(0);
   };
 
   // ① 인증번호 받기
@@ -67,7 +79,7 @@ function FindPage() {
         loginId: tab === "RESET_PW" ? loginId : null,
       });
       setCode(""); setVerified(false); // 다시 받으면 처음부터 확인
-      setSent(true);
+      setSent(true); setLeftSec(300);
       setInfo(resp.data.message); // "입력한 정보가 맞다면 인증번호 메일을 보내 드려요."
     } catch (err) {
       setError(err.response?.data?.message || "인증번호를 보내지 못했어요.");
@@ -188,12 +200,19 @@ function FindPage() {
               {/* 인증번호를 보낸 뒤에만 보이는 칸 */}
               {sent && (
                 <>
-                  <label className={common.label}>인증번호 6자리 (5분 안에 입력)</label>
+                  <label className={common.label}>
+                    인증번호 6자리
+                    {!verified && (
+                      <span className={leftSec <= 60 ? `${styles.timer} ${styles.timerUrgent}` : styles.timer}>
+                        {" "}{leftSec > 0 ? timeText : "시간 만료"}
+                      </span>
+                    )}
+                  </label>
                   <div className={styles.row}>
                     <input className={common.input} value={code} maxLength={6} disabled={verified}
                       onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))} />
                     {/* 인증번호 확인 버튼 (두 탭 모두) */}
-                    <Button className={styles.noWrap} disabled={verified || busy} onClick={checkCode}>
+                    <Button className={styles.noWrap} disabled={verified || busy || leftSec === 0} onClick={checkCode}>
                       {verified ? "인증 완료" : "인증번호 확인"}
                     </Button>
                   </div>
@@ -215,7 +234,9 @@ function FindPage() {
               )}
 
               {info && <div className={common.noticeBox}>{info}</div>}
-              {error && <div className={common.errorBox}>{error}</div>}
+              {(error || (sent && !verified && leftSec === 0)) && (
+                <div className={common.errorBox}>{error || "인증 시간이 만료됐어요. 다시 받기를 눌러 주세요."}</div>
+              )}
 
               {/* 인증된 뒤에만 [아이디 확인] / [비밀번호 변경] */}
               {verified && (
