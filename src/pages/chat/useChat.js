@@ -10,6 +10,7 @@ import { useLocation } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import client from "../../api/api";
 
+const API_BASE = `http://${window.location.hostname}`;
 const WS_URL = `ws://${window.location.hostname}/ws`;
 const BUBBLE_MS = 2000;
 const ERROR_MS = 3000;
@@ -17,8 +18,13 @@ const MOVE_MS = 150;
 
 const myIdOf = (token) => {
   try {
-    const body = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    return Number(JSON.parse(atob(body)).sub);
+    if (typeof token !== "string") return null;
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const id = Number(JSON.parse(atob(padded)).sub);
+    return Number.isFinite(id) ? id : null;
   } catch {
     return null;
   }
@@ -53,7 +59,9 @@ function useChat(countryCode, me) {
     const clientId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     clientIdRef.current = clientId;
 
-    client.get(`/api/chat/${countryCode}/players`)
+    // WebSocket 구독과 동일하게 guestToken 이 있으면 함께 전달 (경계 상황 403 방지)
+    const initGuest = localStorage.getItem("guestToken");
+    client.get(`/api/chat/${countryCode}/players`, { params: initGuest ? { guestToken: initGuest } : undefined })
       .then((resp) => { if (alive && !gotWsPlayers) setPlayers(resp.data); })
       .catch(() => {});
 
@@ -94,12 +102,15 @@ function useChat(countryCode, me) {
           stomp.publish({ destination: `/app/chat/${countryCode}/leave`, body: "{}" });
         } catch { /* 무시 */ }
       }
-      if (navigator.sendBeacon) {
-        try {
-          const blob = new Blob([JSON.stringify({ clientId })], { type: "application/json" });
-          navigator.sendBeacon(`/api/chat/${countryCode}/leave`, blob);
-        } catch { /* 무시 */ }
-      }
+      // 백엔드(80포트)로 언로드 시에도 전달되도록 keepalive fetch 사용 (CORS allowedOrigins("*")와 호환)
+      try {
+        fetch(`${API_BASE}/api/chat/${countryCode}/leave`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clientId }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch { /* 무시 */ }
       stomp.deactivate();
     };
 

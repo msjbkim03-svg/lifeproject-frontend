@@ -20,6 +20,7 @@ const LIFE_MENUS = [
 
 function MyPageSide({ active, nickname, loginId, my }) {
   const navi = useNavigate();
+  const isGoogle = Boolean(loginId && loginId.startsWith("g_"));
   // 지금 메뉴가 어느 묶음인지 보고 그 묶음만 보여 줌
   const menus = active === "lives" || active === "traits" ? LIFE_MENUS : HOME_MENUS;
   const look = lookOf({
@@ -36,7 +37,7 @@ function MyPageSide({ active, nickname, loginId, my }) {
         </div>
         <div>
           <div className={styles.profileName}>{nickname}</div>
-          <div className={styles.profileSub}>{loginId}</div>
+          <div className={styles.profileSub}>{isGoogle ? "Google 계정" : loginId}</div>
         </div>
       </div>
 

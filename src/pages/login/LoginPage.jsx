@@ -7,6 +7,8 @@ import styles from "./LoginPage.module.css";
 
 // 구글 OAuth 클라이언트 ID (Google Cloud Console - lifeproject)
 const GOOGLE_CLIENT_ID = "1060054612101-00gbenedhdoubrsnk69e4guoblbpdovc.apps.googleusercontent.com";
+// 연타 시에도 원본 window.open 참조가 오염되지 않도록 최초 1회 저장
+const NATIVE_WINDOW_OPEN = typeof window !== "undefined" ? window.open : null;
 
 // 공식 4색 Google 'G' SVG 아이콘
 function GoogleIcon() {
@@ -40,6 +42,7 @@ function LoginPage() {
 
   // ===== 구글 소셜 로그인 + 신규 구글 회원 추가 정보 입력 상태 =====
   const tokenClientRef = useRef(null);
+  const openRestoreTimerRef = useRef(null);
   const [googleStep, setGoogleStep] = useState(null); // { credential, email }
   const [gNickname, setGNickname] = useState("");
   const [gNickChecked, setGNickChecked] = useState(false);
@@ -173,7 +176,7 @@ function LoginPage() {
 
     // 듀얼 모니터에서 screenLeft(1920 등)가 더해지면 크롬이 화면 오른쪽 끝(1920 - width)으로 붙여버리므로
     // 현재 모니터의 해상도(availWidth, availHeight) 기준 정중앙 좌표만 계산해 로그인 카드(380px) 바로 위에 띄움
-    const origOpen = window.open;
+    const origOpen = NATIVE_WINDOW_OPEN || window.open;
     const popupW = 380;
     const popupH = 480;
     const availW = window.screen?.availWidth || window.innerWidth || 1920;
@@ -181,12 +184,19 @@ function LoginPage() {
     const left = Math.max(0, Math.round((availW - popupW) / 2));
     const top = Math.max(0, Math.round((availH - popupH) / 2));
 
-    const restoreTimer = setTimeout(() => {
+    if (openRestoreTimerRef.current) {
+      clearTimeout(openRestoreTimerRef.current);
+    }
+    openRestoreTimerRef.current = setTimeout(() => {
       window.open = origOpen;
+      openRestoreTimerRef.current = null;
     }, 1500);
 
     window.open = function (url, target) {
-      clearTimeout(restoreTimer);
+      if (openRestoreTimerRef.current) {
+        clearTimeout(openRestoreTimerRef.current);
+        openRestoreTimerRef.current = null;
+      }
       window.open = origOpen;
       const centeredFeatures = `popup=yes,width=${popupW},height=${popupH},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
       const popup = origOpen.call(window, url, target, centeredFeatures);

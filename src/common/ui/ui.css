@@ -227,6 +227,24 @@ html { scrollbar-gutter: stable; }
 .header-right { display: flex; gap: var(--sp-2); align-items: center; }
 .header-user { font-size: var(--fs-sm); color: var(--ink-sub); }
 .header-user b { color: var(--ink); font-weight: 500; }
+/* 로그인 토큰 남은 시간 표시 (집 버튼 왼쪽) */
+.header-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  border: var(--border);
+  font-size: var(--fs-xs);
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.header-timer.warn {
+  color: var(--red, #e5534b);
+  border-color: var(--red, #e5534b);
+}
 .header-nav, .header-right { flex-shrink: 0; }
 /* 집 모양 버튼 (마이페이지) - 동그란 칸, 지금 마이페이지면 금색 */
 .header-home { width: 36px; padding: 0; }

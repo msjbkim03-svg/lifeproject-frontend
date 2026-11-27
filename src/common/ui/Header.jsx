@@ -1,13 +1,39 @@
 // 상단 헤더 (모든 화면 공통) - App.jsx에서 <Routes> 위에 한 번만 붙어요
 // 로그인 안 했을 때: 시작하기 · 추모관 · 내 인생들 | 로그인 · 회원가입
-// 로그인 했을 때:   시작하기 · 추모관 · 내 인생들 (· 관리자) | 닉네임 님 · [집] · 로그아웃
+// 로그인 했을 때:   시작하기 · 추모관 · 내 인생들 (· 관리자) | 닉네임 님 · [남은시간] · [집] · 로그아웃
 // 내 인생들 → /lives (전생 기록 · 특성 강화)
 // [집] 버튼  → /my          (마이페이지 · 개인정보 수정)
 // 로그인 정보는 localStorage(token, nickname, memberRole)에서 읽어요 (민승 Header 로직 그대로)
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Button from './Button';
 import StarIcon from './StarIcon';
 import './ui.css';
+
+// JWT 토큰에서 만료 시각(ms) 꺼내기 (형식이 깨졌으면 null)
+function getTokenExp(token) {
+  try {
+    if (typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const exp = JSON.parse(atob(padded)).exp;
+    return typeof exp === 'number' ? exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+// 남은 초를 "2:59:42" 또는 "59:42" 모양으로 변환
+function formatLeft(sec) {
+  const s = Math.max(0, Math.floor(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(r)}` : `${pad(m)}:${pad(r)}`;
+}
 
 function Header() {
   const navigate = useNavigate();
@@ -25,6 +51,36 @@ function Header() {
   const token = localStorage.getItem('token');
   const nickname = localStorage.getItem('nickname');
   const isAdmin = localStorage.getItem('memberRole') === 'ADMIN';
+
+  // 로그인 토큰 남은 시간(초) — 1초마다 갱신, New-Token 자동 연장·타 탭 로그아웃도 즉시 반영
+  const [now, setNow] = useState(() => Date.now());
+  const tokenExp = getTokenExp(token);
+  const leftSec = token && tokenExp ? Math.max(0, Math.floor((tokenExp - now) / 1000)) : null;
+
+  useEffect(() => {
+    if (!token) return;
+
+    const tick = () => {
+      const currentToken = localStorage.getItem('token');
+      const currentExp = getTokenExp(currentToken);
+      const currentNow = Date.now();
+      if (currentToken && (!currentExp || currentExp <= currentNow)) {
+        // 만료·손상 시 로그인 정보 정리 후 회원 전용 화면이면 로그인 만료 화면으로 이동
+        localStorage.removeItem('token');
+        localStorage.removeItem('nickname');
+        localStorage.removeItem('memberRole');
+        const p = window.location.pathname;
+        if (p.startsWith('/my') || p.startsWith('/life') || p.startsWith('/quest') || p.startsWith('/admin')) {
+          window.location.href = '/login?expired=1';
+          return;
+        }
+      }
+      setNow(currentNow);
+    };
+
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [token, location.pathname]);
 
   // 로그아웃: 저장해 둔 토큰·닉네임·권한을 지우고 메인으로 새로 이동 (화면에 남아 있던 회원 이어하기 상태도 비움)
   // (비회원 임시 토큰 guestToken 은 다른 키라서 지우지 않음)
@@ -59,6 +115,19 @@ function Header() {
           {token ? (
             <>
               <span className="header-user"><b>{nickname}</b> 님</span>
+              {leftSec !== null && (
+                <span
+                  className={'header-timer' + (leftSec <= 300 ? ' warn' : '')}
+                  title="로그인 남은 시간 (활동 시 자동 연장)"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                  {formatLeft(leftSec)}
+                </span>
+              )}
               {/* 집 모양 = 마이페이지 (마이페이지 · 개인정보 수정) */}
               <Button
                 size="sm"
