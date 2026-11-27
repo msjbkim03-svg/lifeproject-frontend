@@ -219,6 +219,7 @@ function PlayPage() {
   const [mapTip, setMapTip] = useState(null);         // 인생 지도 말풍선 { age, x, y }
   const [traits, setTraits] = useState(null);         // 특성 칸 { traits: [{ traitId, level, effect }], temper }
   const [ctyView, setCtyView] = useState('born');     // 나라 패널: born 태어난 나라 (기본, 11/25 동현님: 이민 가도 출생 나라 기준) / cur 사는 나라
+  const [ctyEra, setCtyEra] = useState('cur');        // 나라 패널 시대: cur 현재 나이 연대 (기본, 11/27 동현님) / born 출생 시대(태어난 해 연대)
   const [cty, setCty] = useState(null);               // 나라 패널 통계 (GET /api/engine/country)
   const [shopOpen, setShopOpen] = useState(false);    // 돈 쓰기 · 투자 창 (여는 동안 시간 멈춤)
   const [costumeOpen, setCostumeOpen] = useState(false); // C21 옷 가게 창 (여는 동안 시간 멈춤)
@@ -607,17 +608,22 @@ function PlayPage() {
 
   // ④ 나라 패널: 사는 나라(또는 태어난 나라)·연대가 바뀔 때만 다시 불러옴
   //    이민 전(또는 태어난 나라로 돌아옴)이면 태어난 나라 보기 단추가 없으니 늘 사는 나라
+  //    출생 시대와 현재 연대가 같으면 출생 시대 보기 단추가 없으니 늘 현재 시대 (11/27 동현님)
   const ctyMode = life && life.birthCountry !== life.currentCountry ? ctyView : 'cur';
   const ctyCode = life ? (ctyMode === 'born' ? life.birthCountry : life.currentCountry) : null;
-  const ctyDecade = life ? Math.floor((life.birthYear + life.currentAge) / 10) * 10 : null;
+  const bornDecade = life ? Math.floor(life.birthYear / 10) * 10 : null;
+  const curDecade = life ? Math.floor((life.birthYear + life.currentAge) / 10) * 10 : null;
+  const eraChanged = life ? bornDecade !== curDecade : false;
+  const eraMode = eraChanged ? ctyEra : 'cur';
+  const ctyDecade = eraMode === 'born' ? bornDecade : curDecade;
   useEffect(() => {
     if (!life?.lifeId || !ctyCode) return undefined;
     let alive = true;
-    client.get('/api/engine/country', { params: { lifeId: life.lifeId, guestToken, view: ctyMode } })
+    client.get('/api/engine/country', { params: { lifeId: life.lifeId, guestToken, view: ctyMode, era: eraMode } })
       .then((res) => { if (alive) setCty(res.data); })
       .catch((err) => console.log('나라 통계 불러오기 실패', err.response?.data));
     return () => { alive = false; };
-  }, [life?.lifeId, ctyCode, ctyDecade, ctyMode, guestToken]);
+  }, [life?.lifeId, ctyCode, ctyDecade, ctyMode, eraMode, guestToken]);
 
   // ⑤ 특성 칸 (C13): 인생마다 한 번 + 어릴 때 기질을 고른 뒤(5세까지 선택 창이 닫힐 때) 다시
   const traitKey = life ? (life.currentAge <= 5 ? `${life.currentAge}-${life.needChoice ? 1 : 0}` : 'grown') : null;
@@ -1029,15 +1035,24 @@ function PlayPage() {
 
           <section className="pp-panel pp-cty">
             <h3 className="pp-h">
-              <span>{cty?.nameKo || countryName}{cty?.decade ? ` · ${cty.decade}년대` : ''}</span>
-              {migrated && (
-                <button type="button" className="pp-ctysw" onClick={() => setCtyView(ctyMode === 'born' ? 'cur' : 'born')}>
-                  {ctyMode === 'born' ? '사는 나라 보기' : '태어난 나라 보기'}
-                </button>
+              <span>{cty?.nameKo || countryName}{cty?.decade ? ` · ${cty.decade}년대` : ''}{eraMode === 'born' ? ' (출생)' : ''}</span>
+              {(eraChanged || migrated) && (
+                <span className="pp-ctybtns">
+                  {eraChanged && (
+                    <button type="button" className="pp-ctysw" onClick={() => setCtyEra(eraMode === 'born' ? 'cur' : 'born')}>
+                      {eraMode === 'born' ? '현재 시대 기준' : '출생 시대 기준'}
+                    </button>
+                  )}
+                  {migrated && (
+                    <button type="button" className="pp-ctysw" onClick={() => setCtyView(ctyMode === 'born' ? 'cur' : 'born')}>
+                      {ctyMode === 'born' ? '사는 나라 보기' : '태어난 나라 보기'}
+                    </button>
+                  )}
+                </span>
               )}
             </h3>
             <dl>
-              {ctyMode === 'cur' && life.histName && life.histName !== countryName && (<><dt>당시 국가명</dt><dd>{life.histName}</dd></>)}
+              {ctyMode === 'cur' && eraMode === 'cur' && life.histName && life.histName !== countryName && (<><dt>당시 국가명</dt><dd>{life.histName}</dd></>)}
               {countryRows(cty).map(([k, v]) => (<Fragment key={k}><dt>{k}</dt><dd>{v}</dd></Fragment>))}
               {ctyMode === 'cur' && (<><dt>사는 곳</dt><dd>{town}</dd></>)}
             </dl>
@@ -1535,12 +1550,13 @@ function StatIcon({ name, color }) {
   );
 }
 
-// 신원 기록 사진(테이프로 붙인 폴라로이드): 마을 속 내 캐릭터(Figure)를 그대로 써서 옷·머리·모자까지 똑같이 (가슴 위만 보이게 자름)
+// 신원 기록 사진(테이프로 붙인 폴라로이드): 마을 속 내 캐릭터(Figure)를 그대로 써서 옷·머리·모자까지 똑같이 (가슴 위만 보이게 자름, 탈것은 제외)
 function Portrait({ gender, age, costume }) {
+  const faceWear = costume && typeof costume === 'object' ? { ...costume, ride: null } : costume;
   return (
     <div className="pp-polaroid" aria-hidden="true">
       <span className="pp-tape" />
-      <div className="pp-photo"><Figure look={lookOf({ gender, age, costume })} /></div>
+      <div className="pp-photo"><Figure look={lookOf({ gender, age, costume: faceWear })} /></div>
       <span className="pp-polaroid-cap">{age}세</span>
     </div>
   );

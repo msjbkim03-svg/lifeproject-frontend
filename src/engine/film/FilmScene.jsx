@@ -18,11 +18,13 @@ export default function FilmScene({ v, t = 0, cam = [0, 0, 1] }) {
     const g = cv.getContext('2d');
     g.clearRect(0, 0, W, H);
     const fn = SCENES[ALIAS[v.scene] || v.scene] || SCENES.village;
+    // 장면 그림(엔딩 크레딧 · 결과 큰 장면 · 추모관 사진첩/방)에서는 탈것 빼고 머리·옷·모자만 (C21 탈것은 마을에서만)
+    const sv = v.costume && typeof v.costume === 'object' ? { ...v, costume: { ...v.costume, ride: null } } : v;
     try {
-      fn(new Px(g), t, v);
+      fn(new Px(g), t, sv);
     } catch (e) {
       // 그림 하나가 틀려도 영상은 계속 (마을 장면으로 대신)
-      if (fn !== SCENES.village) SCENES.village(new Px(g), t, v);
+      if (fn !== SCENES.village) SCENES.village(new Px(g), t, sv);
       console.warn('[film] scene', v.scene, e);
     }
   }, [v, t]);

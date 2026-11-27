@@ -245,16 +245,13 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
   const faded = useRef(false);
   const mode = useTheme();
 
-  // 필름 재료 + 입은 옷 (C21)
+  // 필름 재료 + 입은 옷 (C21, /api/engine/film 에 wear 가 함께 옴)
   useEffect(() => {
     if (filmData) return;
     const isLogin = !!localStorage.getItem('token');
     const guestToken = guestParam || (isLogin ? null : localStorage.getItem('guestToken'));
-    Promise.all([
-      client.get('/api/engine/film', { params: { lifeId, guestToken } }),
-      client.get('/api/costumes', { params: { lifeId, guestToken } }).catch(() => null),
-    ])
-      .then(([f, c]) => setData({ ...f.data, wear: c?.data?.wear || null }))
+    client.get('/api/engine/film', { params: { lifeId, guestToken } })
+      .then((f) => setData(f.data))
       .catch((err) => {
         const msg = err.response?.data;
         setError(typeof msg === 'string' && msg ? msg : '엔딩 크레딧을 불러오지 못했어요.');
@@ -264,7 +261,10 @@ function EndingFilm({ lifeId, result, onClose, guestToken: guestParam = null, ac
   const film = useMemo(() => {
     if (!data || !result) return null;
     const f = buildFilm(result, data);
-    if (data.wear) f.seg.forEach((s) => { if (s.v) s.v = { ...s.v, costume: data.wear }; });
+    if (data.wear) {
+      const wear = { ...data.wear, ride: null }; // 엔딩 크레딧에는 탈것 빼고 머리·옷·모자만 (C21 탈것은 마을에서만)
+      f.seg.forEach((s) => { if (s.v) s.v = { ...s.v, costume: wear }; });
+    }
     return f;
   }, [data, result]);
 
