@@ -7,17 +7,25 @@ import { useEffect, useRef } from "react";
 
 const SITE_KEY = "6LcveTEuAAAAAJShNwwESQlbFtRIfFhCjclbk6BU"; // Google Cloud lifeproject 의 체크박스 키 (비밀 키는 백엔드 application-secret.properties)
 
-function RecaptchaBox({ onChange }) {
+function RecaptchaBox({ onChange, onWidgetId }) {
   const boxRef = useRef(null); // 체크박스가 그려질 자리
+  const onChangeRef = useRef(onChange);
+  const onWidgetIdRef = useRef(onWidgetId);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    onWidgetIdRef.current = onWidgetId;
+  });
 
   useEffect(() => {
     const draw = () => {
       if (!boxRef.current || boxRef.current.childElementCount > 0) return;
-      window.grecaptcha.render(boxRef.current, {
+      const widgetId = window.grecaptcha.render(boxRef.current, {
         sitekey: SITE_KEY,
-        callback: (token) => onChange(token),  // 체크 성공 → 토큰
-        "expired-callback": () => onChange(""), // 2분쯤 지나면 풀림 → 다시 체크해야 함
+        callback: (token) => onChangeRef.current?.(token),  // 체크 성공 → 토큰
+        "expired-callback": () => onChangeRef.current?.(""), // 2분쯤 지나면 풀림 → 다시 체크해야 함
       });
+      onWidgetIdRef.current?.(widgetId);
     };
 
     // 1) 구글 스크립트가 이미 있으면 (가입 화면에 두 번째로 들어온 경우) 바로 그리기
@@ -35,7 +43,7 @@ function RecaptchaBox({ onChange }) {
       script.async = true;
       document.body.appendChild(script);
     }
-  }, [onChange]);
+  }, []);
 
   return <div ref={boxRef} />;
 }

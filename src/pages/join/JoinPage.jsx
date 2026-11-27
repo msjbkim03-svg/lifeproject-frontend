@@ -38,6 +38,7 @@ function JoinPage() {
 
   // 로봇 확인 (reCAPTCHA) - 체크하면 구글이 준 토큰, 안 했거나 풀리면 ''
   const [captchaToken, setCaptchaToken] = useState("");
+  const captchaWidgetIdRef = useRef(null);
 
   // 중복 확인 통과 여부 (true 여야 가입 가능)
   const [checked, setChecked] = useState({ loginId: false, nickname: false, email: false });
@@ -117,7 +118,8 @@ function JoinPage() {
     if (form.password !== form.passwordCheck) {
       return setError("비밀번호 확인이 맞지 않아요.");
     }
-    if (form.nickname.length < 2 || form.nickname.length > 10) {
+    const nick = form.nickname.trim();
+    if (nick.length < 2 || nick.length > 10) {
       return setError("닉네임은 2~10자로 입력해 주세요.");
     }
     if (!checked.loginId || !checked.nickname || !checked.email) {
@@ -142,8 +144,12 @@ function JoinPage() {
       navi("/login", { state: { message: "회원가입을 마쳤어요. 로그인해 주세요.", returnTo } });
     } catch (err) {
       setError(err.response?.data?.message || "서버에 연결할 수 없어요.");
-      // 토큰은 한 번만 쓸 수 있어서, 실패하면 체크박스를 비우고 다시 체크하게 함
-      window.grecaptcha?.reset();
+      // 토큰은 한 번만 쓸 수 있어서, 실패하면 현재 위젯 ID로 체크박스를 비우고 다시 체크하게 함
+      if (captchaWidgetIdRef.current !== null) {
+        window.grecaptcha?.reset(captchaWidgetIdRef.current);
+      } else {
+        window.grecaptcha?.reset();
+      }
       setCaptchaToken("");
     } finally {
       setBusy(false);
@@ -254,7 +260,10 @@ function JoinPage() {
 
           {/* 로봇 확인 (reCAPTCHA) */}
           <div className={styles.captcha}>
-            <RecaptchaBox onChange={setCaptchaToken} />
+            <RecaptchaBox
+              onChange={setCaptchaToken}
+              onWidgetId={(id) => { captchaWidgetIdRef.current = id; }}
+            />
           </div>
         </div>
 

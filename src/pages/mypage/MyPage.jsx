@@ -11,6 +11,7 @@ function MyPage() {
   const navi = useNavigate();
   // 내 정보는 MyPageLayout 이 서버에서 받아서 넘겨 줌 (여기서는 꺼내 쓰기만)
   const { my } = useOutletContext();
+  const isGoogle = Boolean(my.loginId && my.loginId.startsWith("g_"));
   const look = lookOf({
     gender: my.gender || "M",
     age: my.currentAge ?? 25,
@@ -30,7 +31,7 @@ function MyPage() {
             <Button size="sm" onClick={() => navi("/my/edit")}>개인정보 수정</Button>
           </div>
           <dl className={styles.info}>
-            <dt>아이디</dt><dd>{my.loginId}</dd>
+            <dt>아이디</dt><dd>{isGoogle ? "Google 소셜 연동 계정" : my.loginId}</dd>
             <dt>닉네임</dt><dd>{my.nickname}</dd>
             <dt>이메일</dt><dd>{my.email}</dd>
             <dt>전화번호</dt><dd>{my.phone ? formatPhone(my.phone) : "등록되지 않음"}</dd>

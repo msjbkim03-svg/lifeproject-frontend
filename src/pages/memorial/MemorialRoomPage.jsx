@@ -91,8 +91,12 @@ function MemorialRoomPage() {
       setRoom({ ...room, myCandle: true, tributeCount: resp.data.tributeCount ?? room.tributeCount + 1 });
     } catch (e) {
       if (e.response?.status === 401) return goLogin();
-      if (e.response?.status === 400) setRoom({ ...room, myCandle: true }); // 이미 켬
-      else setNotice("촛불을 켜지 못했어요. 잠시 뒤 다시 해 주세요.");
+      const msg = e.response?.data?.message;
+      if (e.response?.status === 400 && msg === "이미 촛불을 켰어요.") {
+        setRoom({ ...room, myCandle: true });
+      } else {
+        setNotice(msg || "촛불을 켜지 못했어요. 잠시 뒤 다시 해 주세요.");
+      }
     }
   };
 

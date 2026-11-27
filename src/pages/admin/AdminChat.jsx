@@ -144,7 +144,12 @@ function AdminChat() {
           : `/api/admin/chat/posts/${target.id}`;
       const resp = await client.delete(url);
       setMessage(resp.data?.message || "삭제했어요.");
-      setReload((n) => n + 1);
+      // 마지막 페이지의 마지막 1건을 삭제해 현재 페이지가 비게 되면 이전 페이지로 이동
+      if ((tab !== "chats" || search.status === "N") && data?.list?.length === 1 && page > 1) {
+        setPage((p) => p - 1);
+      } else {
+        setReload((n) => n + 1);
+      }
     } catch (err) {
       setError(err.response?.data?.message || "삭제하지 못했어요.");
     } finally {
@@ -176,7 +181,7 @@ function AdminChat() {
       {/* ───── 1. 금칙어 관리 패널 ───── */}
       <Panel title={`금칙어 ${words.length}개`}>
         <p className="sub" style={{ marginTop: 0, marginBottom: "var(--sp-3)" }}>
-          등록된 금칙어는 인게임 마을 실시간 채팅과 추모관 마지막 한마디·방명록에 함께 적용돼요. (띄어쓰기·대소문자 무시)
+          등록된 금칙어는 인게임 마을 실시간 채팅, 회원 닉네임, 추모관 마지막 한마디·방명록에 함께 적용돼요. (띄어쓰기·대소문자 무시)
         </p>
 
         <div className={styles.wordTop}>
