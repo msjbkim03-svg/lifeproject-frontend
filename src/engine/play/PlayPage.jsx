@@ -829,7 +829,7 @@ function PlayPage() {
             {!ended && (
               <button type="button" className="shop-b ghost pp-shopbtn" disabled={waiting} title={waiting ? '결정 창을 먼저 골라 주세요' : undefined}
                 onClick={() => setCostumeOpen(true)}>
-                옷 가게
+                상점
               </button>
             )}
           </section>
