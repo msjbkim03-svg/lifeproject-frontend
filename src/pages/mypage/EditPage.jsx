@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
@@ -6,6 +6,9 @@ import Modal from "../../common/ui/Modal";
 import { formatPhone } from "../../utils/phone";
 import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (container, card, title …)
 import styles from "./EditPage.module.css"; // 이 화면만 쓰는 입력칸 모양
+
+// 구글 OAuth 클라이언트 ID (LoginPage.jsx 와 동일)
+const GOOGLE_CLIENT_ID = "1060054612101-00gbenedhdoubrsnk69e4guoblbpdovc.apps.googleusercontent.com";
 
 // 개인정보 수정 (M05) + 회원 탈퇴 (M06)  주소: /my/edit
 // 와이어프레임 16쪽
@@ -42,6 +45,61 @@ function EditPage() {
 
   // 저장·탈퇴 요청을 보내는 중인지 (연타 막기)
   const [busy, setBusy] = useState(false);
+
+  // 구글 소셜 계정 탈퇴 시 본인 확인(재인증)용 OAuth 클라이언트
+  const googleTokenClientRef = useRef(null);
+  const googleWithdrawCbRef = useRef(null);
+  const withdrawPendingRef = useRef(false);
+
+  const closeConfirm = () => {
+    withdrawPendingRef.current = false;
+    setConfirmOpen(false);
+    setBusy(false);
+  };
+
+  useEffect(() => {
+    if (!isGoogle) return;
+    const initClient = () => {
+      if (!window.google?.accounts?.oauth2) return;
+      googleTokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: "openid email profile",
+        callback: (res) => {
+          if (res?.access_token) {
+            googleWithdrawCbRef.current?.(res.access_token);
+          } else {
+            setConfirmOpen(false);
+            setWithdrawError("Google 본인 확인이 취소되었어요.");
+            setBusy(false);
+          }
+        },
+        error_callback: () => {
+          setConfirmOpen(false);
+          setWithdrawError("Google 본인 확인이 취소되었어요.");
+          setBusy(false);
+        },
+      });
+    };
+
+    if (window.google?.accounts?.oauth2) {
+      initClient();
+      return;
+    }
+
+    const existing = document.getElementById("google-gsi-script");
+    if (existing) {
+      existing.addEventListener("load", initClient);
+      return () => existing.removeEventListener("load", initClient);
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-gsi-script";
+    script.src = "https://accounts.google.com/gsi/client?hl=ko";
+    script.async = true;
+    script.defer = true;
+    script.onload = initClient;
+    document.body.appendChild(script);
+  }, [isGoogle]);
 
   // 이메일을 바꿨는지 (공백·대소문자는 무시 → 서버와 같은 기준)
   const emailChanged = email.trim().toLowerCase() !== (my.email || "").toLowerCase();
@@ -141,11 +199,9 @@ function EditPage() {
   };
 
   // 6. 확인 창에서 "탈퇴하기" → POST /api/members/me/withdraw
-  const withdraw = async () => {
-    if (busy) return;
-    setBusy(true);
+  const sendWithdraw = async (payload) => {
     try {
-      await client.post("/api/members/me/withdraw", { currentPassword: withdrawPw });
+      await client.post("/api/members/me/withdraw", payload);
       // 로그인 토큰 지우고 메인으로 (비회원 guestToken 은 그대로)
       localStorage.removeItem("token");
       localStorage.removeItem("nickname");
@@ -157,6 +213,35 @@ function EditPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  useEffect(() => {
+    googleWithdrawCbRef.current = (accessToken) => {
+      if (!withdrawPendingRef.current) return;
+      withdrawPendingRef.current = false;
+      sendWithdraw({ googleCredential: accessToken });
+    };
+  });
+
+  const withdraw = async () => {
+    if (busy) return;
+    setBusy(true);
+    setWithdrawError("");
+
+    // 구글 소셜 계정은 탈퇴 전 Google 재인증(연동 이메일 본인 확인) 필수
+    if (isGoogle) {
+      if (!googleTokenClientRef.current) {
+        setConfirmOpen(false);
+        setWithdrawError("Google 인증을 불러오는 중이에요. 잠시 후 다시 시도해 주세요.");
+        setBusy(false);
+        return;
+      }
+      withdrawPendingRef.current = true;
+      googleTokenClientRef.current.requestAccessToken({ prompt: "select_account" });
+      return;
+    }
+
+    await sendWithdraw({ currentPassword: withdrawPw });
   };
 
   return (
@@ -251,14 +336,22 @@ function EditPage() {
           {/* 오른쪽 안내 상자: 이 화면이 실제로 검사하는 규칙만 적음 */}
           <aside className={styles.guide}>
             <b className={styles.guideTitle}>수정할 때 알아 두세요</b>
-            <ul className={styles.guideList}>
-              <li><b>아이디</b>는 바꿀 수 없어요.</li>
-              <li><b>닉네임</b>은 2~10자이고, 바꿨다면 중복 확인을 해 주세요.</li>
-              <li>저장하려면 <b>현재 비밀번호</b>가 꼭 필요해요.</li>
-              <li><b>새 비밀번호</b>를 바꾸면 저장 후 로그아웃돼요. 새 비밀번호로 다시 로그인해 주세요.</li>
-              <li><b>이메일</b>을 바꾸면 새 이메일로 받은 6자리 인증번호를 넣어야 해요.</li>
-              <li><b>전화번호</b>는 010-1234-5678 모양으로 적어 주세요.</li>
-            </ul>
+            {isGoogle ? (
+              <ul className={styles.guideList}>
+                <li><b>아이디·이메일</b>은 Google 계정과 연동되어 바꿀 수 없어요.</li>
+                <li><b>닉네임</b>은 2~10자이고, 바꿨다면 중복 확인을 해 주세요.</li>
+                <li><b>전화번호</b>는 010-1234-5678 모양으로 적어 주세요.</li>
+              </ul>
+            ) : (
+              <ul className={styles.guideList}>
+                <li><b>아이디</b>는 바꿀 수 없어요.</li>
+                <li><b>닉네임</b>은 2~10자이고, 바꿨다면 중복 확인을 해 주세요.</li>
+                <li>저장하려면 <b>현재 비밀번호</b>가 꼭 필요해요.</li>
+                <li><b>새 비밀번호</b>를 바꾸면 저장 후 로그아웃돼요. 새 비밀번호로 다시 로그인해 주세요.</li>
+                <li><b>이메일</b>을 바꾸면 새 이메일로 받은 6자리 인증번호를 넣어야 해요.</li>
+                <li><b>전화번호</b>는 010-1234-5678 모양으로 적어 주세요.</li>
+              </ul>
+            )}
           </aside>
           </div>
         </section>
@@ -273,7 +366,7 @@ function EditPage() {
             <div className={styles.form}>
               <p className={common.desc}>
                 {isGoogle
-                  ? "탈퇴하면 다시 로그인할 수 없어요. 아래 버튼을 눌러 탈퇴를 진행할 수 있어요."
+                  ? "탈퇴하면 다시 로그인할 수 없어요. 탈퇴 시 연동된 Google 계정으로 본인 확인을 한 번 더 진행해요."
                   : "탈퇴하면 다시 로그인할 수 없어요. 비밀번호를 입력해 본인 확인을 해 주세요."}
               </p>
               <div className={styles.row}>
@@ -300,11 +393,13 @@ function EditPage() {
       </main>
 
       {/* ===== 탈퇴 확인 창 (팀 공통 Modal) ===== */}
-      <Modal open={confirmOpen} title="정말 탈퇴할까요?" onClose={() => setConfirmOpen(false)}>
+      <Modal open={confirmOpen} title="정말 탈퇴할까요?" onClose={closeConfirm}>
         <p className={common.desc}>탈퇴하면 이 계정으로 다시 로그인할 수 없어요.</p>
         <div className={styles.actions}>
-          <Button onClick={() => setConfirmOpen(false)}>취소</Button>
-          <Button type="danger" disabled={busy} onClick={withdraw}>{busy ? "처리하는 중…" : "탈퇴하기"}</Button>
+          <Button onClick={closeConfirm}>취소</Button>
+          <Button type="danger" disabled={busy} onClick={withdraw}>
+            {busy ? "처리하는 중…" : isGoogle ? "Google 인증 후 탈퇴하기" : "탈퇴하기"}
+          </Button>
         </div>
       </Modal>
     </>

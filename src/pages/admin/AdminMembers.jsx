@@ -45,8 +45,9 @@ function AdminMembers() {
       });
   }, [search, page, reload, navi]);
 
-  // 2. 검색 버튼 → 1페이지부터
-  const handleSearch = () => {
+  // 2. 검색 버튼 (또는 Enter) → 1페이지부터
+  const handleSearch = (e) => {
+    if (e?.preventDefault) e.preventDefault();
     setSearch({ keyword: keyword.trim(), status });
     setPage(1);
   };
@@ -58,7 +59,12 @@ function AdminMembers() {
     try {
       await client.post(`/api/admin/members/${target.memberId}/withdraw`);
       setMessage(`${target.nickname} 님을 탈퇴 처리했어요.`);
-      setReload(reload + 1);
+      // '활동 중' 필터의 마지막 페이지에서 마지막 1명을 탈퇴시켰으면 이전 페이지로 이동
+      if (search.status === "ACTIVE" && data?.list?.length === 1 && page > 1) {
+        setPage((p) => p - 1);
+      } else {
+        setReload((n) => n + 1);
+      }
     } catch (err) {
       setMessage(err.response?.data?.message || "탈퇴 처리하지 못했어요.");
     } finally {
@@ -83,7 +89,7 @@ function AdminMembers() {
 
       <Panel title={`회원 ${data.total}명`}>
         {/* 검색 */}
-        <div className={styles.search}>
+        <form className={styles.search} onSubmit={handleSearch}>
           <input
             className="input"
             placeholder="아이디, 닉네임, 이메일"
@@ -96,7 +102,7 @@ function AdminMembers() {
             <option value="WITHDRAWN">탈퇴</option>
           </select>
           <Button type="primary" onClick={handleSearch}>검색</Button>
-        </div>
+        </form>
 
         {message && <p className={styles.message}>{message}</p>}
         {error && <p className={styles.error}>{error}</p>}

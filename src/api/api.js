@@ -5,13 +5,19 @@ const client = axios.create({
   baseURL: `http://${window.location.hostname}`,
 });
 
-// 토큰 안의 만료 시각(exp)이 지났는지
+// 토큰 안의 만료 시각(exp)이 지났는지 확인 (형식이 깨졌거나 exp가 없어도 만료로 처리)
 const isExpired = (token) => {
   try {
-    const body = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(body)).exp * 1000 < Date.now();
+    if (typeof token !== 'string') return true;
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const payload = JSON.parse(atob(padded));
+    if (typeof payload.exp !== 'number') return true;
+    return payload.exp * 1000 < Date.now();
   } catch {
-    return false;
+    return true;
   }
 };
 
@@ -29,6 +35,7 @@ const isMemberOnly = (url = '') => {
   if (url.startsWith('/api/quests') || url.startsWith('/api/admin')) return true;
   if (url.startsWith('/api/members/')
       && !url.startsWith('/api/members/login')
+      && !url.startsWith('/api/members/google')
       && !url.startsWith('/api/members/check')
       && !url.startsWith('/api/members/find')) {
     return true;
@@ -76,7 +83,9 @@ client.interceptors.response.use(
   // → 남아 있는 로그인 정보를 지우고 로그인 화면으로 (로그인·찾기 요청의 401 은 그대로 둠)
   (err) => {
     const url = err.config?.url || '';
-    const skip = url.includes('/api/members/login') || url.includes('/api/members/find');
+    const skip = url.includes('/api/members/login')
+      || url.includes('/api/members/google')
+      || url.includes('/api/members/find');
     if (err.response?.status === 401 && localStorage.getItem('token') && !skip
         && window.location.pathname !== '/login') {
       localStorage.removeItem('token');
