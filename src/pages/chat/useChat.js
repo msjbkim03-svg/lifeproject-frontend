@@ -13,7 +13,7 @@ import { formatErrorMsg } from "../../utils/bannedMsg";
 
 const API_BASE = `http://${window.location.hostname}`;
 const WS_URL = `ws://${window.location.hostname}/ws`;
-const PLACE_LIMIT = 9; // 장소별 대화·표시 정원 (나 + 다른 사람 8명 = 선착순 9명)
+const PLACE_LIMIT = 10; // 장소별 대화 정원 (선착순 10명까지 채팅 가능, 11번째부터는 화면에 보이되 채팅만 제한)
 const BUBBLE_MS = 2000;
 const ERROR_MS = 3000;
 const MOVE_MS = 150;
@@ -197,7 +197,7 @@ function useChat(countryCode, me) {
     sortedUnique.push(p);
   }
 
-  // 장소별로 먼저 들어온 9명(나 + 8명)만 서로 보이고 말할 수 있게 정원 관리
+  // 장소별로 먼저 들어온 10명까지 채팅 가능 (11번째부터는 화면에는 모두 보이되 말하기만 제한)
   const byPlace = new Map();
   for (const p of sortedUnique) {
     const pl = p.place || "home";
@@ -206,15 +206,15 @@ function useChat(countryCode, me) {
   }
 
   const samePlace = atHome ? [] : (byPlace.get(currentPlace) || []);
-  const myRank = samePlace.findIndex((p) => p.memberId === myId); // 0~8: 대화 가능(1~9등), >=9: 10번째~ 대기
+  const myRank = samePlace.findIndex((p) => p.memberId === myId); // 0~9: 대화 가능(1~10등), >=10: 11번째~ 채팅 대기
   const placeFull = !atHome && myRank >= PLACE_LIMIT;
   const placeCount = atHome ? 0 : Math.min(samePlace.length, PLACE_LIMIT);
 
-  // 각 장소 선착순 상위 9명 안에 든 다른 사람만 Village 에 전달 (10번째부터는 다른 사람 화면에 안 보임)
+  // 같은 장소의 모든 접속자를 Village 에 전달 (10명을 초과해도 사람은 보이고, 채팅만 선착순 10명으로 제한)
   const others = [];
   for (const [pl, list] of byPlace.entries()) {
     if (pl === "home") continue;
-    for (const p of list.slice(0, PLACE_LIMIT)) {
+    for (const p of list) {
       if (p.memberId === myId) continue;
       others.push({
         id: p.memberId, name: p.nickname, age: p.age, gender: p.gender, costume: p.costume,
