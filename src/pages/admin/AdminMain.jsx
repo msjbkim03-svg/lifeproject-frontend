@@ -627,7 +627,7 @@ export function Dashboard({ d, loadedAt, onReload, loading }) {
   };
 
   return (
-    <div className={styles.wrap}>
+    <div className={'page ' + styles.wrap}>
       {/* 메뉴 줄 */}
       <div className={styles.top}>
         <AdminNav />
@@ -772,7 +772,7 @@ function AdminMain() {
   return (
     <div className={'sky ' + styles.page}>
       {d ? <Dashboard d={d} loadedAt={loadedAt} onReload={reload} loading={loading} /> : (
-        <div className={styles.wrap}>
+        <div className={'page ' + styles.wrap}>
           <div className={styles.top}><AdminNav /></div>
           {error ? (
             <div className={styles.card}>

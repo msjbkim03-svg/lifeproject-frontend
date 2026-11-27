@@ -50,6 +50,7 @@ function ChatBox({ chat }) {
       ) : (
         <p className={styles.guest}>로그인하면 같은 나라 사람들과 말할 수 있어요.</p>
       )}
+      {chat.error && <p className={styles.error} role="alert">{chat.error}</p>}
       <div className={styles.info}>
         <span>
           {!chat.connected
@@ -58,7 +59,6 @@ function ChatBox({ chat }) {
               ? `같은 나라 접속 ${chat.count}명`
               : `같은 나라 접속 ${chat.count}명 · 이 장소 대화 ${chat.placeCount}/${chat.placeLimit}명`}
         </span>
-        {chat.error && <span className={styles.error}>{chat.error}</span>}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 /* C10 역사 문장 검수 */
-.wrap { max-width: 960px; }
+.wrap { }
 
 .error {
   color: var(--red);

@@ -74,8 +74,8 @@ function AdminMembers() {
   };
 
   // 처음부터 못 불러왔을 때만 화면 전체를 안내로 (목록을 한 번 받은 뒤 검색이 실패하면 목록 위에 문구만)
-  if (error && !data) return <div className="page"><p>{error}</p></div>;
-  if (!data) return <div className="page"><p className="sub">불러오는 중…</p></div>;
+  if (error && !data) return <div className="page col"><AdminNav /><p>{error}</p></div>;
+  if (!data) return <div className="page col"><AdminNav /><p className="sub">불러오는 중…</p></div>;
 
   // 페이지 번호 [1] [2] [3] …
   const lastPage = Math.max(1, Math.ceil(data.total / data.size));
@@ -111,7 +111,7 @@ function AdminMembers() {
         {data.list.length === 0 ? (
           <p className="sub">조건에 맞는 회원이 없어요.</p>
         ) : (
-          <table className={styles.table}>
+          <div style={{ overflowX: "auto" }}><table className={styles.table}>
             <thead>
               <tr>
                 <th>번호</th><th>아이디</th><th>닉네임</th><th>이메일</th><th>전화번호</th>
@@ -142,7 +142,7 @@ function AdminMembers() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
 
         {/* 페이지 번호 */}

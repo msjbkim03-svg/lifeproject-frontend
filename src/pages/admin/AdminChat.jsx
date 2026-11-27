@@ -31,6 +31,7 @@ function AdminChat() {
 
   // ───── 2. 채팅 · 방명록 · 추모관 글 목록 상태 ─────
   const [tab, setTab] = useState("chats");
+  const [loadedTab, setLoadedTab] = useState("");
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState({ keyword: "", status: "" });
@@ -67,6 +68,7 @@ function AdminChat() {
     client.get(url, { params })
       .then((resp) => {
         setData(resp.data);
+        setLoadedTab(tab);
         setError("");
       })
       .catch((err) => {
@@ -158,8 +160,8 @@ function AdminChat() {
     }
   };
 
-  if (error && !data) return <div className="page"><p>{error}</p></div>;
-  if (!data) return <div className="page"><p className="sub">불러오는 중…</p></div>;
+  if (error && !data) return <div className="page col"><AdminNav /><p>{error}</p></div>;
+  if (!data) return <div className="page col"><AdminNav /><p className="sub">불러오는 중…</p></div>;
 
   const filteredWords = wordFilter.trim()
     ? words.filter((w) => w.toLowerCase().includes(wordFilter.trim().toLowerCase()))
@@ -169,9 +171,9 @@ function AdminChat() {
   const pages = [];
   for (let i = 1; i <= lastPage; i++) pages.push(i);
 
-  const tabTitle = tab === "chats" ? `마을 채팅 ${data.total}건`
-    : tab === "comments" ? `추모관 방명록 ${data.total}건`
-      : `추모관 글 ${data.total}건`;
+  const tabTitle = tab === "chats" ? `마을 채팅 ${loadedTab === tab ? data.total + "건" : "불러오는 중…"}`
+    : tab === "comments" ? `추모관 방명록 ${loadedTab === tab ? data.total + "건" : "불러오는 중…"}`
+      : `추모관 글 ${loadedTab === tab ? data.total + "건" : "불러오는 중…"}`;
 
   return (
     <div className={"page col " + styles.admin}>
@@ -268,10 +270,12 @@ function AdminChat() {
         {message && <p className={styles.message}>{message}</p>}
         {error && <p className={styles.error}>{error}</p>}
 
-        {data.list.length === 0 ? (
+        {loadedTab !== tab ? (
+          <p className="sub">불러오는 중…</p>
+        ) : data.list.length === 0 ? (
           <p className="sub">조건에 맞는 내역이 없어요.</p>
         ) : tab === "chats" ? (
-          <table className={styles.table}>
+          <div style={{ overflowX: "auto" }}><table className={styles.table}>
             <thead>
               <tr>
                 <th>번호</th><th>나라</th><th>작성자</th><th>내용</th><th>작성 시각</th><th>상태</th><th></th>
@@ -313,9 +317,9 @@ function AdminChat() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         ) : tab === "comments" ? (
-          <table className={styles.table}>
+          <div style={{ overflowX: "auto" }}><table className={styles.table}>
             <thead>
               <tr>
                 <th>번호</th><th>추모관</th><th>작성자</th><th>방명록 내용</th><th>작성 시각</th><th></th>
@@ -354,9 +358,9 @@ function AdminChat() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         ) : (
-          <table className={styles.table}>
+          <div style={{ overflowX: "auto" }}><table className={styles.table}>
             <thead>
               <tr>
                 <th>번호</th><th>추모관 (고인)</th><th>작성자</th><th>마지막 한마디</th><th>촛불·방명록</th><th>개설 시각</th><th></th>
@@ -399,11 +403,11 @@ function AdminChat() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
 
         {/* 페이지 번호 */}
-        {lastPage > 1 && (
+        {loadedTab === tab && lastPage > 1 && (
           <div className={styles.pager}>
             <Button size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>‹</Button>
             {pages.map((p) => (

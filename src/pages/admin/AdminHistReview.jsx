@@ -44,7 +44,7 @@ function AdminHistReview() {
   const cardIds = cards.map((c) => c.eventId);
   const shown = rows.filter((r) =>
     !cardIds.includes(r.eventId) &&
-    (!keyword || [r.eventId, r.title, r.histTitle, r.countryCode].some((v) => v && v.includes(keyword))));
+    (!keyword.trim() || [r.eventId, r.title, r.histTitle, r.countryCode].some((v) => v && String(v).toLowerCase().includes(keyword.trim().toLowerCase()))));
 
   // 체크: 이미 골랐으면 빼고, 아니면 10개까지만 추가
   const toggle = (id) => {

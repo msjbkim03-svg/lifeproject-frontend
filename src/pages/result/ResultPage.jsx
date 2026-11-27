@@ -31,6 +31,7 @@ import StoryPanel from './StoryPanel';
 import QnaPanel from './QnaPanel';
 import EndingFilm from '../../engine/film/EndingFilm';
 import FilmTest from '../../engine/film/FilmTest';
+import { formatErrorMsg } from '../../utils/bannedMsg';
 import styles from './ResultPage.module.css';
 
 // 학력 코드 → 화면 글자
@@ -331,7 +332,7 @@ function ResultView() {
     setMemoErr('');
     client.post(`/api/memorials/${lifeId}/open`, { message: text })
       .then(() => { setResult((x) => ({ ...x, memorialPostId: x.memorialPostId || -1 })); setMemoOpen(false); })
-      .catch((err) => setMemoErr(err.response?.data?.message || '추모관을 열지 못했어요. 잠시 뒤 다시 해 주세요.'))
+      .catch((err) => setMemoErr(formatErrorMsg(err, '추모관을 열지 못했어요. 잠시 뒤 다시 해 주세요.')))
       .finally(() => setMemoBusy(false));
   };
 
@@ -760,7 +761,7 @@ function ResultView() {
         <div className={styles.memo}>
           <p className="sub">{r.name}({r.birthYear}–{r.deathYear})의 방이 추모관에 열려요. 다른 사람들이 영상 · 사진첩을 보고 촛불과 방명록을 남길 수 있어요.</p>
           <textarea value={memoText} maxLength={100} rows={3} disabled={memoBusy}
-            placeholder="이 삶에 남기는 마지막 한마디 (100자까지)" onChange={(e) => setMemoText(e.target.value)} />
+            placeholder="이 삶에 남기는 마지막 한마디 (100자까지)" onChange={(e) => { setMemoText(e.target.value); if (memoErr) setMemoErr(""); }} />
           <div className={styles.memoFoot}>
             <span className="sub">{memoText.trim().length}/100</span>
             {memoErr && <span className={styles.memoErr} role="alert">{memoErr}</span>}

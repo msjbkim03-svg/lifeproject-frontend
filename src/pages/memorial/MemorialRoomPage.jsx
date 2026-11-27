@@ -6,6 +6,7 @@ import Panel from "../../common/ui/Panel";
 import { buildFilm } from "../../engine/film/filmPlan";
 import MemorialSide from "./MemorialSide";
 import { TABS, toRoom } from "./memorialData";
+import { formatErrorMsg } from "../../utils/bannedMsg";
 import s from "./MemorialRoom.module.css";
 
 // 추모관 방 틀 (B01)  주소가 /memorial/:lifeId 로 시작하면 항상 이 화면이 먼저 그려짐
@@ -22,6 +23,7 @@ function MemorialRoomPage() {
   const [room, setRoom] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [notice, setNotice] = useState(""); // 화면 안 안내 문구
+  const [noticeErr, setNoticeErr] = useState(false);
   const [film, setFilm] = useState(null);   // 엔딩 영상 재료 { result, film, wear } (못 받으면 false) → 영상·사진첩 탭
 
   // 1. 방 불러오기
@@ -67,7 +69,7 @@ function MemorialRoomPage() {
       load();
     } catch (e) {
       if (e.response?.status === 401) return goLogin();
-      setNotice(e.response?.data?.message ?? "추모관을 열지 못했어요.");
+      setNoticeErr(true); setNotice(formatErrorMsg(e, "추모관을 열지 못했어요."));
     }
   };
 
@@ -75,7 +77,7 @@ function MemorialRoomPage() {
   const closeRoom = async () => {
     try {
       await client.delete(`/api/memorials/${lifeId}/open`);
-      setNotice("추모관을 닫았어요.");
+      setNoticeErr(false); setNotice("추모관을 닫았어요.");
       load();
     } catch (e) {
       if (e.response?.status === 401) return goLogin();
@@ -102,15 +104,14 @@ function MemorialRoomPage() {
 
   // 3. 방명록 남기기 (성공하면 true → 방명록 탭이 입력칸을 비움)
   const sendComment = async (content) => {
-    if (!isLogin) { goLogin(); return false; }
+    if (!isLogin) { goLogin(); return { ok: false, error: "" }; }
     try {
       await client.post(`/api/memorials/${lifeId}/comments`, { content });
       load();
-      return true;
+      return { ok: true, error: "" };
     } catch (e) {
-      if (e.response?.status === 401) goLogin();
-      else setNotice(e.response?.data?.message ?? "방명록을 남기지 못했어요.");
-      return false;
+      if (e.response?.status === 401) { goLogin(); return { ok: false, error: "" }; }
+      return { ok: false, error: formatErrorMsg(e, "방명록을 남기지 못했어요.") };
     }
   };
 
@@ -128,7 +129,7 @@ function MemorialRoomPage() {
   // 5. 링크 복사
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href)
-      .then(() => setNotice("링크를 복사했어요."))
+      .then(() => { setNoticeErr(false); setNotice("링크를 복사했어요."); })
       .catch(() => setNotice("링크를 복사하지 못했어요."));
   };
 
@@ -172,7 +173,7 @@ function MemorialRoomPage() {
         </Panel>
       </div>
 
-      {notice && <p className={s.notice}>{notice}</p>}
+      {notice && <p className={noticeErr ? `${s.notice} ${s.noticeErr}` : s.notice} role={noticeErr ? "alert" : undefined}>{notice}</p>}
 
       {/* 아래 */}
       <Panel className={s.bottom}>

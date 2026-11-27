@@ -4,6 +4,7 @@ import client from "../../api/api";
 import Button from "../../common/ui/Button";
 import { formatPhone } from "../../utils/phone";
 import RecaptchaBox from "./RecaptchaBox";
+import { formatErrorMsg } from "../../utils/bannedMsg";
 import styles from "./JoinPage.module.css";
 
 // 회원가입 화면 (M01)
@@ -96,9 +97,9 @@ function JoinPage() {
       const resp = await client.get(urls[field]); // 서버에 물어보기
       if (formRef.current[field] !== value) return; // 기다리는 사이 값을 고쳤으면 이 응답은 버림
       if (resp.data.available) setHint(field, true, "사용할 수 있어요.");
-      else setHint(field, false, resp.data.message || "이미 사용 중이에요.");
-    } catch {
-      setHint(field, false, "서버에 연결할 수 없어요.");
+      else setHint(field, false, formatErrorMsg(resp.data.message, "이미 사용 중이에요."));
+    } catch (err) {
+      setHint(field, false, formatErrorMsg(err, "서버에 연결할 수 없어요."));
     }
   };
 
@@ -143,7 +144,7 @@ function JoinPage() {
       // 로그인 화면으로 이동 + 안내 문구 넘기기 (alert 창 대신 화면 안 초록 칸, 가입 전 화면 위치도 함께 전달)
       navi("/login", { state: { message: "회원가입을 마쳤어요. 로그인해 주세요.", returnTo } });
     } catch (err) {
-      setError(err.response?.data?.message || "서버에 연결할 수 없어요.");
+      setError(formatErrorMsg(err, "서버에 연결할 수 없어요."));
       // 토큰은 한 번만 쓸 수 있어서, 실패하면 현재 위젯 ID로 체크박스를 비우고 다시 체크하게 함
       if (captchaWidgetIdRef.current !== null) {
         window.grecaptcha?.reset(captchaWidgetIdRef.current);
