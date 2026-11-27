@@ -13,6 +13,7 @@ import Figure from '../../engine/village/Figure';
 import { lookOf } from '../../engine/village/costumeData';
 import { ro } from '../../engine/play/lifeText';
 import { retireAge } from '../../engine/film/filmPlan';
+import { formatErrorMsg } from '../../utils/bannedMsg';
 import styles from './AiPanels.module.css';
 
 const MAX_LENGTH = 200; // 백엔드 QaService.MAX_QUESTION_LENGTH 와 같게
@@ -92,8 +93,7 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
     client.post(`/api/qa/${lifeId}`, { question: text, guestToken: guestToken(linkToken), sinceQaId }, { timeout: 60000 })
       .then((res) => setList((old) => [...old, res.data]))
       .catch((err) => {
-        const msg = err.response?.data;
-        setError(typeof msg === 'string' && msg ? msg : '대답을 듣지 못했어요. 잠시 뒤 다시 물어봐 주세요.');
+        setError(formatErrorMsg(err, '대답을 듣지 못했어요. 잠시 뒤 다시 물어봐 주세요.'));
         setQuestion(text);
       })
       .finally(() => setAsking(''));
@@ -150,7 +150,6 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
             </div>
           </div>
         )}
-        {error && <p className={styles.err}>{error}</p>}
         <div ref={bottomRef} />
       </div>
 
@@ -163,9 +162,10 @@ function QnaPanel({ lifeId, guestToken: linkToken, r, happyAge, costume }) {
       <form className={styles.form} onSubmit={(e) => { e.preventDefault(); ask(); }}>
         <input className="input" value={question} maxLength={MAX_LENGTH} disabled={!!asking}
           placeholder={`${who}에게 물어보기 (${MAX_LENGTH}자까지)`}
-          onChange={(e) => setQuestion(e.target.value)} />
+          onChange={(e) => { setQuestion(e.target.value); if (error) setError(""); }} />
         <Button type="primary" pill disabled={!!asking || !question.trim()} onClick={() => ask()}>보내기</Button>
       </form>
+      {error && <p className={styles.err} role="alert">{error}</p>}
       <p className={styles.foot}>게임 속 가상 인물이 기록과 실제 역사 자료를 바탕으로 답해요. AI가 쓴 답이라 틀린 부분이 있을 수 있어요.</p>
     </div>
   );

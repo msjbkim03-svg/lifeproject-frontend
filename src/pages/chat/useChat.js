@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import client from "../../api/api";
+import { formatErrorMsg } from "../../utils/bannedMsg";
 
 const API_BASE = `http://${window.location.hostname}`;
 const WS_URL = `ws://${window.location.hostname}/ws`;
@@ -87,7 +88,7 @@ function useChat(countryCode, me) {
           const p = JSON.parse(msg.body);
           setPlayers((prev) => prev.map((x) => (x.memberId === p.memberId ? { ...x, ...p } : x)));
         }, who);
-        stomp.subscribe("/user/queue/chatError", (msg) => setError(JSON.parse(msg.body).message));
+        stomp.subscribe("/user/queue/chatError", (msg) => setError(formatErrorMsg(JSON.parse(msg.body).message, "메시지를 보내지 못했어요.")));
         setConnected(true);
       },
       onWebSocketClose: () => setConnected(false),

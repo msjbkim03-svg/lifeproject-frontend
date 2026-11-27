@@ -5,6 +5,7 @@ import Button from "../../common/ui/Button";
 import Modal from "../../common/ui/Modal";
 import { formatPhone } from "../../utils/phone";
 import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (container, card, title …)
+import { BANNED_MSG, formatErrorMsg } from "../../utils/bannedMsg";
 import styles from "./EditPage.module.css"; // 이 화면만 쓰는 입력칸 모양
 
 // 구글 OAuth 클라이언트 ID (LoginPage.jsx 와 동일)
@@ -29,6 +30,7 @@ function EditPage() {
 
   // 안내 문구
   const [nickMsg, setNickMsg] = useState("");
+  const [nickErr, setNickErr] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
 
   // 이메일 변경 인증 (이메일을 바꿨을 때만 씀)
@@ -106,14 +108,21 @@ function EditPage() {
 
   // 2. 닉네임 중복 확인 (원래 닉네임 그대로면 확인 필요 없음)
   const checkNickname = async () => {
-    if (nickname === my.nickname) return setNickMsg("지금 쓰는 닉네임이에요.");
+    if (nickname === my.nickname) { setNickErr(false); return setNickMsg("지금 쓰는 닉네임이에요."); }
     const nick = nickname.trim();
-    if (nick.length < 2 || nick.length > 10) return setNickMsg("닉네임은 2~10자로 입력해 주세요.");
+    if (nick.length < 2 || nick.length > 10) { setNickErr(true); return setNickMsg("닉네임은 2~10자로 입력해 주세요."); }
     try {
       const resp = await client.get("/api/members/checkNickname", { params: { nickname } });
-      setNickMsg(resp.data.available ? "사용할 수 있는 닉네임이에요." : (resp.data.message || "이미 사용 중인 닉네임이에요."));
-    } catch {
-      setNickMsg("중복 확인을 하지 못했어요. 잠시 뒤 다시 시도해 주세요.");
+      if (resp.data.available) {
+        setNickErr(false);
+        setNickMsg("사용할 수 있는 닉네임이에요.");
+      } else {
+        setNickErr(true);
+        setNickMsg(formatErrorMsg(resp.data.message, "이미 사용 중인 닉네임이에요."));
+      }
+    } catch (err) {
+      setNickErr(true);
+      setNickMsg(formatErrorMsg(err, "중복 확인을 하지 못했어요. 잠시 뒤 다시 시도해 주세요."));
     }
   };
 
@@ -185,7 +194,12 @@ function EditPage() {
       // (같은 화면이라 입력칸 · "저장했어요." 문구는 그대로 남음)
       navi("/my/edit", { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || "저장하지 못했어요.");
+      const msg = formatErrorMsg(err, "저장하지 못했어요.");
+      if (msg === BANNED_MSG) {
+        setNickErr(true);
+        setNickMsg(msg);
+      }
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -268,10 +282,10 @@ function EditPage() {
           <div className={styles.row}>
             <label>닉네임</label>
             <input className={styles.input} value={nickname}
-              onChange={(e) => { setNickname(e.target.value); setNickMsg(""); }} />
+              onChange={(e) => { setNickname(e.target.value); setNickMsg(""); setNickErr(false); }} />
             <Button onClick={checkNickname}>중복 확인</Button>
           </div>
-          {nickMsg && <p className={styles.hint}>{nickMsg}</p>}
+          {nickMsg && <p className={styles.hint} style={nickErr ? { color: "var(--red)" } : undefined} role={nickErr ? "alert" : undefined}>{nickMsg}</p>}
 
           {!isGoogle && (
             <>

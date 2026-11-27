@@ -111,7 +111,7 @@ function AdminMembers() {
         {data.list.length === 0 ? (
           <p className="sub">조건에 맞는 회원이 없어요.</p>
         ) : (
-          <table className={styles.table}>
+          <div style={{ overflowX: "auto" }}><table className={styles.table}>
             <thead>
               <tr>
                 <th>번호</th><th>아이디</th><th>닉네임</th><th>이메일</th><th>전화번호</th>
@@ -142,7 +142,7 @@ function AdminMembers() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
 
         {/* 페이지 번호 */}

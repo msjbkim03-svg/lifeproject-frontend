@@ -2,14 +2,9 @@
 
 /* 정렬 고르기 (최신순 / 오래 산 순) */
 .sort {
-  height: 34px;
-  padding: 0 var(--sp-2);
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  color: var(--ink);
-  background: var(--bg-deep);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 /* 인생 목록 표 */

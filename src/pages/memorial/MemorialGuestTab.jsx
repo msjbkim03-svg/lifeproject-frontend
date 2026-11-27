@@ -13,13 +13,16 @@ function MemorialGuestTab() {
   const location = useLocation(); // 로그인하면 이 화면으로 돌아오게
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false); // 보내는 중 (Enter 연타로 같은 글 여러 번 막기)
+  const [error, setError] = useState("");
 
   const send = async () => {
     const content = text.trim();
     if (!content || busy) return;
     setBusy(true);
-    const ok = await sendComment(content); // 틀(MemorialRoomPage)이 서버에 보냄
-    if (ok) setText("");
+    setError("");
+    const res = await sendComment(content); // 틀(MemorialRoomPage)이 서버에 보냄
+    if (res?.ok) setText("");
+    else if (res?.error) setError(res.error);
     setBusy(false);
   };
 
@@ -34,21 +37,24 @@ function MemorialGuestTab() {
       <Chips
         items={QUICK.map((q) => ({ value: q, label: q }))}
         selected={text}
-        onPick={setText}
+        onPick={(v) => { setText(v); setError(""); }}
       />
 
       {isLogin ? (
-        <div className={s.write}>
+        <>
+          <div className={s.write}>
           <input
             className="input"
             value={text}
             maxLength={100}
             placeholder="한 줄로 남겨 주세요 (100자)"
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); if (error) setError(""); }}
             onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && send()}
           />
           <Button type="primary" disabled={busy} onClick={send}>{busy ? "남기는 중…" : "남기기"}</Button>
         </div>
+          {error && <p className={s.writeErr} role="alert">{error}</p>}
+        </>
       ) : (
         <p className={s.muted}>
           <Link to="/login" state={{ background: location }} className="gold">로그인</Link>하면 방명록을 남길 수 있어요.

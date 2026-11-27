@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import client from "../../api/api";
 import Button from "../../common/ui/Button";
+import Chips from "../../common/ui/Chips";
 import Figure from "../../engine/village/Figure";
 import { lookOf } from "../../engine/village/costumeData";
 import common from "./MyPage.module.css"; // 마이페이지와 같은 틀 (main, card, stats, life …)
@@ -10,6 +11,7 @@ import styles from "./LivesPage.module.css"; // 표·페이지 번호만
 // 마지막으로 받은 전생 기록을 기억해 둠 (다른 화면에 갔다 와도 '불러오는 중…' 없이 바로 보여 주고, 뒤에서 새로 받음)
 //   키에 로그인 아이디를 넣어서 다른 사람 기록이 섞이지 않게 함
 const cache = {};
+const SORTS = [{ value: "recent", label: "최신순" }, { value: "age", label: "오래 산 순" }];
 
 // 전생 기록 (M07)  주소: /life/lives
 // 와이어프레임 17쪽: 숫자 칸 3개 + 진행 중인 인생 + 인생 목록(10개씩, 최신순/오래 산 순) + 페이지 번호
@@ -35,8 +37,9 @@ function LivesPage() {
   }, [page, sort, my.loginId, retry]);
 
   // 정렬을 바꾸면 1페이지부터
-  const changeSort = (e) => {
-    setSort(e.target.value);
+  const changeSort = (nextSort) => {
+    if (nextSort === sort) return;
+    setSort(nextSort);
     setPage(1);
   };
 
@@ -105,10 +108,9 @@ function LivesPage() {
       <section className={common.card}>
         <div className={common.cardHead}>
           <span className={common.cardTitle}>인생 목록</span>
-          <select className={styles.sort} value={sort} onChange={changeSort}>
-            <option value="recent">최신순</option>
-            <option value="age">오래 산 순</option>
-          </select>
+          <div className={styles.sort}>
+            <Chips items={SORTS} selected={sort} onPick={changeSort} />
+          </div>
         </div>
 
         {data.lives.length === 0 ? (
