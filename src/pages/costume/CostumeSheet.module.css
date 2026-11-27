@@ -12,17 +12,24 @@
 .top { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; }
 .mirror {
   flex: none;
-  width: 110px;
-  height: 170px;
+  width: 124px;
+  height: 168px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   border-radius: 14px;
   background: var(--panel-2);
   border: 1px solid var(--line);
+  overflow: hidden;
 }
-.mirror svg { width: 88px; height: 148px; }
+.mirror svg { width: 82px; height: 136px; }
+/* 탈것 착용 시 거울 칸 안에 여유 있게 들어오도록 비율 자동 축소 */
+.mirrorRide {
+  align-items: center;
+  padding-bottom: 0;
+}
+.mirrorRide svg { width: 44px; height: 74px; }
 .title { font-family: var(--font-display); font-size: 26px; margin: 0 0 6px; }
 .sub { margin: 0; font-size: 13px; color: var(--ink-sub); line-height: 1.6; }
 .msg { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--primary-light); color: var(--ink); font-size: 13.5px; }
@@ -39,40 +46,59 @@
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 
 .row {
+  position: relative;
   display: grid;
-  grid-template-columns: 68px minmax(0, 1fr) auto auto;
+  grid-template-columns: 78px minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   padding: 6px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel-2);
+  overflow: hidden;
 }
 .row.on { border-color: var(--primary); }
 
 .preview {
   position: relative;
-  width: 68px;
+  width: 78px;
   height: 64px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  overflow: visible;
+  padding-bottom: 4px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-deep) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+  overflow: hidden;
 }
 
-.preview svg { width: 36px; height: 60px; }
+.preview svg { width: 32px; height: 52px; }
+/* 탈것(자전거·오토바이·자동차·말·슈퍼카·UFO)은 좌우 폭이 넓어 칸 안에 딱 맞도록 축소 */
+.previewRide {
+  align-items: center;
+  padding-bottom: 0;
+}
+.previewRide svg { width: 23px; height: 38px; }
 
-.locked { opacity: 0.68; }
-.locked .preview svg { filter: grayscale(0.6); }
+/* ===== 나이 제한 잠금: 기존 자물쇠 자리에 철제 자물쇠 아이콘 표시 ===== */
+.locked {
+  opacity: 0.76;
+}
+.locked .preview svg {
+  filter: grayscale(0.6) brightness(0.75);
+}
 .lockOverlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 8px;
-  font-size: 16px;
+  background: rgba(15, 23, 42, 0.42);
+  border-radius: inherit;
+}
+.lockOverlay svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7)) !important;
 }
 
 .nameBox {
@@ -82,7 +108,13 @@
   min-width: 0;
 }
 .name { font-size: 14px; font-weight: 600; }
-.ageLock { font-size: 11.5px; color: var(--red, #e8584c); }
+.ageLock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--red, #e8584c);
+}
 .ageOk { font-size: 11.5px; color: var(--ink-light); }
 .price { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
 /* 사기 · 착용 · 벗기 · 닫기 버튼 = 공통 Button (common/ui) */
