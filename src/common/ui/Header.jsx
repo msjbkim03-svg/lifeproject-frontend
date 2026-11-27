@@ -10,16 +10,18 @@ import Button from './Button';
 import StarIcon from './StarIcon';
 import './ui.css';
 
-// JWT 토큰에서 만료 시각(ms) 꺼내기 (형식이 깨졌으면 null)
-function getTokenExp(token) {
+// JWT 토큰에서 발급 시각(iat)·만료 시각(exp)(ms) 꺼내기 (형식이 깨졌으면 null)
+function getTokenTimes(token) {
   try {
     if (typeof token !== 'string') return null;
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
-    const exp = JSON.parse(atob(padded)).exp;
-    return typeof exp === 'number' ? exp * 1000 : null;
+    const payload = JSON.parse(atob(padded));
+    const exp = typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+    const iat = typeof payload.iat === 'number' ? payload.iat * 1000 : null;
+    return exp ? { iat, exp } : null;
   } catch {
     return null;
   }
@@ -53,16 +55,18 @@ function Header() {
   const isAdmin = localStorage.getItem('memberRole') === 'ADMIN';
 
   // 로그인 토큰 남은 시간(초) — 1초마다 갱신, New-Token 자동 연장·타 탭 로그아웃도 즉시 반영
+  // 로그인 직후 첫 렌더에서 예전 now 값이 쓰여 남은 시간이 3시간을 초과해 튀지 않도록 iat 하한 보정
   const [now, setNow] = useState(() => Date.now());
-  const tokenExp = getTokenExp(token);
-  const leftSec = token && tokenExp ? Math.max(0, Math.floor((tokenExp - now) / 1000)) : null;
+  const tokenTimes = getTokenTimes(token);
+  const effectiveNow = tokenTimes?.iat ? Math.max(now, tokenTimes.iat) : now;
+  const leftSec = token && tokenTimes?.exp ? Math.max(0, Math.floor((tokenTimes.exp - effectiveNow) / 1000)) : null;
 
   useEffect(() => {
     if (!token) return;
 
     const tick = () => {
       const currentToken = localStorage.getItem('token');
-      const currentExp = getTokenExp(currentToken);
+      const currentExp = getTokenTimes(currentToken)?.exp;
       const currentNow = Date.now();
       if (currentToken && (!currentExp || currentExp <= currentNow)) {
         // 만료·손상 시 로그인 정보 정리 후 회원 전용 화면이면 로그인 만료 화면으로 이동
@@ -78,8 +82,13 @@ function Header() {
       setNow(currentNow);
     };
 
+    // 로그인 직후·화면 이동 직후 1초를 기다리지 않고 현재 시각을 바로 동기화
+    const initId = setTimeout(tick, 0);
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(initId);
+      clearInterval(id);
+    };
   }, [token, location.pathname]);
 
   // 로그아웃: 저장해 둔 토큰·닉네임·권한을 지우고 메인으로 새로 이동 (화면에 남아 있던 회원 이어하기 상태도 비움)
