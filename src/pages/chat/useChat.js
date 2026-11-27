@@ -12,6 +12,7 @@ import client from "../../api/api";
 
 const API_BASE = `http://${window.location.hostname}`;
 const WS_URL = `ws://${window.location.hostname}/ws`;
+const PLACE_LIMIT = 9; // 장소별 대화·표시 정원 (나 + 다른 사람 8명 = 선착순 9명)
 const BUBBLE_MS = 2000;
 const ERROR_MS = 3000;
 const MOVE_MS = 150;
@@ -37,8 +38,9 @@ function useChat(countryCode, me) {
   const [players, setPlayers] = useState([]);
   const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
-  const [atHome, setAtHome] = useState(me.place === "home"); // 집 안에서는 다른 사람이 안 보여서 말도 막음
+  const [currentPlace, setCurrentPlace] = useState(me.place || "home"); // 현재 보고 있는 장소 (장소별 9명 정원 계산용)
   const [now, setNow] = useState(() => Date.now());
+  const atHome = currentPlace === "home"; // 집 안에서는 다른 사람이 안 보여서 말도 막음
   const stompRef = useRef(null);
   const myPos = useRef({ place: me.place, x: 50, dir: "right", walking: false });
   const lastMove = useRef({ at: 0, walking: false });
@@ -171,7 +173,7 @@ function useChat(countryCode, me) {
   const move = useCallback((p) => {
     const placeChanged = myPos.current.place !== p.place;
     myPos.current = { place: p.place, x: Math.round(p.x * 10) / 10, dir: p.dir, walking: p.walking };
-    setAtHome(p.place === "home");
+    setCurrentPlace(p.place || "home");
     const stomp = stompRef.current;
     if (!stomp?.connected) return;
     const t = Date.now();
@@ -185,21 +187,45 @@ function useChat(countryCode, me) {
     return live.length ? live[live.length - 1].content : null;
   };
 
+  // 서버가 부여한 장소 입장 순번(placeSeq) 오름차순으로 정렬 + 회원당 1명 중복 제거
+  const sortedUnique = [];
   const seen = new Set();
-  const others = [];
-  for (const p of players) {
-    if (p.memberId === myId || seen.has(p.memberId)) continue;
+  for (const p of [...players].sort((a, b) => (a.placeSeq || 0) - (b.placeSeq || 0))) {
+    if (seen.has(p.memberId)) continue;
     seen.add(p.memberId);
-    others.push({
-      id: p.memberId, name: p.nickname, age: p.age, gender: p.gender, costume: p.costume,
-      place: p.place || me.place, x: p.place ? p.x : xOf(p.memberId), dir: p.dir, walking: p.walking,
-      message: bubbleOf(p.memberId),
-    });
+    sortedUnique.push(p);
   }
-  const count = new Set(players.map((p) => p.memberId)).size;
+
+  // 장소별로 먼저 들어온 9명(나 + 8명)만 서로 보이고 말할 수 있게 정원 관리
+  const byPlace = new Map();
+  for (const p of sortedUnique) {
+    const pl = p.place || "home";
+    if (!byPlace.has(pl)) byPlace.set(pl, []);
+    byPlace.get(pl).push(p);
+  }
+
+  const samePlace = atHome ? [] : (byPlace.get(currentPlace) || []);
+  const myRank = samePlace.findIndex((p) => p.memberId === myId); // 0~8: 대화 가능(1~9등), >=9: 10번째~ 대기
+  const placeFull = !atHome && myRank >= PLACE_LIMIT;
+  const placeCount = atHome ? 0 : Math.min(samePlace.length, PLACE_LIMIT);
+
+  // 각 장소 선착순 상위 9명 안에 든 다른 사람만 Village 에 전달 (10번째부터는 다른 사람 화면에 안 보임)
+  const others = [];
+  for (const [pl, list] of byPlace.entries()) {
+    if (pl === "home") continue;
+    for (const p of list.slice(0, PLACE_LIMIT)) {
+      if (p.memberId === myId) continue;
+      others.push({
+        id: p.memberId, name: p.nickname, age: p.age, gender: p.gender, costume: p.costume,
+        place: pl, x: p.place ? p.x : xOf(p.memberId), dir: p.dir, walking: p.walking,
+        message: bubbleOf(p.memberId),
+      });
+    }
+  }
+  const count = sortedUnique.length;
 
   const send = (content) => {
-    if (atHome) return;
+    if (atHome || placeFull) return;
     if (!stompRef.current?.connected) {
       setError("채팅 서버에 연결하는 중이에요. 잠깐 뒤에 다시 보내 주세요.");
       return;
@@ -213,9 +239,9 @@ function useChat(countryCode, me) {
   };
 
   return {
-    others, count, error, connected, send, move, atHome,
-    myMessage: myId ? bubbleOf(myId) : null,
-    canTalk: !!token && !atHome,
+    others, count, placeCount, placeLimit: PLACE_LIMIT, placeFull, error, connected, send, move, atHome,
+    myMessage: myId && !placeFull ? bubbleOf(myId) : null,
+    canTalk: !!token && !atHome && !placeFull,
   };
 }
 

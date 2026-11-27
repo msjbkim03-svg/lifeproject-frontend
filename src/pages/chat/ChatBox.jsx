@@ -45,11 +45,19 @@ function ChatBox({ chat }) {
         </form>
       ) : chat.atHome ? (
         <p className={styles.guest}>밖으로 나가면 같은 나라 사람들과 말할 수 있어요.</p>
+      ) : chat.placeFull ? (
+        <p className={styles.guest}>이 장소는 대화 인원({chat.placeLimit}명)이 가득 차서 지금은 안 보이고 말할 수 없어요. 앞사람이 나가면 자동으로 참여돼요.</p>
       ) : (
         <p className={styles.guest}>로그인하면 같은 나라 사람들과 말할 수 있어요.</p>
       )}
       <div className={styles.info}>
-        <span>{chat.connected ? `같은 나라 접속 ${chat.count}명` : "연결하는 중…"}</span>
+        <span>
+          {!chat.connected
+            ? "연결하는 중…"
+            : chat.atHome
+              ? `같은 나라 접속 ${chat.count}명`
+              : `같은 나라 접속 ${chat.count}명 · 이 장소 대화 ${chat.placeCount}/${chat.placeLimit}명`}
+        </span>
         {chat.error && <span className={styles.error}>{chat.error}</span>}
       </div>
     </div>
