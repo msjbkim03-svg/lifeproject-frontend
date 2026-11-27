@@ -22,7 +22,7 @@ function MemorialGuestTab() {
     setError("");
     const res = await sendComment(content); // 틀(MemorialRoomPage)이 서버에 보냄
     if (res?.ok) setText("");
-    else if (res?.error) setError(res.error);
+    else if (res?.error) { setError(res.error); setText(""); } // 안내를 띄우고 입력칸은 처음처럼 비움
     setBusy(false);
   };
 
@@ -43,16 +43,16 @@ function MemorialGuestTab() {
       {isLogin ? (
         <>
           <div className={s.write}>
-          <input
-            className="input"
-            value={text}
-            maxLength={100}
-            placeholder="한 줄로 남겨 주세요 (100자)"
-            onChange={(e) => { setText(e.target.value); if (error) setError(""); }}
-            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && send()}
-          />
-          <Button type="primary" disabled={busy} onClick={send}>{busy ? "남기는 중…" : "남기기"}</Button>
-        </div>
+            <input
+              className="input"
+              value={text}
+              maxLength={100}
+              placeholder="한 줄로 남겨 주세요 (100자)"
+              onChange={(e) => { setText(e.target.value); if (error) setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && send()}
+            />
+            <Button type="primary" disabled={busy} onClick={send}>{busy ? "남기는 중…" : "남기기"}</Button>
+          </div>
           {error && <p className={s.writeErr} role="alert">{error}</p>}
         </>
       ) : (

@@ -63,13 +63,15 @@ function MemorialRoomPage() {
   const goLogin = () => navi("/login", { state: { message: "로그인하고 다시 해 주세요.", background: location } });
 
   // 추모관 열기 (내 끝난 인생, 마지막 한마디)
+  // 성공하면 { ok: true }, 실패하면 { ok: false, error: 안내 문구 } → MemorialSide 가 열기 칸 안(입력칸 아래)에 보여 줌
   const openRoom = async (message) => {
     try {
       await client.post(`/api/memorials/${lifeId}/open`, { message });
       load();
+      return { ok: true, error: "" };
     } catch (e) {
-      if (e.response?.status === 401) return goLogin();
-      setNoticeErr(true); setNotice(formatErrorMsg(e, "추모관을 열지 못했어요."));
+      if (e.response?.status === 401) { goLogin(); return { ok: false, error: "" }; }
+      return { ok: false, error: formatErrorMsg(e, "추모관을 열지 못했어요.") };
     }
   };
 
